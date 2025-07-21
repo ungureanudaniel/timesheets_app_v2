@@ -3,6 +3,10 @@ import os
 from dotenv import load_dotenv
 from django.contrib.messages import constants as messages
 from django.utils.translation import gettext_lazy as _
+from mysql.connector.django.base import DatabaseWrapper
+from django.utils.functional import cached_property
+
+DatabaseWrapper.display_name = cached_property(lambda self: "MySQL")
 
 load_dotenv(verbose=True)
 

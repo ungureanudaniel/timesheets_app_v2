@@ -14,8 +14,8 @@ class FundsSourceAdmin(admin.ModelAdmin):
     search_fields = ['name']
 
 
-# @admin.register(Timesheet)
-# class TimesheetAdmin(admin.ModelAdmin):
-#     list_display = ['user', 'date', 'activity', 'hours_worked', 'submitted', 'created_at']
-#     list_filter = ['user', 'submitted']
-#     search_fields = ['user__username', 'activity__name']
+@admin.register(Timesheet)
+class TimesheetAdmin(admin.ModelAdmin):
+    list_display = ['user', 'date', 'activity', 'hours_worked', 'submitted', 'created_at']
+    list_filter = ['user', 'submitted']
+    search_fields = ['user__username', 'activity__name']
