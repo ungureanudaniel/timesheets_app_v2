@@ -10,6 +10,8 @@ from django.http import HttpResponse
 from reportlab.pdfgen import canvas
 from io import BytesIO
 import openpyxl
+import calendar
+from django.utils.translation import gettext as _
 
 class ReportGeneratorView(LoginRequiredMixin, FormView):
     template_name = 'reports/generate_report.html'
@@ -33,6 +35,7 @@ class ReportGeneratorView(LoginRequiredMixin, FormView):
         self.request.session['report_data'] = {
             'start_date': start_date.isoformat(),
             'end_date': end_date.isoformat(),
+            'period': period,
             'report_type': report_type,
             'user_id': self.request.user.id
         }
@@ -44,7 +47,23 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         report_data = self.request.session.get('report_data', {})
+        print("DEBUG - Session data:", report_data)  # Check console output
+        # Get timezone-aware date
+        start_date = timezone.datetime.strptime(
+            report_data.get('start_date'), 
+            '%Y-%m-%d'
+        ).date()
+        period = report_data.get('period', 'weekly')
         
+        if period == 'weekly':
+            context['report_title'] = _("Weekly Report")
+            context['period_detail'] = _("Week") + f" {start_date.isocalendar()[1]}"
+            context['year'] = start_date.year
+        else:
+            context['report_title'] = _("Monthly Report")
+            context['period_detail'] = _(calendar.month_name[start_date.month])
+            context['year'] = start_date.year
+
         # Get timesheets for period
         timesheets = Timesheet.objects.filter(
             user_id=report_data.get('user_id'),
@@ -62,6 +81,7 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
         context['period'] = report_data.get('period', 'weekly')
         context['start_date'] = report_data.get('start_date')
         context['end_date'] = report_data.get('end_date')
+        print(context['period'])
         return context
     
     def _generate_summary_report(self, timesheets):

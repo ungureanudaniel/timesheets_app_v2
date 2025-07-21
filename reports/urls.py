@@ -8,8 +8,8 @@ from django.utils.translation import gettext_lazy as _
 
 urlpatterns = [
     # -------Visitor urls------------------
-    path('reports/generate/', ReportGeneratorView.as_view(), name='generate_report'),
-    path('reports/results/', ReportResultsView.as_view(), name='report_results'),
+    path('generate/', ReportGeneratorView.as_view(), name='generate_report'),
+    path('results/', ReportResultsView.as_view(), name='report_results'),
 
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -3,7 +3,13 @@
 {% load i18n %}
 {% load cache %}
 {% block content %}
-
+<!-- Header -->
+    <div class="header">
+        <div class="container">
+           <h1>{% trans 'Contact' %}</h1>
+            {% include 'includes/messages.html' %}
+        </div>
+    </div>
 <!-- Contact Section -->
 <section id="contact" class="contact-section py-5">
     <div class="container">

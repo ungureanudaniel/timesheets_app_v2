@@ -3,6 +3,14 @@
 {% load i18n %}
 {% load cache %}
 {% block content %}
+<!-- Header -->
+    <div class="header">
+        <div class="container">
+            <h1>{% trans 'Timesheets' %}</h1>
+            <p>{% trans 'Track your working hours efficiently' %}</p>
+            {% include 'includes/messages.html' %}
+        </div>
+    </div>
 <!-- Main Content -->
 <div class="main-content">
     <div class="container">
@@ -20,7 +28,7 @@
                     <i class="fas fa-calendar-alt"></i>
                     <h3>{% trans 'Monthly Reports' %}</h3>
                     <p>{% trans 'Check your monthly reports' %}</p>
-                    <a href="#" class="btn btn-primary">{% trans 'Submit' %}</a>
+                    <a href="{% url 'generate_report' %}" class="btn btn-primary">{% trans 'Submit' %}</a>
                 </div>
             </div>
         </div>

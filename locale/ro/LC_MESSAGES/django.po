@@ -195,7 +195,11 @@ msgstr "Introdu activități"
 
 # Reports
 msgid "Generate Work Report"
-msgstr "Generează Raport de Lucru"
+msgstr "Generează Raport de Activitate"
+
+# Reports
+msgid "Generate Report"
+msgstr "Generează Raport"
 
 msgid "Weekly Report"
 msgstr "Raport Săptămânal"
@@ -214,3 +218,62 @@ msgstr "Tipărește Raport"
 
 msgid "New Report"
 msgstr "Raport Nou"
+
+msgid "Weekly"
+msgstr "Săptămânal"
+
+msgid "Week"
+msgstr "Săptămâna"
+
+msgid "Monthly"
+msgstr "Lunar"
+
+msgid "Month"
+msgstr "Luna"
+
+msgid "Generate a new report, using the filter buttons below"
+msgstr "Generează un raport nou, folosind filtrele de mai jos"
+
+msgid "Create a new timesheet for a specific day using the calendar below"
+msgstr "Introdu activități pentru o zi anume, folosind calendarul de mai jos"
+
+msgid "Manage your team activity using the tools below"
+msgstr "Administrează activitatea echipei tale, folosind uneltele de mai jos"
+
+# Month translations (January-December)
+
+msgid "January"
+msgstr "Ianuarie"
+
+msgid "February"
+msgstr "Februarie"
+
+msgid "March"
+msgstr "Martie"
+
+msgid "April"
+msgstr "Aprilie"
+
+msgid "May"
+msgstr "Mai"
+
+msgid "June"
+msgstr "Iunie"
+
+msgid "July"
+msgstr "Iulie"
+
+msgid "August"
+msgstr "August"
+
+msgid "September"
+msgstr "Septembrie"
+
+msgid "October"
+msgstr "Octombrie"
+
+msgid "November"
+msgstr "Noiembrie"
+
+msgid "December"
+msgstr "Decembrie"

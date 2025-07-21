@@ -1,7 +1,15 @@
-{% extends "base.html" %}
+{% extends "general/base.html" %}
 {% load i18n %}
 
 {% block content %}
+<!-- Header -->
+    <div class="header">
+        <div class="container">
+           <h1>{% trans 'Reports' %}</h1>
+            <p>{% trans 'Generate a new report, using the filter buttons below' %}</p>
+            {% include 'includes/messages.html' %}
+        </div>
+    </div>
 <div class="container mt-4">
     <h2>{% trans "Generate Work Report" %}</h2>
     <form method="post">
