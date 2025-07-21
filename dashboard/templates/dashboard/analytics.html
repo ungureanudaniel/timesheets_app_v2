@@ -1,0 +1,150 @@
+{% extends 'general/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Team Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2">
+            <div class="list-group">
+                <h4>{% trans "Dashboard Menu" %}</h4>
+                <a href="#" class="list-group-item list-group-item-action active" data-chart="teamPieChart">{% trans "Team Worked Hours" %}</a>
+                <a href="#" class="list-group-item list-group-item-action" data-chart="yearlyBarChart">{% trans "Yearly Stats" %}</a>
+            </div>
+        </div>
+
+        <!-- Main Content / Charts -->
+        <div class="col-md-10">
+            <h2>{% trans "Team Dashboard" %}</h2>
+            
+            <!-- Pie Chart: Team Worked Hours (Current Month) -->
+            <div id="teamPieChart" class="chart-container">
+                <canvas id="workedHoursChart" width="400" height="400"></canvas>
+            </div>
+
+            <!-- Bar Chart: Yearly Worked Hours + Holidays + Sick Leaves -->
+            <div id="yearlyBarChart" class="chart-container" style="display:none;">
+                <canvas id="yearlyStatsChart" width="800" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Pie Chart: Team Worked Hours (Current Month)
+        fetch("{% url 'worked_hours_per_member' %}")
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('workedHoursChart').getContext('2d');
+                const labels = data.map(member => member.name);
+                const hours = data.map(member => member.hours);
+
+                const workedHoursChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: hours,
+                            backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56'],
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: true,
+                                text: 'Worked Hours per Team Member (Current Month)'
+                            }
+                        }
+                    }
+                });
+            });
+
+        // Bar Chart: Yearly Worked Hours + Holidays + Sick Leaves + Weekend Hours
+        fetch("{% url 'yearly_statistics' %}")
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('yearlyStatsChart').getContext('2d');
+                const months = data.map(month => 'Month ' + month.month);
+                const workedHours = data.map(month => month.worked_hours);
+                const holidays = data.map(month => month.holidays);
+                const sickLeaves = data.map(month => month.sick_leaves);
+                const weekendHours = data.map(month => month.weekend_hours);
+
+                const yearlyStatsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: months,
+                        datasets: [
+                            {
+                                label: 'Worked Hours',
+                                data: workedHours,
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Holidays',
+                                data: holidays,
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Sick Leaves',
+                                data: sickLeaves,
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Weekend Hours',
+                                data: weekendHours,
+                                backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                                borderColor: 'rgba(255, 206, 86, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Yearly Worked Hours, Holidays, Sick Leaves, Weekend Hours'
+                            }
+                        }
+                    }
+                });
+            });
+
+        // Sidebar Chart Toggle Logic
+        document.querySelectorAll('.list-group-item-action').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.chart-container').forEach(chart => {
+                    chart.style.display = 'none';
+                });
+                document.getElementById(this.getAttribute('data-chart')).style.display = 'block';
+                document.querySelectorAll('.list-group-item-action').forEach(menu => menu.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    });
+</script>
+{% endblock %}

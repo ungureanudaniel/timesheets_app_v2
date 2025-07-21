@@ -1,0 +1,38 @@
+{% load static %}
+{% load i18n %}
+<div class="modal fade" id="timesheetModal" tabindex="-1" aria-labelledby="timesheetModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="timesheetModalLabel">{% trans "Enter Timesheet Data" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'create_timesheet' %}" id="timesheetForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="date" id="modalDate">
+                    <div class="mb-3">
+                        <label for="fundssource" class="form-label">{% trans "Funds From" %}</label>
+                        {{ form.fundssource }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="hours_worked" class="form-label">{% trans "Hours Worked" %}</label>
+                        {{ form.hours_worked }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="activity" class="form-label">{% trans "Activity" %}</label>
+                        {{ form.activity }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">{% trans "Description" %}</label>
+                        {{ form.description }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                    <button type="submit" class="btn btn-primary">{% trans "Save Timesheet" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

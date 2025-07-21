@@ -1,0 +1,29 @@
+{% extends "general/base.html" %}
+{% load static %}
+{% load i18n %}
+{% load cache %}
+{% block content %}
+<!-- Main Content -->
+<div class="main-content">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="timesheet-card">
+                    <i class="fas fa-calendar-check"></i>
+                    <h3>{% trans 'Create Timesheet' %}</h3>
+                    <p>{% trans 'Submit your monthly working hours' %}</p>
+                    <a href="#" class="btn btn-primary">{% trans 'Submit' %}</a>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="timesheet-card">
+                    <i class="fas fa-calendar-alt"></i>
+                    <h3>{% trans 'Monthly Reports' %}</h3>
+                    <p>{% trans 'Check your monthly reports' %}</p>
+                    <a href="#" class="btn btn-primary">{% trans 'Submit' %}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

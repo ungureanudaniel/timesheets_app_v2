@@ -1,0 +1,220 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+.navbar {
+    background-color: #007bff;
+}
+.navbar-brand, .navbar-nav .nav-link {
+    color: #fff;
+    font-weight: bold;
+}
+.nav-item .highlighted {
+    border: 1px solid #fff;
+    background-color: #28a745;
+    color: #fff;
+}
+.navbar-brand:hover, .navbar-nav .nav-link:hover {
+    color: #f8f9fa !important;
+}
+.header {
+    background-color: #007bff;
+    color: #fff;
+    padding: 60px 0;
+    text-align: center;
+}
+.header h1 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+.header p {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+}
+.main-content {
+    padding: 40px 20px;
+    text-align: center;
+}
+.timesheet-card {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 40px 20px;
+    margin-bottom: 30px;
+    transition: all 0.3s ease;
+}
+.timesheet-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+.timesheet-card i {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: #007bff;
+}
+.timesheet-card h3 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+}
+.timesheet-card p {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+}
+.footer {
+    background-color: #343a40;
+    color: #f8f9fa;
+    padding: 30px 0;
+    text-align: center;
+}
+.footer p {
+    margin-bottom: 0;
+}
+.timesheet-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 10px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timesheet-card i {
+    margin-bottom: 10px;
+}
+
+.card {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+/* Add custom CSS for animations or additional styles */
+.contact-section {
+    background-color: #f8f9fa; /* Example background color */
+}
+.contact-section .section-heading {
+    font-size: 3rem;
+    color: #343a40; /* Example text color */
+}
+.contact-section hr {
+    width: 50px;
+    border-top: 2px solid #343a40; /* Example HR color */
+}
+.contact-section .btn-primary {
+    background-color: #007bff; /* Example button color */
+    border-color: #007bff;
+}
+.contact-section .btn-primary:hover {
+    background-color: #0056b3; /* Example button hover color */
+    border-color: #0056b3;
+}
+.custom-modal-height {
+    max-height: 120vh; /* Adjust this value as needed */
+    overflow-y: auto; /* Enable vertical scrolling if the content exceeds the modal height */
+}
+.timesheet-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.timesheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ccc;
+}
+
+.nav-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.current-day {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.calendar-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.week-nav {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 10px;
+}
+
+.week-nav li {
+    flex: 1;
+    text-align: center;
+}
+
+.week-nav .active {
+    font-weight: bold;
+    background-color: #f0f0f0;
+}
+
+.timesheet-entries {
+    margin-top: 20px;
+}
+
+.timesheet-entries table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.timesheet-entries th, .timesheet-entries td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+}
+
+.empty-timesheet {
+    text-align: center;
+}
+
+.empty-timesheet img {
+    max-width: 200px;
+    margin-bottom: 20px;
+}
+
+.add-time-entry {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.submit-timesheet {
+    margin-top: 20px;
+    text-align: right;
+}
+
+.submit-button {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+.timesheet-list .hero {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, #83B8D7, #BAA6FD);
+    display: grid;
+  }
+.timesheet-description {
+    height: 150px;  /* You can adjust this value to your desired height */
+    resize: vertical;  /* Allows users to resize the textarea vertically */
+}
+.fc-day {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.fc-day:hover {
+    background-color: #f0f8ff; /* Light blue highlight */
+  }

@@ -1,0 +1,45 @@
+{% extends 'general/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans 'Timesheet List' %}{% endblock %}
+
+{% block content %}
+<div class="timesheet-list container mt-4">
+    
+    <h1 class="mb-4">{% trans 'Timesheets calendar' %}</h1>
+    
+    <div class="col-md-12">  
+        <div id='calendar'>
+        </div>
+    </div>
+</div>
+{% include 'modals/create_timesheets.html' with form=form %}
+<script>
+    $.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!/^(GET|HEAD|OPTIONS|TRACE)$/.test(settings.type)) {
+            xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken')); // Include CSRF token
+        }
+    }
+    });
+
+    // Function to get CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Check if this cookie string begins with the given name
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+    }
+    return cookieValue;
+}
+
+</script>
+{% endblock %}

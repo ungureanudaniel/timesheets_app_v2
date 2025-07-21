@@ -1,0 +1,164 @@
+{% extends 'general/base.html' %}
+{% load static %}
+{% load i18n %}
+{% load cache %}
+
+{% block title %}{% trans 'Timesheet List' %}{% endblock %}
+
+{% block content %}
+
+    <div class="container mt-4">
+        <h1 class="mb-4">{% trans 'Timesheet List' %}</h1>
+
+        <div class="timesheet-day-view">
+            <!-- Header with date selection -->
+            <div class="header">
+              <button id="prev-day"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg></button>
+              <h2 id="current-date">October 15, 2024</h2>
+              <button id="next-day"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg></button>
+            </div>
+          
+            <!-- Time Entries for the Day (Loaded via AJAX) -->
+            <div class="time-entries" id="time-entries">
+              <!-- Time entries will be dynamically loaded here -->
+              <p>Loading time entries...</p>
+            </div>
+          
+            <!-- Add New Entry Button -->
+            <div class="add-entry">
+              <button id="add-entry">Add New Entry</button>
+            </div>
+          </div>
+        
+         <!-- Button to open the modal -->
+        <button id="openModalButton" data-bs-toggle="modal" data-bs-target="#createTimesheetModal" type="button" class="btn btn-primary">
+            {% trans 'Add New Timesheet' %}
+        </button>
+         <!-- Button to Open Calendar -->
+        <div class="d-flex justify-content-center mb-4">
+            <button type="date" class="btn btn-primary" id="openCalendarBtn">{% trans "Add New Timesheet" %}</button>
+        </div>
+        <!-- Calendar (Date Picker) -->
+        <div id="datepicker-container" class="d-flex justify-content-center mb-4">
+            <input type="date" id="datepicker" class="form-control" style="width: 300px;" placeholder="{% trans 'Select date' %}">
+        </div>
+        <form action="#createTimesheetModal">
+            <label for="timesheetdate"> {% trans 'Add New Timesheet' %}:</label>
+            <input type="date" id="timesheetdate" name="newtimesheet">
+            <input id="openModalButton" data-bs-toggle="modal" data-bs-target="#createTimesheetModal" type="button" class="btn btn-primary" value='Add new timesheet'>
+        </form> 
+
+            
+            
+       
+        
+        <!-- Search and Filter Form -->
+        <form method="get" class="mb-4">
+            <div class="row">
+                <!-- Search Field -->
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <input type="text" name="q" value="{{ request.GET.q }}" class="form-control" placeholder="{% trans 'Search by activity or date' %}">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="submit">{% trans 'Search' %}</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Month Filter -->
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <select name="month" class="form-control">
+                            <option value="">{% trans 'All Months' %}</option>
+                            {% for month in months %}
+                                <option value="{{ month.0 }}" {% if request.GET.month == month.0 %}selected{% endif %}>{{ month.1 }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="submit">{% trans 'Filter' %}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        {% if timesheets %}
+            <table class="table table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>{% trans 'ID' %}</th>
+                        <th>{% trans 'Date' %}</th>
+                        <th>{% trans 'Activity' %}</th>
+                        <th>{% trans 'Hours' %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for timesheet in timesheets %}
+                        <tr>
+                            <!-- <td>{{ timesheet.id }}</td> -->
+                            <td>{{ timesheet.date }}</td>
+                            <td>{{ timesheet.activity }}</td>
+                            <td>{{ timesheet.hours }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="alert alert-info">
+                {% trans 'No timesheets found. Please adjust filters' %}.
+            </div>
+        {% endif %}
+    </div>
+    <!-- Timesheet Modal -->
+    <div class="modal fade" id="createTimesheetModal" tabindex="-1" aria-labelledby="createTimesheetModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content custom-modal-height">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createTimesheetModalLabel">{% trans "Create New Timesheet" %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+                </div>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="id_fundssource" class="form-label">{% trans "Funds From" %}</label>
+                            {{ form.fundssource }}
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="id_date" class="form-label">{% trans "Date" %}</label>
+                            {{ form.date }}
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="id_date" class="form-label">{% trans "User" %}</label>
+                            {{ form.user }}
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="{{ form.hours_worked.id_for_label }}" class="form-label">{% trans "Hours Worked" %}</label>
+                            <div class="input-group">
+                                {{ form.hours_worked }}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_activity" class="form-label">{% trans "Activity" %}</label>
+                            {{ form.activity }}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">{% trans "Description" %}</label>
+                            {{ form.description }}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                        <button type="submit" class="btn btn-primary">{% trans "Save Timesheet" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+{% endblock %}

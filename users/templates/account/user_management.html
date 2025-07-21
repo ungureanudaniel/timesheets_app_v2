@@ -1,0 +1,32 @@
+{% extends 'dashboard_base.html' %}
+{% load static %}
+{% load i18n %}
+{% load cache %}
+
+{% block dashboard_content %}
+    <h2 class="mt-4 mb-4">{% trans 'Manage Users & Roles' %}</h2>
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>{% trans 'ID' %}</th>
+                <th>{% trans 'User' %}</th>
+                <th>{% trans 'Role' %}</th>
+                <th>{% trans 'Actions' %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.role }}</td>
+                    <td>
+                        <a href="{% url 'profile_edit' user.username %}" class="btn btn-sm btn-primary">{% trans 'Edit' %}</a>
+                        <a href="{% url 'delete_user' user.username %}" class="btn btn-sm btn-danger">{% trans 'Delete' %}</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

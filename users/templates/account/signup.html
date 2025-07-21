@@ -1,0 +1,53 @@
+{% extends "general/base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+{% load i18n %}
+{% load cache %}
+{% block content %}
+<!-- Main Content -->
+<div class="main-content">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card mt-5">
+                    <div class="card-body">
+                        <h2 class="card-title text-center">{% trans 'Sign up' %}</h2>
+                        
+                        <form method="post" action="{% url 'custom_signup' %}">
+                            {% csrf_token %}
+                            <!-- Username -->
+                            <div class="mb-3">
+                                <!-- <input type="text" name="username" class="form-control" id="id_username" required> -->
+                                 {{ form.username|add_class:"form-control" }}
+                            </div>
+                            <!-- Email -->
+                            <div class="mb-3">
+                                <!-- <input type="email" name="email" class="form-control" id="id_email" required> -->
+                                {{ form.email|add_class:"form-control" }}
+                            </div>
+                            <!-- Password -->
+                            <div class="mb-3">
+                                <!-- <input type="password" name="password1" class="form-control" id="id_password1" required> -->
+                                {{ form.password1|add_class:"form-control" }}
+                            </div>
+                            <!-- Confirm Password -->
+                            <div class="mb-3">
+                                <!-- <input type="password" name="password2" class="form-control" id="id_password2" required> -->
+                                {{ form.password2|add_class:"form-control" }}
+                            </div>
+                            <!-- Submit Button -->
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">{% trans 'Register' %}</button>
+                            </div>
+                        </form>
+                        <!-- Additional Options -->
+                        <div class="text-center mt-3">
+                            <p>{% trans 'Already have an account?' %} <a href="{% url 'login' %}">{% trans 'Login' %}</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

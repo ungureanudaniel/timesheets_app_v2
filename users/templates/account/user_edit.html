@@ -1,0 +1,129 @@
+{% extends 'general/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans 'Edit User Profile' %}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <!-- Profile Section -->
+        <div class="col-md-4 mb-4">
+            <div class="card profile-card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">{% trans 'User Information' %}</h5>
+                </div>
+                <div class="card-body text-center">
+                    <!-- Profile Image -->
+                    <div class="mb-3">
+                        {% if user_profile.avatar %}
+                            <img src="{{ user_profile.avatar.url }}" class="rounded-circle img-fluid" alt="Profile Image" style="max-width: 150px;">
+                        {% else %}
+                            <img src="{% static 'img/icons/user.svg' %}" class="rounded-circle img-fluid" alt="Default Profile Image" style="max-width: 150px;">
+                        {% endif %}
+                    </div>
+
+                    <h4 class="card-title">{{ user.get_full_name }}</h4>
+                    <p class="text-muted">{{ user.username }}</p>
+                    <p class="text-muted">{{ user.email }}</p>
+                    
+                    <hr>
+                    <p class="text-muted">{% trans 'Bio' %}</p>
+                    <p class="card-text">{{ user_profile.bio|default:"No bio available." }}</p>
+
+                    <hr>
+                    <p class="text-muted">{% trans 'Curriculum Vitae' %}</p>
+                    <p class="card-text">{{ user_profile.resume|default:"No resume uploaded." }}</p>
+
+                    <!-- Edit Profile Button -->
+                    <a href="{% url 'profile_edit' user.username %}" class="btn btn-outline-primary mt-3">
+                        <i class="bi bi-pencil"></i> {% trans 'Edit Profile' %}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Edit Form Section -->
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0">{% trans 'Edit Profile Information' %}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Avatar Upload -->
+                        <div class="mb-3">
+                            <label class="form-label">{% trans 'Profile Picture' %}</label>
+                            {{ form.avatar }}
+                        </div>
+
+                        <!-- Full Name -->
+                        <div class="mb-3">
+                            <label class="form-label">{% trans 'Full Name' %}</label>
+                            {{ form.first_name }} {{ form.last_name }}
+                        </div>
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label class="form-label">{% trans 'Email Address' %}</label>
+                            {{ form.email }}
+                        </div>
+
+                        <!-- Bio -->
+                        <div class="mb-3">
+                            <label class="form-label">{% trans 'Bio' %}</label>
+                            {{ form.bio }}
+                        </div>
+
+                        <!-- Resume Upload -->
+                        <div class="mb-3">
+                            <label class="form-label">{% trans 'Curriculum Vitae (PDF)' %}</label>
+                            {{ form.resume }}
+                        </div>
+
+                        <!-- Save Changes Button -->
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> {% trans 'Save Changes' %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Section (Optional) -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">{% trans 'Recent Activity' %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_activity %}
+                        <ul class="list-group">
+                            {% for activity in recent_activity %}
+                                <li class="list-group-item">{{ activity.description }} - {{ activity.timestamp|date:"Y-m-d H:i" }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">{% trans 'No recent activity.' %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Styles for Custom Elements -->
+<style>
+    .profile-card img {
+        border: 3px solid #6c757d;
+        margin-bottom: 20px;
+    }
+</style>
+
+{% endblock %}

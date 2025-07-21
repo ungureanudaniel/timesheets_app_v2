@@ -1,0 +1,53 @@
+{% extends "general/base.html" %}
+{% load static %}
+{% load i18n %}
+{% load cache %}
+{% block content %}
+
+<!-- Contact Section -->
+<section id="contact" class="contact-section py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h2 class="section-heading">{% trans 'Contact Us' %}</h2>
+                <hr class="my-4">
+                <p class="mb-5">{% trans 'Have questions? We are here to help! Fill out the form below or contact us directly' %}.</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6 ml-auto text-center mb-4 mb-lg-0">
+                <i class="fas fa-phone fa-3x mb-3 text-muted"></i>
+                <div><a href="tel:+40245772640">+40 245 772 640</a></div>
+            </div>
+            <div class="col-lg-6 mr-auto text-center">
+                <i class="fas fa-envelope fa-3x mb-3 text-muted"></i>
+                <!-- Replace with your email -->
+                <div>
+                    <a href="mailto:contact@bucegipark.ro">contact@bucegipark.ro</a>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-lg-8 mx-auto text-center">
+                <!-- Form to be added for contact -->
+                <p class="mb-5">{% trans 'Or send us a message' %}:</p>
+                <!-- Example form, replace with your form -->
+                <form action="{% url 'contact' %}" method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="name" name="name" placeholder="{% trans 'Your Name' %}" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" class="form-control" id="email" name="email" placeholder="{% trans 'Your Email' %}" required>
+                    </div>
+                    <div class="form-group">
+                        <textarea class="form-control" id="message" name="message" rows="5" placeholder="{% trans 'Your Message' %}" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg">{% trans 'Send Message' %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

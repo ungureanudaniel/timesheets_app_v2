@@ -1,0 +1,38 @@
+{% extends "general/base.html" %}
+{% load static %}
+{% load i18n %}
+{% load cache %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                {% if user_profile.avatar %}
+                <img src="{{ user_profile.avatar.url  }}" class="card-img-top" alt="Profile Image">
+                {% else %}
+                <img src="{% static 'img/icons/user.svg' %}" class="card-img-top" alt="Default Profile Image">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{% trans 'User Information' %}</h5>
+                    <p class="card-text">{% trans 'Username' %}: {{ user.username }}</p>
+                    <p class="card-text">{% trans 'Email' %}: {{ user.email }}</p>
+                    <p class="card-text">{% trans 'Full Name' %}: {{ user.get_full_name }}</p>
+                    <p class="card-text">{% trans 'Short self description' %}: {{ user_profile.bio }}</p>
+                    <p class="card-text">{% trans 'Curriculum Vitae' %}: {{ user_profile.resume }}</p>
+                    <!-- Add more profile fields as needed -->
+                    <a href="{% url 'profile_edit' user.username %}" class="btn btn-primary">{% trans 'Edit Profile' %}</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{% trans 'Recent Activity' %}</h5>
+                    <p class="card-text">{% trans 'No recent activity.' %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,133 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-04-04 11:22+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?"
+"2:1));\n"
+
+#: .\timesheets_main\settings.py:161
+msgid "Română"
+msgstr ""
+
+#: .\timesheets_main\settings.py:162
+msgid "English"
+msgstr ""
+
+msgid "Create Timesheet"
+msgstr "Creează Foaia de Pontaj"
+
+msgid "month"
+msgstr "luna"
+
+msgid "week"
+msgstr "săptămână"
+
+msgid "day"
+msgstr "zi"
+
+msgid "Enter Timesheet Data"
+msgstr "Introduce-ți activitatea"
+
+msgid "Submit your monthly working hours"
+msgstr "Trimite orele tale de lucru lunar"
+
+msgid "Monthly Reports"
+msgstr "Rapoarte Lunare"
+
+msgid "Check your monthly reports"
+msgstr "Verifică rapoartele tale lunare"
+
+msgid "National and Natural Parks Timesheets"
+msgstr "Pontajele Parcurilor Naționale și Naturale"
+
+msgid "Submit"
+msgstr "Trimite"
+
+msgid "Acasa"
+msgstr "Acasă"
+
+msgid "Timesheet"
+msgstr "Pontaj"
+
+#: templates/login.html
+msgid "Login"
+msgstr "Autentificare"
+
+#: templates/login.html
+msgid "Username"
+msgstr "Nume de utilizator"
+
+#: templates/login.html
+msgid "Password"
+msgstr "Parolă"
+
+#: templates/login.html
+msgid "Don't have an account? "
+msgstr "Nu ai cont?"
+
+#: templates/login.html
+msgid "Register"
+msgstr "Înregistrare"
+
+msgid "Users"
+msgstr "Utilizatori"
+
+msgid "Reports"
+msgstr "Rapoarte"
+
+msgid "Timesheets"
+msgstr "Pontaje"
+
+msgid "Track your working hours efficiently"
+msgstr "Urmărește eficient orele de lucru"
+
+msgid "Contact"
+msgstr "Contact"
+
+msgid "All rights reserved"
+msgstr "Toate drepturile rezervate"
+
+msgid "Already have an account?"
+msgstr "Ai deja un cont?"
+
+#: templates/contact.html
+msgid "Contact Us"
+msgstr "Contactați-ne"
+
+#: templates/contact.html
+msgid "Have questions? We are here to help! Fill out the form below or contact us directly"
+msgstr "Ai întrebări? Suntem aici pentru a te ajuta! Completează formularul de mai jos sau contactează-ne direct"
+
+#: templates/contact.html
+msgid "Or send us a message"
+msgstr "Sau trimite-ne un mesaj"
+
+#: templates/contact.html
+msgid "Your Name"
+msgstr "Numele tău"
+
+#: templates/contact.html
+msgid "Your Email"
+msgstr "Adresa ta de email"
+
+#: templates/contact.html
+msgid "Your Message"
+msgstr "Mesajul tău"
+
+#: templates/contact.html
+msgid "Send Message"
+msgstr "Trimite mesajul"

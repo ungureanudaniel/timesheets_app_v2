@@ -1,0 +1,63 @@
+{% extends "general/base.html" %}
+{% load static %}
+{% load i18n %}
+{% load cache %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title text-center">{% trans 'Edit Profile' %}</h2>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <!-- Username -->
+                        <div class="mb-3">
+                            <label for="username" class="form-label">{% trans 'Username' %}</label>
+                            <input type="text" id="username" class="form-control" value="{{ user.username }}" disabled>
+                        </div>
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label">{% trans 'Email' %}</label>
+                            <input type="email" id="email" class="form-control" value="{{ user.email }}" disabled>
+                        </div>
+                        <!-- Change user name -->
+                        <div class="mb-3">
+                            <a href="{% url 'credentials_change' user.username %}" class="btn btn-primary form-control">{% trans 'Change Username or Email' %}</a>
+                        </div>
+                        <!-- Change Password -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label">{% trans 'Profile Password' %}</label>
+                            <input type="email" id="email" class="form-control mb-3" value="***********" disabled>
+                            <a href="{% url 'password_change' %}" class="btn btn-primary form-control">{% trans 'Change Password' %}</a>
+                        </div>
+                        <!-- Photo upload -->
+                        <div class="mb-3">
+                            <label for="photo" class="form-label">{% trans 'Profile Photo' %}</label>
+                            <!-- <input type="file" id="photo" name="photo" class="form-control"> -->
+                            {{ form.avatar }}
+                        </div>
+                        <!-- Edit bio -->
+                        <div class="mb-3">
+                            <label for="cv" class="form-label">{% trans 'Edit your bio' %}</label>
+                            {{ form.bio }}
+                        </div>
+                        <!-- CV attachment -->
+                        <div class="mb-3">
+                            <label for="cv" class="form-label">{% trans 'Attach CV (PDF)' %}</label>
+                            {{ form.resume }}
+                            
+                        </div>
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">{% trans 'Save Changes' %}</button>
+                        </div>
+                    </form>
+                    {% include 'includes/messages.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

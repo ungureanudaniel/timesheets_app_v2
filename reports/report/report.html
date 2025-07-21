@@ -1,0 +1,37 @@
+{% extends "timesheet/base.html" %}
+{% load static %}
+{% load i18n %}
+{% load cache %}
+{% block content %}
+<!-- Main Content -->
+<div class="main-content">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="timesheet-card">
+                    <i class="fas fa-calendar-check"></i>
+                    <h3>Weekly Timesheet</h3>
+                    <p>Submit your weekly working hours</p>
+                    <a href="#" class="btn btn-primary">Submit</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="timesheet-card">
+                    <i class="fas fa-calendar-alt"></i>
+                    <h3>Monthly Timesheet</h3>
+                    <p>Submit your monthly working hours</p>
+                    <a href="#" class="btn btn-primary">Submit</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="timesheet-card">
+                    <i class="fas fa-clock"></i>
+                    <h3>Track Hours</h3>
+                    <p>View and track your working hours</p>
+                    <a href="#" class="btn btn-primary">View</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
