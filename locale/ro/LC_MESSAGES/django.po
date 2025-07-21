@@ -185,3 +185,10 @@ msgstr "Administrația Parcului Natural Bucegi"
 msgid "Home"
 msgstr "Acasă"
 
+#: general/base.html
+msgid "Administration"
+msgstr "Administrare"
+
+#: general/base.html
+msgid "Add new Timesheet"
+msgstr "Introdu activități"
