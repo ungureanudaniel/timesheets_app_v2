@@ -181,3 +181,7 @@ msgstr "Profil"
 msgid "Administration of Bucegi Natural Park"
 msgstr "Administrația Parcului Natural Bucegi"
 
+#: general/base.html
+msgid "Home"
+msgstr "Acasă"
+
