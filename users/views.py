@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, LogoutView
 from django.views import generic
 from django.contrib.auth.forms import PasswordChangeForm, AuthenticationForm
 from .forms import UsernameEmailChangeForm
@@ -156,6 +156,9 @@ class CustomLoginView(LoginView):
         messages.error(self.request, "Invalid username or password. Please try again.")
         return super().form_invalid(form)
 
+# ============== user logout view ==============
+class CustomLogoutView(LogoutView):
+    next_page = 'home'  # Redirect to home after logout
 
 # ============user profile editing====================
 # @login_required

@@ -39,9 +39,6 @@ msgstr "săptămână"
 msgid "day"
 msgstr "zi"
 
-msgid "Enter Timesheet Data"
-msgstr "Introduce-ți activitatea"
-
 msgid "Submit your monthly working hours"
 msgstr "Trimite orele tale de lucru lunar"
 
@@ -131,3 +128,56 @@ msgstr "Mesajul tău"
 #: templates/contact.html
 msgid "Send Message"
 msgstr "Trimite mesajul"
+
+#: timesheet/templates/modals.html
+msgid "Enter Timesheet Data"
+msgstr "Introduceți Date Pontaj"
+
+#: timesheet/templates/modals.html
+msgid "Funds From"
+msgstr "Sursă finanțare"
+
+#: timesheet/templates/modals.html
+msgid "Hours Worked"
+msgstr "Ore lucrate"
+
+#: timesheet/templates/modals.html
+msgid "Activity"
+msgstr "Activitate"
+
+#: timesheet/templates/modals.html
+msgid "Description"
+msgstr "Descriere"
+
+#: timesheet/templates/modals.html
+msgid "Close"
+msgstr "Închide"
+
+#: timesheet/templates/modals.html
+msgid "Save Timesheet"
+msgstr "Salvează Pontaj"
+
+#: forms.py (placeholders)
+msgid "Select date"
+msgstr "Selectați data"
+
+#: forms.py (placeholders)
+msgid "Choose funding source"
+msgstr "Alegeți sursa de finanțare"
+
+#: forms.py (placeholders)
+msgid "Choose activity"
+msgstr "Alegeți activitatea"
+
+#: forms.py (placeholders)
+msgid "Describe activity"
+msgstr "Descrieți activitatea"
+
+#: general/base.html
+msgid "Profile"
+msgstr "Profil"
+
+#: general/base.html
+msgid "Administration of Bucegi Natural Park"
+msgstr "Administrația Parcului Natural Bucegi"
+

@@ -75,12 +75,13 @@ MIDDLEWARE = [
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     # --------caching middleware------------------
     # --------whitenoise middleware for media load
     "whitenoise.middleware.WhiteNoiseMiddleware",
     # --------django internalization for language selection
     'django.contrib.messages.middleware.MessageMiddleware',  # message frmwk
-    "django.middleware.locale.LocaleMiddleware",
+    
     'django.middleware.common.CommonMiddleware',
     # --------caching middleware-------------------
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -190,8 +191,8 @@ DEFAULT_LANGUAGE = 1
 
 # ==============authentication settings=========================
 SITE_ID = 1
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'home'
 ACCOUNT_FORMS = {
     'signup': 'users.forms.CustomSignupForm',
 }
