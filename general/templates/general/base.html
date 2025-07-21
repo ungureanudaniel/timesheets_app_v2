@@ -132,7 +132,7 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 RNP ROMSILVA - ADMINISTRAȚIA PARCULUI NATURAL BUCEGI. {% trans 'All rights reserved' %}.</p>
+            <p>&copy; <span id="year"></span> RNP ROMSILVA - ADMINISTRAȚIA PARCULUI NATURAL BUCEGI. {% trans 'All rights reserved' %}.</p>
         </div>
     </footer>
 
@@ -147,6 +147,8 @@
     <!-- Evocalendar JS-->
     <!-- <script src="https://cdn.jsdelivr.net/npm/evo-calendar@1.1.2/evo-calendar/js/evo-calendar.min.js" defer></script> -->
 	<!-- <script src="{% static 'calendar/evo/js/evo-calendar.min.js' %}" defer></script> -->
-
+    <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
 </body>
 </html>
