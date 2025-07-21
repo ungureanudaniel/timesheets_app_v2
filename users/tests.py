@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.urls import reverse
 from django.core import mail
-from users.forms import CustomUserCreationForm
+from users.forms import CustomSignupForm
 
 User = get_user_model()
 
@@ -35,9 +35,9 @@ class RegisterViewTests(TestCase):
         self.group_timesheets_input = Group.objects.create(name='REPORTER')
 
     def test_register_view_get(self):
-        response = self.client.get(reverse('register'))
+        response = self.client.get(reverse('custom_signup'))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'registration/register.html')
+        self.assertTemplateUsed(response, 'account/signup.html')
 
     def test_register_view_post_valid_form(self):
         form_data = {
@@ -46,9 +46,9 @@ class RegisterViewTests(TestCase):
             'password1': 'newpassword123',
             'password2': 'newpassword123',
         }
-        response = self.client.post(reverse('register'), form_data)
+        response = self.client.post(reverse('custom_signup'), form_data)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'registration/profile.html')
+        self.assertTemplateUsed(response, 'account/profile.html')
 
         self.assertTrue(User.objects.filter(username='newuser').exists())
         new_user = User.objects.get(username='newuser')
@@ -70,9 +70,9 @@ class RegisterViewTests(TestCase):
             'password1': 'newpassword123',
             'password2': 'newpassword123',
         }
-        response = self.client.post(reverse('register'), form_data)
+        response = self.client.post(reverse('custom_signup'), form_data)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'registration/register.html')
+        self.assertTemplateUsed(response, 'account/signup.html')
 
         self.assertContains(response, 'Username already exists. Please choose a different username.')
 
@@ -85,8 +85,8 @@ class RegisterViewTests(TestCase):
             'password1': 'newpassword123',
             'password2': 'newpassword123',
         }
-        response = self.client.post(reverse('register'), form_data)
+        response = self.client.post(reverse('custom_signup'), form_data)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'registration/register.html')
+        self.assertTemplateUsed(response, 'account/signup.html')
 
         self.assertContains(response, 'Email address already exists. Please use a different email.')
