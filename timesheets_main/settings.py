@@ -276,7 +276,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': 'pnb_main.log',
+            'filename': 'timesheets_main.log',
             'formatter': 'verbose'
         },
         'console': {
