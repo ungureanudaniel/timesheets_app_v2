@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{% trans "Generate Work Report" %}</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">{% trans "Report Period" %}</label>
+            {{ form.period }}
+        </div>
+        <div class="mb-3">
+            <label class="form-label">{% trans "Report Type" %}</label>
+            {{ form.report_type }}
+        </div>
+        <button type="submit" class="btn btn-primary">{% trans "Generate Report" %}</button>
+    </form>
+</div>
+{% endblock %}

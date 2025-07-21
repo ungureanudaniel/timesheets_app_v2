@@ -81,7 +81,6 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     # --------django internalization for language selection
     'django.contrib.messages.middleware.MessageMiddleware',  # message frmwk
-    
     'django.middleware.common.CommonMiddleware',
     # --------caching middleware-------------------
     'django.middleware.csrf.CsrfViewMiddleware',

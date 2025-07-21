@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>
+        {% if period == 'weekly' %}
+            {% trans "Weekly Report" %}
+        {% else %}
+            {% trans "Monthly Report" %}
+        {% endif %}
+        ({{ start_date|date:"d M Y" }} - {{ end_date|date:"d M Y" }})
+    </h2>
+    
+    {% if report_type == 'summary' %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>{% trans "Activity Code" %}</th>
+                        <th>{% trans "Activity Name" %}</th>
+                        <th>{% trans "Funding Source" %}</th>
+                        <th>{% trans "Total Hours" %}</th>
+                        <th>{% trans "Entries" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in report %}
+                    <tr>
+                        <td>{{ entry.activity__code }}</td>
+                        <td>{{ entry.activity__name }}</td>
+                        <td>{{ entry.fundssource__name }}</td>
+                        <td>{{ entry.total_hours }}</td>
+                        <td>{{ entry.entries }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <!-- Detailed report template -->
+    {% endif %}
+    
+    <div class="mt-3">
+        <button onclick="window.print()" class="btn btn-secondary">{% trans "Print Report" %}</button>
+        <a href="{% url 'generate_report' %}" class="btn btn-primary">{% trans "New Report" %}</a>
+    </div>
+</div>
+{% endblock %}

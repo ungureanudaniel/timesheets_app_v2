@@ -192,3 +192,25 @@ msgstr "Administrare"
 #: general/base.html
 msgid "Add new Timesheet"
 msgstr "Introdu activități"
+
+# Reports
+msgid "Generate Work Report"
+msgstr "Generează Raport de Lucru"
+
+msgid "Weekly Report"
+msgstr "Raport Săptămânal"
+
+msgid "Monthly Report"
+msgstr "Raport Lunar"
+
+msgid "Summary Report"
+msgstr "Raport Sumar"
+
+msgid "Detailed Report"
+msgstr "Raport Detaliat"
+
+msgid "Print Report"
+msgstr "Tipărește Raport"
+
+msgid "New Report"
+msgstr "Raport Nou"

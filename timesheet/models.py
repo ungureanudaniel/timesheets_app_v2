@@ -45,5 +45,32 @@ class Timesheet(models.Model):
     submitted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # This method is used to set the upload path for images associated with the timesheet
+    def get_image_upload_path(instance, filename):
+            return f'timesheet_images/user_{instance.user.id}/{instance.date}/{filename}'
+
+    # This method is used to set the upload path for documents associated with the timesheet
     def __str__(self):
         return f"Timesheet for {self.user.username}"
+
+class TimesheetImage(models.Model):
+    """
+    This class creates db tables for images associated with timesheets
+    """
+    timesheet = models.ForeignKey(Timesheet, related_name='timesheet_images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to=Timesheet.get_image_upload_path)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image for {self.timesheet.user.username} on {self.timesheet.date}"
+
+
+# class TimesheetDocument(models.Model):
+#     """
+#     This class creates db tables for documents associated with timesheets
+#     """
+#     timesheet = models.ForeignKey(Timesheet, related_name='documents', on_delete=models.CASCADE)
+#     document = models.FileField(upload_to=Timesheet.get_document_upload_path)
+
+#     def __str__(self):
+#         return f"Document for {self.timesheet.user.username} on {self.timesheet.date}"

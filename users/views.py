@@ -158,8 +158,10 @@ class CustomLoginView(LoginView):
 
 # ============== user logout view ==============
 class CustomLogoutView(LogoutView):
-    next_page = 'home'  # Redirect to home after logout
-
+    def dispatch(self, request, *args, **kwargs):
+        response = super().dispatch(request, *args, **kwargs)
+        messages.success(request, "You have been successfully logged out.")
+        return response
 # ============user profile editing====================
 # @login_required
 # def profile_edit_view(request, username):
