@@ -13,10 +13,10 @@ def upload_activities(request):
             wb = openpyxl.load_workbook(excel_file)
             sheet = wb.active
 
-            for row in sheet.iter_rows(min_row=2, values_only=True):  # skip header
-                code, description = row
+            for row in sheet.iter_rows(min_row=4, values_only=True):  # skip header
+                group, subgroup, code, description = row
                 if code and description:
-                    Activity.objects.get_or_create(code=code, defaults={'name': description})
+                    Activity.objects.get_or_create(code=code, defaults={'name': description, 'group': group, 'subgroup': subgroup})
 
             messages.success(request, "Activities uploaded successfully.")
         except Exception as e:

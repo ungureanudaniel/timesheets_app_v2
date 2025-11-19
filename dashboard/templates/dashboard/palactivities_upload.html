@@ -1,0 +1,44 @@
+{% extends 'general/base.html' %}
+{% load static %}
+{% load i18n %}
+{% load cache %}
+
+{% block title %}{% trans "PAL Dashboard" %}{% endblock %}
+
+{% block content %}
+<!-- Header -->
+    <div class="header">
+        <div class="container">
+           <h1>{% trans 'Annual WorkPlan' %}</h1>
+           <p class="text-muted">{% trans 'Upload your activities for the annual work plan' %}</p>
+            {% include 'includes/messages.html' %}
+        </div>
+    </div>
+<div class="container-fluid mt-5 mb-5">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-md-10">
+            <h3 class="mb-4">{% trans "Upload Activities Excel" %}</h3>
+
+            <form method="post" enctype="multipart/form-data" action="{% url 'pal_activity_upload' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <!-- <input class="form-control" type="file" name="excel_file" accept=".xlsx, .xls"> -->
+                     {{ form.file.label_tag }}
+                     {{ form.file }}
+                </div>
+                <button type="submit" class="btn btn-primary">{% trans "Upload Activities" %}</button>
+            </form>
+
+            <!-- Placeholder for any messages -->
+            {% if messages %}
+                <div class="mt-3">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

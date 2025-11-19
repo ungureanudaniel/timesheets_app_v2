@@ -1,0 +1,74 @@
+<html>
+<head>
+    <style>
+        body { font-family: DejaVu Sans, sans-serif; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid black; padding: 5px; text-align: center; }
+        .header { text-align: center; font-weight: bold; font-size: 18px; }
+        .week-number { font-size: 36px; border: 1px solid red; padding: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        PROGRAM SĂPTĂMÂNA {{ week }} ({{ start_date }} - {{ end_date }})
+    </div>
+    <p><b>*ATENȚIE LA CERINȚELE DIN SUBSOLUL PROGRAMULUI DE LUCRU</b></p>
+    <table>
+        <thead>
+            <tr>
+                <th>NR</th>
+                <th>NUME SI PRENUME</th>
+                <th>PROGRAM SĂPTĂMÂNAL</th>
+                <th>SEMNATURĂ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for program in programs %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ program.user }}</td>
+                <td>{{ program.activity_title }}</td>
+                <td>{{ program.user }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <table style="width:100%; margin-top:20px;">
+        <tr>
+            <!-- Left side: Notes -->
+            <td style="width:70%; vertical-align:top; color:red; font-size:12px; line-height:1.5;">
+                <p><b>*ATENȚIE:</b> PENTRU CAZUL ACTIVITĂȚILOR NEPREVAZUTE PUTEȚI GRUPA ȘI 2 SAU 3 ACTIVITĂȚI ÎNTR-O SINGURĂ ZI. TARIFUL DE VIZITARE POATE FI CONSIDERAT CA ȘI ACTIVITATE ZILNICĂ PERMANENTĂ ÎN PARALEL ȘI CU CELELALTE ACTIVITĂȚI PROGRAMATE EXPLICIT.</p>
+                <p>VA ROG SĂ AVEȚI ÎN VEDERE SĂ ACOPERIȚI CU ACTIVITĂȚILE ENUMERATE TOATĂ SĂPTĂMÂNA DE LUCRU ȘI SĂ JUSTIFICAȚI ZILELE CE VOR FI PONTATE. (FOLOSIȚI APLICAȚII GPS QFIELD/SAU ALTA ÎN CAZUL NEFUNCȚIONĂRII EI) PENTRU A DOVEDI DEPLASĂRILE ÎN TEREN, FOTOGRAFII ȘI DESCRIERI AMĂNUNȚITE DESPRE CONSTATĂRILE EFECTUATE.</p>
+                <p>RAPORTUL ZILNIC OBLIGATORIU VA FI ÎNSOȚIT DE FOTOGRAFII EFECTUATE CU APLICAȚIA GPS MAP CAMERA SAU ALTEVA SIMILAR CARE SĂ AFIȘEZE PE POZĂ LOCAȚIA ȘI COORDONATELE RESPECTIV DATA ȘI ORA, ÎN CAZ CONTRAR NU SE PONTEAZĂ ZIUA RESPECTIVĂ.</p>
+                <p>PENTRU GEF ACTIVITĂȚILE POT FI PONTATE ȘI FRACȚIONAT (2,4 ORE) PENTRU TOTALUL DE 8 ORE ZILNIC.</p>
+                <p>AVEȚI OBLIGAȚIA DE A COMPLETA ZILNIC GEF-UL CÂT ȘI RAPORTUL DE ACTIVITATE PE ZIUA RESPECTIVĂ (INCLUSIV FIȘE ȘI PROCESE VERBALE). SEMNĂTURA ELECTRONICĂ VA DOVEDI ACEST LUCRU PE RAPORT. CELE INTOCMITE ÎN ALTE DATE FAȚĂ DE ZIUA ÎN CAUZĂ NU SUNT LUATE ÎN CALCUL LA PONTAJ.</p>
+            </td>
+            <!-- Right side: Signature table -->
+            <td style="width:30%; vertical-align:top;">
+                <table style="width:100%; border:1px solid black; border-collapse:collapse;">
+                    <tr>
+                        <th style="border:1px solid black;">DAMIAN MIHAI</th>
+                        <td style="border:1px solid black;">
+                            
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="border:1px solid black;">FRICIU BEATRICE</th>
+                        <td style="border:1px solid black;">
+                            
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="border:1px solid black;">COLTOIU ALEXANDRU</th>
+                        <td style="border:1px solid black;"></td>
+                    </tr>
+                    <tr>
+                        <th style="border:1px solid black;">DIACONESCU ALINA</th>
+                        <td style="border:1px solid black;"></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

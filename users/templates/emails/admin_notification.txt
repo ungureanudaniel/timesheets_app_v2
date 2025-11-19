@@ -1,0 +1,13 @@
+Înregistrare user nou
+
+A new user has registered and is awaiting approval:
+
+Username: {{ user.username }}
+Email: {{ user.email }}
+Registration Date: {{ user.date_joined|date:"F j, Y, g:i a" }}
+
+To review and approve this user, please visit the admin panel:
+{{ admin_url }}
+
+Thank you,
+Your Application Team

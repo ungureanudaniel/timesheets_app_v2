@@ -1,0 +1,15 @@
+{% extends 'general/base.html' %}
+{% load static %}
+{% load i18n %}
+{% load cache %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>{% trans "Create Weekly Activity Program" %}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">{% trans "Save Program" %}</button>
+    </form>
+</div>
+{% endblock %}

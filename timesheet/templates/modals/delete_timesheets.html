@@ -1,0 +1,22 @@
+{% load static %}
+{% load i18n %}
+<div class="modal fade" id="deleteTimesheetModal" tabindex="-1" aria-labelledby="deleteTimesheetModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteTimesheetModalLabel">{% trans "Delete Timesheet" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>{% trans "Are you sure you want to delete this timesheet?" %}</p>
+                <p><strong>{% trans "Activity" %}:</strong> <span id="deleteActivityName"></span></p>
+                <p><strong>{% trans "Date" %}:</strong> <span id="deleteDate"></span></p>
+                <input type="hidden" id="deleteTimesheetId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">{% trans "Delete" %}</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,9 +1,20 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
+from django.core.paginator import Paginator
+from django.urls import reverse_lazy
 from django.utils import timezone
+from .forms import PALActivitiesUploadForm, FundsSourceForm
 from django.db.models import Sum
+from dashboard.forms import ActivityProgramForm
+from dashboard.models import ActivityProgram
+from timesheet.models import Activity, FundsSource
 from users.models import CustomUser
 from timesheet.models import Timesheet
+from django.views import generic
+from django.views.generic import CreateView, ListView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib import messages
+import pandas as pd
 
 
 # main admin dashboard view.
@@ -13,23 +24,136 @@ def dashboard(request):
     context = {}
     return render(request, template, context)
 
+# ==============Data analytics============
+class AnalyticsView(generic.ListView):
+    template_name = "dashboard/analytics.html"
 
-# the analytics view for the admin/manager.
-def analytics(request):
-    template = "dashboard/analytics.html"
+    queryset = CustomUser.objects.all()
+    paginate_by = 20
 
-    context = {}
-    return render(request, template, context)
+    def get(self, request, **kwargs):
+        # get each individual userprofile safely
+        user_profile = getattr(self.request.user, 'customuser', None)
+        # If no customuser attribute (AnonymousUser or profile not created), user_profile will be None
+        print(user_profile)
+        return super().get(request, **kwargs)
+    
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+
+class PALActivitiesListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """
+    List all Activities with pagination
+    """
+    model = Activity
+    template_name = 'dashboard/pal.html'
+    context_object_name = 'activities'
+    paginate_by = 10  # Show 10 activities per page
+    
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+
+    def get_queryset(self):
+        # Call the parent method to get the properly ordered queryset
+        return super().get_queryset().order_by('code')
+
+class PALActivitiesUploadView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """
+    Upload new Activity
+    """
+    model = Activity
+    form_class = PALActivitiesUploadForm
+    template_name = 'dashboard/palactivities_upload.html'
+    success_url = reverse_lazy('pal')
+    paginate_by = 20
+
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get all activities ordered by code
+        activities_list = Activity.objects.all().order_by('code')
+        
+        # Setup pagination
+        paginator = Paginator(activities_list, self.paginate_by)
+        page = self.request.GET.get('page')
+        activities = paginator.get_page(page)
+        
+        context['activities'] = activities
+        return context
+
+    def get(self, request, *args, **kwargs):
+        form = PALActivitiesUploadForm()
+        return render(request, self.template_name, {'form': form})
+    
+    def post(self, request, *args, **kwargs):
+        form = PALActivitiesUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            excel_file = request.FILES['file']
+            try:
+                # Read Excel file using pandas
+                df = pd.read_excel(excel_file)
+
+                # Check required columns
+                if 'code' not in df.columns or 'name' not in df.columns:
+                    messages.error(request, "Excel file must contain 'code' and 'name' columns.")
+                    return redirect(self.success_url)
+
+                # Iterate rows and save Activities
+                for _, row in df.iterrows():
+                    if Activity.objects.filter(code=row['code']).exists():
+                        Activity.objects.filter(
+                            code=row['code']).update(
+                            name=row['name'],
+                        )
+                        continue
+                    else:
+                        # Create new Activity if it doesn't exist
+                        Activity.objects.create(
+                            code=row['code'],
+                            name=row['name']
+                        )
+                messages.success(request, "Activities uploaded successfully.")
+            except Exception as e:
+                messages.error(request, f"Error processing Excel file: {e}")
+            return redirect(self.success_url)
+        else:
+            messages.error(request, "Invalid form submission.")
+            return render(request, self.template_name, {'form': form})
 
 
-# the activities view for the admin/manager.
-def pal_activities(request):
-    template = "dashboard/pal.html"
+class PALActivitiesUpdateView(LoginRequiredMixin, UserPassesTestMixin, generic.UpdateView):
+    """
+    Update view for Activity
+    """
+    model = Activity
+    template_name = 'dashboard/pal_activity_edit.html'
+    success_url = reverse_lazy('pal')
 
-    context = {}
-    return render(request, template, context)
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
 
 
+class PALActivitiesDeleteView(LoginRequiredMixin, UserPassesTestMixin, generic.DeleteView):
+    """
+    Delete view for Activity
+    """
+    model = Activity
+    template_name = 'dashboard/pal_activity_delete.html'
+    success_url = reverse_lazy('pal')
+
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['activity'] = self.get_object()
+        return context
+
+
+# the activity program view
 def activity_program(request):
     template = "activities/activity-program.html"
 
@@ -54,7 +178,7 @@ def worked_hours_per_member(request):
 
     return JsonResponse(data, safe=False)
 
-
+# the yearly statistics view
 def yearly_statistics(request):
     current_year = timezone.now().year
     team_members = CustomUser.objects.all()  # Adjust this to your team selection logic
@@ -75,3 +199,83 @@ def yearly_statistics(request):
         })
 
     return JsonResponse(months_data, safe=False)
+
+
+class ActivityProgramCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """
+    Create view for Activity Program
+    """
+    model = ActivityProgram
+    form_class = ActivityProgramForm
+    template_name = 'activities/activity_program_create.html'
+    success_url = reverse_lazy('activity_program_list')  # or PDF generation page
+
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+
+
+class ActivityProgramListView(LoginRequiredMixin, UserPassesTestMixin, generic.ListView):
+    """
+    List view for Activity Programs
+    """
+    model = ActivityProgram
+    template_name = 'activities/activity_program_list.html'
+    context_object_name = 'activity_programs'
+
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+
+    def get_queryset(self):
+        return ActivityProgram.objects.filter(user=self.request.user).order_by('-registration_date')
+
+
+class ActivityProgramUpdateView(LoginRequiredMixin, UserPassesTestMixin, generic.UpdateView):
+    """
+    Update view for Activity Program
+    """
+    model = ActivityProgram
+    form_class = ActivityProgramForm
+    template_name = 'activities/activity_program_edit.html'
+    success_url = reverse_lazy('activity_program_list')
+
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+
+
+class ActivityProgramDeleteView(LoginRequiredMixin, UserPassesTestMixin, generic.DeleteView):
+    """
+    Delete view for Activity Program
+    """
+    model = ActivityProgram
+    template_name = 'activities/activity_program_delete.html'
+    success_url = reverse_lazy('activity_program_list')
+
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['activity_program'] = self.get_object()
+        return context
+
+class FundsSourceListView(LoginRequiredMixin, UserPassesTestMixin, generic.ListView):
+    """
+    List view for Funds Source
+    """
+    model = FundsSource
+    template_name = 'dashboard/funds_source.html'
+    context_object_name = 'funds'
+
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+class NewFundsSourceView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """
+    Create view for new Funds Source
+    """
+    model = FundsSource
+    form_class = FundsSourceForm
+    template_name = 'dashboard/new_funds_source.html'
+    success_url = reverse_lazy('funds_source')
+
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser

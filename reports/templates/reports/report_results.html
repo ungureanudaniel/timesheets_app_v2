@@ -3,55 +3,207 @@
 
 {% block content %}
 <!-- Header -->
-    <div class="header">
-        <div class="container">
-            <h2>{{ report_title }}</h2>
-            <p class="text-muted">{{ period_detail }} {{ start_date|date:"%Y" }}</p>
-            {% include 'includes/messages.html' %}
-        </div>
-    </div>
-<div class="container mt-4">
-    <h2>
-        {% if period == 'weekly' %}
-            {% trans "Weekly Report" %}
-        {% else %}
-            {% trans "Monthly Report" %}
-        {% endif %}
-        ({{ start_date|date:"d M Y" }} - {{ end_date|date:"d M Y" }})
-    </h2>
-    
-    {% if report_type == 'summary' %}
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>{% trans "Activity Code" %}</th>
-                        <th>{% trans "Activity Name" %}</th>
-                        <th>{% trans "Funding Source" %}</th>
-                        <th>{% trans "Total Hours" %}</th>
-                        <th>{% trans "Entries" %}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for entry in report %}
-                    <tr>
-                        <td>{{ entry.activity__code }}</td>
-                        <td>{{ entry.activity__name }}</td>
-                        <td>{{ entry.fundssource__name }}</td>
-                        <td>{{ entry.total_hours }}</td>
-                        <td>{{ entry.entries }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% else %}
-        <!-- Detailed report template -->
-    {% endif %}
-    
-    <div class="mt-3">
-        <button onclick="window.print()" class="btn btn-secondary">{% trans "Print Report" %}</button>
-        <a href="{% url 'generate_report' %}" class="btn btn-primary">{% trans "New Report" %}</a>
+<div class="header">
+    <div class="container">
+        <h2>{{ report_title }}</h2>
+        <p class="text-muted">{{ period_detail }}</p>
+        {% include 'includes/messages.html' %}
     </div>
 </div>
+
+<div class="container mt-4">
+    <!-- Report Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ total_hours|floatformat:2 }}</h3>
+                    <p class="text-muted">{% trans "Total Hours" %}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ total_entries }}</h3>
+                    <p class="text-muted">{% trans "Total Entries" %}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ average_hours|floatformat:2 }}</h3>
+                    <p class="text-muted">{% trans "Average Hours" %}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ period }}</h3>
+                    <p class="text-muted">{% trans "Period" %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Buttons -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            {% if period == 'weekly' %}
+                {% trans "Weekly Report" %}
+            {% elif period == 'monthly' %}
+                {% trans "Monthly Report" %}
+            {% else %}
+                {% trans "Custom Report" %}
+            {% endif %}
+            ({{ start_date|date:"d M Y" }} - {{ end_date|date:"d M Y" }})
+        </h2>
+        <div class="btn-group">
+            <a href="{% url 'export_pdf' %}" class="btn btn-outline-danger">
+                {% trans "Export PDF" %}
+            </a>
+        </div>
+    </div>
+    
+    {% if report_type == 'summary' %}
+        <!-- Summary Report -->
+        <div class="card">
+            <div class="card-header">
+                <h4>{% trans "Summary by Activity" %}</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Activity Code" %}</th>
+                                <th>{% trans "Activity Name" %}</th>
+                                <th>{% trans "Funding Source" %}</th>
+                                <th>{% trans "Total Hours" %}</th>
+                                <th>{% trans "Entries" %}</th>
+                                <th>{% trans "Average Hours" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in report_data %}
+                            <tr>
+                                <td>{{ entry.activity__code }}</td>
+                                <td>{{ entry.activity__name }}</td>
+                                <td>{{ entry.fundssource__name|default:"-" }}</td>
+                                <td>{{ entry.total_hours|floatformat:2 }}</td>
+                                <td>{{ entry.entries }}</td>
+                                <td>{{ entry.avg_hours|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">
+                                    {% trans "No data found for the selected period" %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        {% if report_data %}
+                        <tfoot>
+                            <tr class="table-active">
+                                <td colspan="3" class="text-end"><strong>{% trans "Totals:" %}</strong></td>
+                                <td><strong>{{ total_hours|floatformat:2 }}</strong></td>
+                                <td><strong>{{ total_entries }}</strong></td>
+                                <td><strong>{{ average_hours|floatformat:2 }}</strong></td>
+                            </tr>
+                        </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Detailed Report -->
+        <div class="card">
+            <div class="card-header">
+                <h4>{% trans "Detailed Timesheet Entries" %}</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Date" %}</th>
+                                <th>{% trans "Start Time" %}</th>
+                                <th>{% trans "End Time" %}</th>
+                                <th>{% trans "Activity Code" %}</th>
+                                <th>{% trans "Activity Name" %}</th>
+                                <th>{% trans "Funding Source" %}</th>
+                                <th>{% trans "Hours" %}</th>
+                                <th>{% trans "Description" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in report_data %}
+                            <tr>
+                                <td>{{ entry.date|date:"d M Y" }}</td>
+                                <td>{{ entry.start_time|time:"H:i"|default:"-" }}</td>
+                                <td>{{ entry.end_time|time:"H:i"|default:"-" }}</td>
+                                <td>{{ entry.activity_code }}</td>
+                                <td>{{ entry.activity_name }}</td>
+                                <td>{{ entry.fundssource_name|default:"-" }}</td>
+                                <td>{{ entry.hours|floatformat:2 }}</td>
+                                <td>{{ entry.description|truncatewords:10 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">
+                                    {% trans "No data found for the selected period" %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        {% if report_data %}
+                        <tfoot>
+                            <tr class="table-active">
+                                <td colspan="6" class="text-end"><strong>{% trans "Totals:" %}</strong></td>
+                                <td><strong>{{ total_hours|floatformat:2 }}</strong></td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Action Buttons -->
+    <div class="mt-4 d-flex justify-content-between">
+        <div>
+            <button onclick="window.print()" class="btn btn-secondary">
+                <i class="fas fa-print"></i> {% trans "Print Report" %}
+            </button>
+        </div>
+        <div>
+            <a href="{% url 'generate_report' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> {% trans "New Report" %}
+            </a>
+            <a href="{% url 'timesheet_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-calendar"></i> {% trans "Back to Timesheets" %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .header, .btn, .card-header, .d-print-none {
+        display: none !important;
+    }
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .table {
+        font-size: 12px;
+    }
+}
+</style>
 {% endblock %}

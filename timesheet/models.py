@@ -1,20 +1,17 @@
+from django.utils import timezone
 from django.db import models
-from users.models import CustomUser
+from django.conf import settings
+from dashboard.models import Activity
+from django.utils import timezone
+
+def default_start_time():
+    now = timezone.localtime()
+    return now.replace(hour=8, minute=0, second=0, microsecond=0).time()
 
 
-class Activity(models.Model):
-    """
-    This class creates db tables for the types of actvities
-    """
-    name = models.CharField(max_length=100)
-    code = models.CharField(max_length=6)
-
-    class Meta:
-        verbose_name = "Activity"
-        verbose_name_plural = "Activities"
-
-    def __str__(self):
-        return "{} - {}".format(self.code, self.name)
+def default_end_time():
+    now = timezone.localtime()
+    return now.replace(hour=10, minute=0, second=0, microsecond=0).time()
 
 
 class FundsSource(models.Model):
@@ -36,18 +33,29 @@ class Timesheet(models.Model):
     """
     This class created db tables for each timesheet, linked to activity model and FundsSource model by ForeinKey relations
     """
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    date = models.DateField()
-    hours_worked = models.DecimalField(max_digits=5, decimal_places=0)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE)
+    date = models.DateField(default=timezone.now().date())
+    # hours_worked = models.DecimalField(max_digits=5, decimal_places=0)
+    start_time = models.TimeField(default=default_start_time)
+    end_time = models.TimeField(default=default_end_time)
     fundssource = models.ForeignKey(FundsSource, on_delete=models.CASCADE)
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
     description = models.TextField()
-    submitted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    # submitted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
 
     # This method is used to set the upload path for images associated with the timesheet
-    def get_image_upload_path(instance, filename):
-            return f'timesheet_images/user_{instance.user.id}/{instance.date}/{filename}'
+    def get_image_upload_path(self, filename):
+            return f'timesheet_images/user_{self.user.pk}/{self.date}/{filename}/%Y/%m/%d/'
+
+    def worked_hours(self):
+        start_dt = timezone.datetime.combine(self.date, self.start_time)
+        end_dt = timezone.datetime.combine(self.date, self.end_time)
+        duration = end_dt - start_dt
+        hours = duration.total_seconds() / 3600
+        return hours
 
     # This method is used to set the upload path for documents associated with the timesheet
     def __str__(self):

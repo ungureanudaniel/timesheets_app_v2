@@ -1,0 +1,57 @@
+{% extends 'general/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}PAL Activities List{% endblock %}
+
+{% block content %}
+<!-- Header -->
+    <div class="header">
+        <div class="container">
+           <h1>{% trans 'Funds source' %}</h1>
+           <p class="text-muted">{% trans 'Analyze or add funds source' %}</p>
+            {% include 'includes/messages.html' %}
+        </div>
+    </div>
+<div class="container-fluid mt-5">
+    <div class="row">
+        <div class="container mt-4">
+            <a type="submit" href="{% url 'new_funds_source' %}" class="btn btn-primary">{% trans "Add new sources of funds" %}</a>
+        </div>
+            <!-- Placeholder for any messages -->
+            {% if messages %}
+                <div class="mt-3">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <div class="container mt-4">
+                <h2>Funds Sources</h2>
+                {% if object_list %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fund in funds %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ fund.name }}</td>
+                        </tr>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="alert alert-info">No funds sources found.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

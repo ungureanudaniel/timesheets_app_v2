@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from django.contrib.messages import constants as messages
 from django.utils.translation import gettext_lazy as _
+from django.urls import reverse_lazy
 from mysql.connector.django.base import DatabaseWrapper
 
 DatabaseWrapper.display_name = property(lambda self: "MySQL")
@@ -25,15 +26,6 @@ if os.getenv('ALLOWED_HOSTS'):
     ALLOWED_HOSTS.extend(os.getenv('ALLOWED_HOSTS').split(' '))
 
 DEVELOPMENT = bool(os.environ.get("DEBUG", default=0))
-
-# -----------authentication----------------------
-# AUTH_USER_MODEL = 'users.CustomUser'
-AUTH_TOKEN_LENGTH = 100
-AUTHENTICATION_BACKENDS = [
-    'axes.backends.AxesStandaloneBackend',
-    'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
-]
 
 # Application definition
 
@@ -61,11 +53,28 @@ INSTALLED_APPS = [
     'timesheet',
     'api',
     'debug_toolbar',
-    'allauth',
-    'allauth.account',
     'axes',
 ]
 
+# -----------authentication----------------------
+AUTH_TOKEN_LENGTH = 100
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'users.auth_backend.EmailOrUsernameModelBackend',  # Your custom backend
+    'django.contrib.auth.backends.ModelBackend',
+]
+AUTH_USER_MODEL = 'users.CustomUser'
+# Axes Configuration
+AXES_FAILURE_LIMIT = 5  # Lock after 5 failed attempts
+AXES_COOLOFF_TIME = 1  # Lock for 1 hour
+AXES_RESET_ON_SUCCESS = True
+AXES_LOCKOUT_TEMPLATE = 'accounts/lockout.html'  # Create this template
+AXES_VERBOSE = True  # Logging
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Development
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Production
+# Optional: Customize lockout messages
+AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']  # Lock by username only
+AXES_RESET_COOL_OFF_ON_FAILURE = True
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
@@ -87,7 +96,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # -----------authentication---------------------
-    'allauth.account.middleware.AccountMiddleware',
     'axes.middleware.AxesMiddleware',
 ]
 
@@ -167,7 +175,6 @@ USE_TZ = True
 
 USE_L10N = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
@@ -187,38 +194,17 @@ LOCALE_PATHS = [
     os.path.join(BASE_DIR, 'locale'),
 ]
 DEFAULT_LANGUAGE = 1
-
+# Email configuration (for password resets)
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'contact@bucegipark.ro')
+ADMIN_URL = os.getenv('ADMIN_URL', 'https://www.bucegipark.ro/admin/')
+ADMIN_EMAILS = os.getenv('ADMIN_EMAILS', ['danielungureanu531@gmail.com'])
 # ==============authentication settings=========================
 SITE_ID = 1
-LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'home'
-ACCOUNT_FORMS = {
-    'signup': 'users.forms.CustomSignupForm',
-}
-AUTH_USER_MODEL = 'users.CustomUser'
-# Whether email is required during signup
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 
-ACCOUNT_LOGIN_METHODS = {'username'}
-
-# Whether email verification is mandatory before login
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Or 'optional', 'none'
-
-# Set unique email (one account per email)
-ACCOUNT_UNIQUE_EMAIL = True
-
-# Authentication method ('email' for email only, 'username' for username, 'username_email' for both)
-ACCOUNT_LOGIN_METHODS = {'username'}
-
-ACCOUNT_LOGOUT_REDIRECT_URL = 'account_login'  # Redirect after logout
 # ==============EMAIL SETTINGS==========================
 # -----test
-if DEBUG:
-    # --------development
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-else:
-    # -----production
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# -----production
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # -----email credentials
 EMAIL_PORT = os.getenv('EMAIL_PORT')
 EMAIL_HOST = os.getenv('EMAIL_HOST')

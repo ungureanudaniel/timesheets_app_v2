@@ -65,7 +65,7 @@
                     {% endif %}
 
                     <li class="nav-item">
-                        <a class="nav-link highlighted" href="{% url 'timesheet_list' %}">{% trans 'Add new Timesheet' %}</a>
+                        <a class="nav-link" href="{% url 'timesheet_list' %}">{% trans 'Timesheet List' %}</a>
                     </li>
                     
                     <li class="nav-item dropdown">
@@ -82,14 +82,20 @@
                     </li>
                     {% if user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'profile' user.username %}">{% trans 'Profile' %}</a>
+                        <a class="nav-link" href="{% url 'users:profile' %}">{% trans 'Profile' %}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" style="color:red;" href="{% url 'logout' %}">Logout</a>
+                        <!-- DEBUG version with console logging -->
+                        <form method="post" action="{% url 'users:logout' %}" id="logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="btn nav-link">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </button>
+                        </form>
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login' %}">Login</a>
+                        <a class="nav-link" href="{% url 'users:login' %}">Login</a>
                     </li>
                     {% endif %}
                     <li class="nav-item dropdown">

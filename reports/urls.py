@@ -10,6 +10,8 @@ urlpatterns = [
     # -------Visitor urls------------------
     path('generate/', ReportGeneratorView.as_view(), name='generate_report'),
     path('results/', ReportResultsView.as_view(), name='report_results'),
+    path('results/', ReportResultsView.as_view(), name='export_pdf'),
+
 
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

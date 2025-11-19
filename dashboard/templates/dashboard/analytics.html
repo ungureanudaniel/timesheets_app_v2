@@ -5,6 +5,14 @@
 {% block title %}Team Dashboard{% endblock %}
 
 {% block content %}
+<!-- Header -->
+    <div class="header">
+        <div class="container">
+           <h1>{% trans 'Activity Analytics' %}</h1>
+           <p class="text-muted">{% trans 'Analyze the activities and performance of your team' %}</p>
+            {% include 'includes/messages.html' %}
+        </div>
+    </div>
 <div class="container-fluid mt-5">
     <div class="row">
         <!-- Sidebar -->

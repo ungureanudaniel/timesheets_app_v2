@@ -1,0 +1,134 @@
+{% extends "general/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block content %}
+<div class="main-content">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-body p-4">
+                        <h2 class="card-title text-center mb-4">{% trans 'Login' %}</h2>
+                        
+                        {% if messages %}
+                        <div class="mb-3">
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <form method="post" action="{% url 'users:login' %}">
+                            {% csrf_token %}
+                            
+                            {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Email Field -->
+                            <div class="mb-3">
+                                <label for="id_username" class="form-label">{% trans 'Username or Email Address' %}</label>
+                                <input type="text" 
+                                       name="username" 
+                                       class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                                       id="id_username" 
+                                       required 
+                                       autofocus 
+                                       value="{{ form.username.value|default:'' }}"
+                                       placeholder="{% trans 'Enter your username or email address' %}">
+                                {% if form.username.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.username.errors %}
+                                        <strong>{{ error }}</strong>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Password Field -->
+                            <div class="mb-3">
+                                <label for="id_password" class="form-label">{% trans 'Password' %}</label>
+                                <input type="password" 
+                                       name="password" 
+                                       class="form-control {% if form.password.errors %}is-invalid{% endif %}" 
+                                       id="id_password" 
+                                       required
+                                       placeholder="{% trans 'Enter your password' %}">
+                                {% if form.password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Form-level errors (like invalid password) -->
+                            {% if form.errors and not form.username.errors and not form.password.errors %}
+                            <div class="alert alert-danger">
+                                <strong>{% trans 'Invalid password.' %}</strong> {% trans 'Please check your password and try again.' %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Remember Me -->
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" name="remember" class="form-check-input" id="id_remember">
+                                <label class="form-check-label" for="id_remember">{% trans 'Remember me' %}</label>
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">{% trans 'Login' %}</button>
+                            </div>
+                            
+                            <!-- Axes Lockout Message -->
+                            {% if axes_locked_out %}
+                            <div class="alert alert-danger mt-3">
+                                <strong>{% trans 'Account locked!' %}</strong> 
+                                {% trans 'Too many failed login attempts. Please try again later.' %}
+                            </div>
+                            {% elif axes_cool_off %}
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    {% trans 'Account will be unlocked in:' %} {{ axes_cool_off_time }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </form>
+                        
+                        <!-- Additional Options -->
+                        <div class="text-center mt-3">
+                            <p class="mb-2">
+                                {% trans "Don't have an account?" %} 
+                                <a href="{% url 'users:signup' %}" class="fw-bold">{% trans 'Sign up here' %}</a>
+                            </p>
+                            <p class="mb-0">
+                                <a href="{% url 'users:password_reset' %}">{% trans 'Forgot your password?' %}</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.invalid-feedback {
+    display: block !important;
+}
+.form-control.is-invalid {
+    border-color: #dc3545;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 3.6.4.4.4-.4'/%3e%3cpath d='M6 7v1'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+</style>
+{% endblock %}

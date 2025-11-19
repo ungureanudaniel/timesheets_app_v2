@@ -1,23 +1,30 @@
 {% load static %}
 {% load i18n %}
-<div class="modal fade" id="timesheetModal" tabindex="-1" aria-labelledby="timesheetModalLabel" aria-hidden="true">
+<div class="modal fade" id="createTimesheetModal" tabindex="-1" aria-labelledby="timesheetModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="timesheetModalLabel">{% trans "Enter Timesheet Data" %}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="post" action="{% url 'create_timesheet' %}" id="timesheetForm">
+            <form method="POST" action="{% url 'create_timesheet' %}" id="timesheetForm">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <input type="hidden" name="date" id="modalDate">
+                    <!-- <input type="text" name="user" id="modalUser">
+
+                    <input type="text" name="date" id="modalDate">
+
                     <div class="mb-3">
                         <label for="fundssource" class="form-label">{% trans "Funds From" %}</label>
                         {{ form.fundssource }}
                     </div>
                     <div class="mb-3">
-                        <label for="hours_worked" class="form-label">{% trans "Hours Worked" %}</label>
-                        {{ form.hours_worked }}
+                        <label for="start_time" class="form-label">{% trans "Start Time" %}</label>
+                        {{ form.start_time }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="end_time" class="form-label">{% trans "End Time" %}</label>
+                        {{ form.end_time }}
                     </div>
                     <div class="mb-3">
                         <label for="activity" class="form-label">{% trans "Activity" %}</label>
@@ -27,7 +34,12 @@
                         <label for="description" class="form-label">{% trans "Description" %}</label>
                         {{ form.description }}
                     </div>
-                </div>
+                </div> -->
+                {{ form.as_p }}
+
+                <label for="images">Upload Images:</label>
+                <input type="file" name="images" multiple>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
                     <button type="submit" class="btn btn-primary">{% trans "Save Timesheet" %}</button>

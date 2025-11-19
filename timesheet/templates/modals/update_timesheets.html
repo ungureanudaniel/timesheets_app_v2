@@ -1,0 +1,67 @@
+{% load i18n %}
+<!-- Update Timesheet Modal -->
+<div class="modal fade" id="updateTimesheetModal" tabindex="-1" aria-labelledby="updateTimesheetModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateTimesheetModalLabel">{% trans "Edit Timesheet" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'update_timesheet' %}" id="updateTimesheetForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="timesheet_id" id="updateTimesheetId">
+                    
+                    <div class="mb-3">
+                        <label for="updateDate" class="form-label">{% trans "Date" %}</label>
+                        <input type="date" class="form-control" id="updateDate" name="date" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="updateActivity" class="form-label">{% trans "Activity" %}</label>
+                        <select class="form-control" id="updateActivity" name="activity" required>
+                            <option value="">{% trans "Select Activity" %}</option>
+                            {% for activity in form.activity.field.queryset %}
+                                <option value="{{ activity.id }}">{{ activity.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="updateFundssource" class="form-label">{% trans "Funding Source" %}</label>
+                        <select class="form-control" id="updateFundssource" name="fundssource" required>
+                            <option value="">{% trans "Select Funding Source" %}</option>
+                            {% for source in form.fundssource.field.queryset %}
+                                <option value="{{ source.id }}">{{ source.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="updateStartTime" class="form-label">{% trans "Start Time" %}</label>
+                                <input type="time" class="form-control" id="updateStartTime" name="start_time" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="updateEndTime" class="form-label">{% trans "End Time" %}</label>
+                                <input type="time" class="form-control" id="updateEndTime" name="end_time" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="updateDescription" class="form-label">{% trans "Description" %}</label>
+                        <textarea class="form-control" id="updateDescription" name="description" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                    <button type="submit" class="btn btn-primary">{% trans "Update Timesheet" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

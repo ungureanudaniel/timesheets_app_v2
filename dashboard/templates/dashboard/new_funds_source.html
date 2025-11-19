@@ -1,0 +1,38 @@
+{% extends 'general/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Add new funds source{% endblock %}
+
+{% block content %}
+<!-- Header -->
+    <div class="header">
+        <div class="container">
+           <h1>{% trans 'New Funds Source' %}</h1>
+           <p class="text-muted">{% trans 'Add funds source' %}</p>
+            {% include 'includes/messages.html' %}
+        </div>
+    </div>
+<div class="container-fluid mt-5">
+    <div class="row">
+        
+            <!-- Placeholder for any messages -->
+            {% if messages %}
+                <div class="mt-3">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <div class="container mt-4">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary">{% trans "Add funds source" %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

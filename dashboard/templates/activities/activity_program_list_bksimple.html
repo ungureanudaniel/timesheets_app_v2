@@ -1,0 +1,57 @@
+{% extends "general/base.html" %}
+{% load static %}
+{% load i18n %}
+{% load cache %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{% trans "Weekly Activity Programs" %}</h2>
+        <a href="{% url 'activity_program_create' %}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> {% trans "Add New Program" %}
+        </a>
+    </div>
+
+    {% if object_list %}
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">{% trans "User" %}</th>
+                    <th scope="col">{% trans "Registration No." %}</th>
+                    <th scope="col">{% trans "Week" %}</th>
+                    <th scope="col">{% trans "Date" %}</th>
+                    <th scope="col">{% trans "Activity Title" %}</th>
+                    <th scope="col">{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for program in object_list %}
+                <tr>
+                    <th scope="row">{{ forloop.counter }}</th>
+                    <td>{{ program.user }}</td>
+                    <td>{{ program.registration_nr }}</td>
+                    <td>{{ program.week }}</td>
+                    <td>{{ program.registration_date }}</td>
+                    <td>{{ program.activity_title }}</td>
+                    <td>
+                        <a href="{% url 'activity_program_edit' program.id %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-pencil"></i> {% trans "Edit" %}
+                        </a>
+                        <a href="{% url 'activity_program_delete' program.id %}" class="btn btn-sm btn-danger" onclick="return confirm('{% trans "Are you sure you want to delete this program?" %}');">
+                            <i class="bi bi-trash"></i> {% trans "Delete" %}
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        {% trans "No activity programs found. Click" %} "{% trans "Add New Program" %}" {% trans "to create one." %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

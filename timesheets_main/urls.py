@@ -9,7 +9,6 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('i18n/', include('django.conf.urls.i18n')),
-    path('accounts/', include('allauth.urls')),
     path("__debug__/", include("debug_toolbar.urls")),
 ]
 
@@ -19,11 +18,17 @@ urlpatterns += i18n_patterns(
     path('timesheets/', include('timesheet.urls')),
     path('administration/', include('dashboard.urls')),
     path('reports/', include('reports.urls')),
-    path('accounts/', include('django.contrib.auth.urls')),
-    path('users/', include('users.urls')),
+    path('accounts/', include('users.urls')),
 )
 
-
 # ------------add custom media path for production mode-----------
-urlpatterns += re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
-urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Option B: For production with custom view
+else:
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    ]
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
