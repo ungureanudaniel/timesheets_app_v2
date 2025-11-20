@@ -144,7 +144,6 @@ class CreateTimesheetView(generic.CreateView):
         return render(request, self.template_name, {'form': form})
 
 
-# timesheet update view
 class UpdateTimesheetView(LoginRequiredMixin, generic.UpdateView):
     model = Timesheet
     form_class = TimesheetForm
@@ -153,11 +152,22 @@ class UpdateTimesheetView(LoginRequiredMixin, generic.UpdateView):
     
     def get_queryset(self):
         return Timesheet.objects.filter(user=self.request.user)
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+
+        # Handle new image uploads
+        images = self.request.FILES.getlist('images')
+        for image in images:
+            TimesheetImage.objects.create(timesheet=self.object, image=image)
+
+        messages.success(self.request, 'Timesheet updated successfully!')
+        return response
 
 
 class DeleteTimesheetView(LoginRequiredMixin, generic.DeleteView):
     model = Timesheet
-    template_name = 'timesheet/delete_timesheets.html'
+    template_name = 'timesheet/delete_timesheets.html'  # Regular page template
     success_url = reverse_lazy('timesheet_list')
     
     def get_queryset(self):
