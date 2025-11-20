@@ -37,6 +37,7 @@
                                 <th>{% trans 'End Time' %}</th>
                                 <th>{% trans 'Funding Source' %}</th>
                                 <th>{% trans 'Description' %}</th>
+                                <th>{% trans 'Images' %}</th>
                                 <th>{% trans 'Actions' %}</th>
                             </tr>
                         </thead>
@@ -50,30 +51,32 @@
                                 <td>{{ timesheet.fundssource.name|default:"-" }}</td>
                                 <td>{{ timesheet.description|default:"-" }}</td>
                                 <td>
+                                    {% with image_count=timesheet.timesheet_images.count %}
+                                        {% if image_count > 0 %}
+                                        <a href="{% url 'timesheet_images' timesheet.id %}" 
+                                           class="badge bg-info text-decoration-none"
+                                           title="{% trans 'View attached images' %}">
+                                            <i class="fas fa-images"></i> {{ image_count }}
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>
                                     <div class="btn-group btn-group-sm">
                                         <!-- Edit Button -->
-                                        <button type="button" class="btn btn-outline-primary" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#updateTimesheetModal"
-                                                data-timesheet-id="{{ timesheet.id }}"
-                                                data-date="{{ timesheet.date|date:'Y-m-d' }}"
-                                                data-activity="{{ timesheet.activity.id }}"
-                                                data-start-time="{{ timesheet.start_time|time:'H:i'|default:'' }}"
-                                                data-end-time="{{ timesheet.end_time|time:'H:i'|default:'' }}"
-                                                data-fundssource="{{ timesheet.fundssource.id|default:'' }}"
-                                                data-description="{{ timesheet.description|default:'' }}"
-                                                title="{% trans 'Edit' %}">
+                                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateTimesheetModal" title="{% trans 'Edit' %}">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         
                                         <!-- Delete Button -->
-                                        <button type="button" class="btn btn-outline-danger" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#deleteTimesheetModal"
-                                                data-timesheet-id="{{ timesheet.id }}"
-                                                data-activity-name="{{ timesheet.activity.name }}"
-                                                data-date="{{ timesheet.date|date:'d M Y' }}"
-                                                title="{% trans 'Delete' %}">
+                                        <button type="button"
+                                           class="btn btn-danger"
+                                           data-bs-toggle="modal" 
+                                           data-bs-target="#deleteTimesheetModal"  
+                                           title="{% trans 'Delete' %}"
+                                           onclick="return confirm('{% trans 'Are you sure you want to delete this timesheet?' %}');">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -121,88 +124,7 @@
     </div>
 </div>
 
-<!-- Include Modals -->
+<!-- Include Create Modal Only (since we're using direct URLs for edit/delete) -->
 {% include 'modals/create_timesheets.html' with form=form %}
-{% include 'modals/update_timesheets.html' with form=form %}
-{% include 'modals/delete_timesheets.html' %}
 
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded - checking modals...');
-    
-    // Update modal functionality
-    const updateModal = document.getElementById('updateTimesheetModal');
-    if (updateModal) {
-        console.log('Update modal found');
-        
-        updateModal.addEventListener('show.bs.modal', function (event) {
-            console.log('Update modal opening...');
-            const button = event.relatedTarget;
-            console.log('Button clicked:', button);
-            
-            const timesheetId = button.getAttribute('data-timesheet-id');
-            const date = button.getAttribute('data-date');
-            const activityId = button.getAttribute('data-activity');
-            const startTime = button.getAttribute('data-start-time');
-            const endTime = button.getAttribute('data-end-time');
-            const fundssourceId = button.getAttribute('data-fundssource');
-            const description = button.getAttribute('data-description');
-            
-            console.log('Timesheet data:', {
-                timesheetId, date, activityId, startTime, endTime, fundssourceId, description
-            });
-            
-            // Populate the form
-            document.getElementById('updateTimesheetId').value = timesheetId;
-            document.getElementById('updateDate').value = date;
-            document.getElementById('updateActivity').value = activityId;
-            document.getElementById('updateStartTime').value = startTime;
-            document.getElementById('updateEndTime').value = endTime;
-            document.getElementById('updateFundssource').value = fundssourceId;
-            document.getElementById('updateDescription').value = description;
-            
-            console.log('Form should be populated now');
-        });
-    } else {
-        console.log('Update modal NOT found!');
-    }
-    
-    // Delete modal functionality
-    const deleteModal = document.getElementById('deleteTimesheetModal');
-    if (deleteModal) {
-        console.log('Delete modal found');
-        
-        deleteModal.addEventListener('show.bs.modal', function (event) {
-            console.log('Delete modal opening...');
-            const button = event.relatedTarget;
-            const timesheetId = button.getAttribute('data-timesheet-id');
-            const activityName = button.getAttribute('data-activity-name');
-            const date = button.getAttribute('data-date');
-            
-            console.log('Delete data:', { timesheetId, activityName, date });
-            
-            document.getElementById('deleteTimesheetId').value = timesheetId;
-            document.getElementById('deleteActivityName').textContent = activityName;
-            document.getElementById('deleteDate').textContent = date;
-        });
-    } else {
-        console.log('Delete modal NOT found!');
-    }
-    
-    // Delete confirmation
-    const confirmDeleteBtn = document.getElementById('confirmDelete');
-    if (confirmDeleteBtn) {
-        confirmDeleteBtn.addEventListener('click', function() {
-            console.log('Delete confirmed');
-            const timesheetId = document.getElementById('deleteTimesheetId').value;
-            console.log('Deleting timesheet:', timesheetId);
-            
-            // Your existing delete code...
-        });
-    }
-});
-</script>
 {% endblock %}

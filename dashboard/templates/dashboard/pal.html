@@ -20,7 +20,10 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>{% trans 'Annual Work Plan - Activities' %}</h2>
                 <a href="{% url 'pal_activity_upload' %}" class="btn btn-primary">
-                    <i class="fas fa-upload"></i> {% trans "Upload Activities" %}
+                    <i class="fas fa-upload"></i> {% trans "Upload Activities Excel" %}
+                </a>
+                <a href="{% url 'pal_activity_create' %}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> {% trans "Upload a Single Activity" %}
                 </a>
             </div>
 
@@ -59,7 +62,8 @@
                                 <tr>
                                     <th width="5%">#</th>
                                     <th width="15%">{% trans 'Activity Code' %}</th>
-                                    <th width="80%">{% trans 'Activity Name' %}</th>
+                                    <th width="65%">{% trans 'Activity Name' %}</th>
+                                    <th width="15%">{% trans 'Actions' %}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -72,6 +76,26 @@
                                         <span class="badge bg-secondary font-monospace">{{ activity.code }}</span>
                                     </td>
                                     <td>{{ activity.name }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <!-- Edit Button -->
+                                            <a href="{% url 'pal_activity_edit' activity.id %}" 
+                                               class="btn btn-outline-primary" 
+                                               title="{% trans 'Edit Activity' %}"
+                                               data-bs-toggle="tooltip">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            
+                                            <!-- Delete Button -->
+                                            <a href="{% url 'pal_activity_delete' activity.id %}" 
+                                               class="btn btn-outline-danger" 
+                                               title="{% trans 'Delete Activity' %}"
+                                               data-bs-toggle="tooltip"
+                                               onclick="return confirm('{% trans 'Are you sure you want to delete this activity?' %}');">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -169,43 +193,16 @@
 {% endblock %}
 
 {% block extra_css %}
-<style>
-.header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 3rem 0;
-    margin-bottom: 2rem;
-}
+{% endblock %}
 
-.header h1 {
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.table-hover tbody tr:hover {
-    background-color: rgba(0, 123, 255, 0.075);
-}
-
-.empty-state-icon {
-    opacity: 0.6;
-}
-
-.card {
-    border: none;
-    border-radius: 0.5rem;
-}
-
-.page-link {
-    color: #495057;
-}
-
-.page-item.active .page-link {
-    background-color: #007bff;
-    border-color: #007bff;
-}
-
-.badge {
-    font-size: 0.8em;
-}
-</style>
+{% block extra_js %}
+<script>
+// Simple tooltip initialization only
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
 {% endblock %}

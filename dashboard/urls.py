@@ -1,7 +1,7 @@
 from django.urls import path, include
 from django.conf import settings
-from .views import ActivityProgramCreateView, ActivityProgramListView, ActivityProgramUpdateView, ActivityProgramDeleteView, dashboard, AnalyticsView, \
-    worked_hours_per_member, yearly_statistics, activity_program, PALActivitiesListView, PALActivitiesUpdateView, PALActivitiesDeleteView, PALActivitiesUploadView, \
+from .views import ActivityProgramCreateView, ActivityProgramListView, ActivityProgramUpdateView, ActivityProgramDeleteView, PALActivityCreateView, dashboard, AnalyticsView, \
+    worked_hours_per_member, yearly_statistics, activity_program, PALActivitiesListView, PALActivityUpdateView, PALActivityDeleteView, PALActivitiesUploadView, \
     FundsSourceListView, NewFundsSourceView
 from .utils import upload_activities
 from django.conf.urls.static import static
@@ -13,9 +13,10 @@ urlpatterns = [
     path('dashboard/', dashboard, name="dashboard"),
     path('analytics/', AnalyticsView.as_view(), name="analytics"),
     path('plan-de-lucru-anual/', PALActivitiesListView.as_view(), name="pal"),
+    path('pal_activity/create/', PALActivityCreateView.as_view(), name='pal_activity_create'),
     path('pal_activity/upload/', PALActivitiesUploadView.as_view(), name='pal_activity_upload'),
-    path('pal_activity/<int:pk>/edit/', PALActivitiesUpdateView.as_view(), name='pal_activity_edit'),
-    path('pal_activity/<int:pk>/delete/', PALActivitiesDeleteView.as_view(), name='pal_activity_delete'),
+    path('pal_activity/<int:pk>/edit/', PALActivityUpdateView.as_view(), name='pal_activity_edit'),
+    path('pal_activity/<int:pk>/delete/', PALActivityDeleteView.as_view(), name='pal_activity_delete'),
     path('upload_pal_activities/', upload_activities, name="upload_activities"),
     path('analytics/worked_hours_per_member', worked_hours_per_member, name="worked_hours_per_member"),
     path('analytics/yearly_statistics', yearly_statistics, name="yearly_statistics"),

@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.urls import reverse_lazy
 from django.utils import timezone
-from .forms import PALActivitiesUploadForm, FundsSourceForm
+from .forms import PALActivitiesUploadForm, FundsSourceForm, PALActivityForm
 from django.db.models import Sum
 from dashboard.forms import ActivityProgramForm
 from dashboard.models import ActivityProgram
@@ -14,7 +14,7 @@ from django.views import generic
 from django.views.generic import CreateView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
-import pandas as pd
+import openpyxl
 
 
 # main admin dashboard view.
@@ -91,30 +91,54 @@ class PALActivitiesUploadView(LoginRequiredMixin, UserPassesTestMixin, CreateVie
     def post(self, request, *args, **kwargs):
         form = PALActivitiesUploadForm(request.POST, request.FILES)
         if form.is_valid():
+            if 'file' not in request.FILES:
+                messages.error(request, "No file uploaded.")
+                return redirect(self.success_url)
+
             excel_file = request.FILES['file']
             try:
-                # Read Excel file using pandas
-                df = pd.read_excel(excel_file)
+                # Read Excel file using openpyxl
+                wb = openpyxl.load_workbook(excel_file, data_only=True)
+                if not wb.sheetnames:
+                    messages.error(request, "Excel file contains no sheets.")
+                    return redirect(self.success_url)
+
+                # Prefer active sheet but fall back to first sheet
+                sheet = wb.active if wb.active is not None else wb[wb.sheetnames[0]]
+
+                if sheet is None:
+                    messages.error(request, "Could not read worksheet from the uploaded Excel file.")
+                    return redirect(self.success_url)
+
+                # get the headers from worksheet (normalize to lowercase strings)
+                headers = [str(cell.value).strip().lower() if cell.value is not None else '' for cell in sheet[1]]
 
                 # Check required columns
-                if 'code' not in df.columns or 'name' not in df.columns:
+                if 'code' not in headers or 'name' not in headers:
                     messages.error(request, "Excel file must contain 'code' and 'name' columns.")
                     return redirect(self.success_url)
 
+                # Get column indices
+                code_index = headers.index('code')
+                name_index = headers.index('name')
+
                 # Iterate rows and save Activities
-                for _, row in df.iterrows():
-                    if Activity.objects.filter(code=row['code']).exists():
-                        Activity.objects.filter(
-                            code=row['code']).update(
-                            name=row['name'],
-                        )
+                for row in sheet.iter_rows(min_row=2, values_only=True):
+                    if not row or all(cell is None for cell in row):
                         continue
+
+                    code_val = row[code_index] if len(row) > code_index else None
+                    name_val = row[name_index] if len(row) > name_index else None
+
+                    if code_val is None:
+                        # skip rows without a code
+                        continue
+
+                    if Activity.objects.filter(code=code_val).exists():
+                        Activity.objects.filter(code=code_val).update(name=name_val)
                     else:
                         # Create new Activity if it doesn't exist
-                        Activity.objects.create(
-                            code=row['code'],
-                            name=row['name']
-                        )
+                        Activity.objects.create(code=code_val, name=name_val)
                 messages.success(request, "Activities uploaded successfully.")
             except Exception as e:
                 messages.error(request, f"Error processing Excel file: {e}")
@@ -124,19 +148,33 @@ class PALActivitiesUploadView(LoginRequiredMixin, UserPassesTestMixin, CreateVie
             return render(request, self.template_name, {'form': form})
 
 
-class PALActivitiesUpdateView(LoginRequiredMixin, UserPassesTestMixin, generic.UpdateView):
+class PALActivityCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """
+    Create view for Activity
+    """
+    model = Activity
+    template_name = 'dashboard/pal_activity_create.html'
+    success_url = reverse_lazy('pal')
+    form_class = PALActivityForm
+
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+
+
+class PALActivityUpdateView(LoginRequiredMixin, UserPassesTestMixin, generic.UpdateView):
     """
     Update view for Activity
     """
     model = Activity
     template_name = 'dashboard/pal_activity_edit.html'
     success_url = reverse_lazy('pal')
+    form_class = PALActivityForm
 
     def test_func(self):
         return self.request.user.is_staff or self.request.user.is_superuser
 
 
-class PALActivitiesDeleteView(LoginRequiredMixin, UserPassesTestMixin, generic.DeleteView):
+class PALActivityDeleteView(LoginRequiredMixin, UserPassesTestMixin, generic.DeleteView):
     """
     Delete view for Activity
     """

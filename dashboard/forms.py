@@ -11,6 +11,22 @@ class PALActivitiesUploadForm(forms.Form):
         widget=forms.ClearableFileInput(attrs={'class': 'form-control'})
     )
 
+
+class PALActivityForm(forms.ModelForm):
+    class Meta:
+        model = Activity
+        fields = ['code', 'name']
+        widgets = {
+            'code': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': _('Insert activity code')}
+            ),
+            'name': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': _('Enter activity name')}
+            ),
+        }
+
+
+
 class ActivityProgramForm(forms.ModelForm):
     """Form for creating and updating activity programs."""
     week = forms.ChoiceField(

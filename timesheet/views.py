@@ -1,5 +1,6 @@
 import json
 from django import forms
+from django.urls import reverse_lazy
 from django.views.generic import ListView
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from datetime import timedelta, datetime
@@ -144,63 +145,20 @@ class CreateTimesheetView(generic.CreateView):
 
 
 # timesheet update view
-class UpdateTimesheetView(LoginRequiredMixin, generic.View):
-    def post(self, request):
-        timesheet_id = request.POST.get('timesheet_id')
-        date = request.POST.get('date')
-        activity_id = request.POST.get('activity')
-        fundssource_id = request.POST.get('fundssource')
-        start_time = request.POST.get('start_time')
-        end_time = request.POST.get('end_time')
-        description = request.POST.get('description')
+class UpdateTimesheetView(LoginRequiredMixin, generic.UpdateView):
+    model = Timesheet
+    form_class = TimesheetForm
+    template_name = 'timesheet/update_timesheets.html'
+    success_url = reverse_lazy('timesheet_list')
+    
+    def get_queryset(self):
+        return Timesheet.objects.filter(user=self.request.user)
 
-        # Validate required fields
-        if not all([date, activity_id, fundssource_id, start_time, end_time, description]):
-            return JsonResponse({
-                'status': 'error', 
-                'message': 'All fields are required.'
-            }, status=400)
 
-        try:
-            timesheet = Timesheet.objects.get(id=timesheet_id, user=request.user)
-            
-            # Update all fields according to model
-            timesheet.date = date
-            timesheet.activity = activity_id
-            timesheet.fundssource = fundssource_id
-            timesheet.start_time = start_time
-            timesheet.end_time = end_time
-            timesheet.description = description
-            
-            timesheet.save()
-
-            return JsonResponse({
-                'status': 'success', 
-                'message': 'Timesheet updated successfully.'
-            })
-            
-        except Timesheet.DoesNotExist:
-            return JsonResponse({
-                'status': 'error', 
-                'message': 'Timesheet not found.'
-            }, status=404)
-        except Exception as e:
-            return JsonResponse({
-                'status': 'error', 
-                'message': f'Error updating timesheet: {str(e)}'
-            }, status=400)
-class DeleteTimesheetView(LoginRequiredMixin, generic.View):
-    """
-    This class handles the deletion of a Timesheet instance.
-    """
-    def post(self, request):
-        timesheet_id = request.POST.get('id')
-
-        try:
-            # Fetch the timesheet by ID
-            timesheet = Timesheet.objects.get(id=timesheet_id, user=request.user)  # Assuming there's a user foreign key
-            timesheet.delete()  # Delete the timesheet
-
-            return JsonResponse({'status': 'success', 'message': 'Timesheet deleted successfully.'})
-        except Timesheet.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Timesheet not found.'}, status=404)
+class DeleteTimesheetView(LoginRequiredMixin, generic.DeleteView):
+    model = Timesheet
+    template_name = 'timesheet/delete_timesheets.html'
+    success_url = reverse_lazy('timesheet_list')
+    
+    def get_queryset(self):
+        return Timesheet.objects.filter(user=self.request.user)

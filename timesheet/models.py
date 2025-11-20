@@ -48,14 +48,21 @@ class Timesheet(models.Model):
 
     # This method is used to set the upload path for images associated with the timesheet
     def get_image_upload_path(self, filename):
-            return f'timesheet_images/user_{self.user.pk}/{self.date}/{filename}/%Y/%m/%d/'
+            return f'timesheet_images/user_{self.user.pk}/{self.date}/{filename}'
 
     def worked_hours(self):
-        start_dt = timezone.datetime.combine(self.date, self.start_time)
-        end_dt = timezone.datetime.combine(self.date, self.end_time)
-        duration = end_dt - start_dt
-        hours = duration.total_seconds() / 3600
-        return hours
+        if self.start_time and self.end_time:
+            start_dt = timezone.datetime.combine(self.date, self.start_time)
+            end_dt = timezone.datetime.combine(self.date, self.end_time)
+            
+            # Handle overnight shifts
+            if end_dt < start_dt:
+                end_dt += timezone.timedelta(days=1)
+                
+            duration = end_dt - start_dt
+            hours = duration.total_seconds() / 3600
+            return round(hours, 2)
+        return 0
 
     # This method is used to set the upload path for documents associated with the timesheet
     def __str__(self):
@@ -66,7 +73,7 @@ class TimesheetImage(models.Model):
     This class creates db tables for images associated with timesheets
     """
     timesheet = models.ForeignKey(Timesheet, related_name='timesheet_images', on_delete=models.CASCADE)
-    image = models.ImageField(upload_to=Timesheet.get_image_upload_path)
+    image = models.ImageField(upload_to='timesheet_images/')  # Simpler upload path
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
