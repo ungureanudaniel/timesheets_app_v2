@@ -111,7 +111,7 @@
                         </div>
                         {% endif %}
                     </div>
-                    <p><strong>{% trans 'Username:' %}</strong> {{ object.username }}</p>
+                    <p><strong>{% trans 'Username:' %}</strong> {{ form.username }}</p>
                     <p><strong>{% trans 'Joined:' %}</strong> {{ object.date_joined|date:"M d, Y" }}</p>
                     <p><strong>{% trans 'Last Login:' %}</strong> {{ object.last_login|date:"M d, Y H:i"|default:"Never" }}</p>
                 </div>

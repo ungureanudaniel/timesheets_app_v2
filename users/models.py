@@ -115,41 +115,43 @@ class CustomUser(AbstractUser):
     def is_reporter(self):
         return self.role == self.Role.REPORTER and not self.is_superuser
 
+    def assign_initial_group(self):
+        """Assign user to REPORTER group by default"""
+        try:
+            group, created = Group.objects.get_or_create(name='REPORTER')
+            self.groups.add(group)
+            logger.debug(f"Assigned {self.email} to group 'REPORTER'.")
+        except Group.DoesNotExist:
+            logger.error("Group 'REPORTER' does not exist.")
+
     def assign_role_permissions(self):
         """
-        Optional: Sync role field with groups for Django's permission system
-        Use this if you want to use Django's group-based permissions alongside your role field
+        Sync role field with groups - uses set() to avoid duplicates
         """
-        # Remove from all role groups
-        self.groups.remove(*Group.objects.filter(name__in=['ADMIN', 'MANAGER', 'REPORTER']))
-        
-        # Add to role-specific group
-        group, created = Group.objects.get_or_create(name=self.role)
-        self.groups.add(group)
+        try:
+            target_group_name = self.role
+            group, created = Group.objects.get_or_create(name=target_group_name)
+            
+            # This is the safest way - replaces all groups with just this one
+            self.groups.set([group])
+            
+        except Exception as e:
+            logger.error(f"Error assigning role permissions for {self.email}: {e}")
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         
-        # Auto-assign ADMIN role to superusers
-        if self.is_superuser and self.role != self.Role.ADMIN:
-            self.role = self.Role.ADMIN
-        
-        super().save(*args, **kwargs)
-        
-        # Optional: Sync with groups for permission system
-        self.assign_role_permissions()
-        
-        # Assign default REPORTER group to new regular users (optional)
-        if is_new and not self.groups.exists() and self.role == self.Role.REPORTER:
-            group, created = Group.objects.get_or_create(name='REPORTER')
-            self.groups.add(group)
-
-    def save(self, *args, **kwargs):
         # Fix role field before saving
         if hasattr(self.role, 'value'):
             self.role = self.role.value
         elif not isinstance(self.role, str):
             self.role = str(self.role)
+            
+        # Ensure username is populated
+        if not self.username and self.email:
+            self.username = self.email.split('@')[0]
+        
+        # Just save, no group assignment
         super().save(*args, **kwargs)
 
     def __str__(self):

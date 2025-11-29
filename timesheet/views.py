@@ -70,7 +70,7 @@ def get_user_timesheets(user):
 class TimesheetListView(LoginRequiredMixin, generic.View):
     def get(self, request):
         # Get all timesheets for the user, ordered by date (newest first)
-        timesheets_list = Timesheet.objects.filter(user=request.user).select_related('activity', 'fundssource').order_by('-date', '-created_at')
+        timesheets_list = Timesheet.objects.filter(user=request.user).select_related('activity', 'fundssource').prefetch_related('timesheet_images').order_by('-date', '-created_at')
         
         # Simple pagination - 20 items per page
         paginator = Paginator(timesheets_list, 20)

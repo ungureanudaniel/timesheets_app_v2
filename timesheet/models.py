@@ -36,13 +36,13 @@ class Timesheet(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE)
-    date = models.DateField(default=timezone.now().date())
+    date = models.DateField(default=timezone.now)
     # hours_worked = models.DecimalField(max_digits=5, decimal_places=0)
     start_time = models.TimeField(default=default_start_time)
     end_time = models.TimeField(default=default_end_time)
     fundssource = models.ForeignKey(FundsSource, on_delete=models.CASCADE)
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
-    description = models.TextField()
+    description = models.TextField(blank=True)
     # submitted = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
 

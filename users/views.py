@@ -219,7 +219,7 @@ class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, generic.UpdateView
 class UserDeleteView(LoginRequiredMixin, UserPassesTestMixin, generic.DeleteView):
     model = CustomUser
     template_name = "accounts/user_delete.html"
-    success_url = reverse_lazy('user_management')
+    success_url = reverse_lazy('users:user_management')
     context_object_name = 'user_to_delete'
 
     def test_func(self):
@@ -228,11 +228,17 @@ class UserDeleteView(LoginRequiredMixin, UserPassesTestMixin, generic.DeleteView
         return self.request.user.is_admin and user_to_delete != self.request.user
 
     def delete(self, request, *args, **kwargs):
-        user_to_delete = self.get_object()
-        username = user_to_delete.username
-        
+        self.object = self.get_object()
+        user_identifier = self.object.username if self.object.username else self.object.email
+        user_email = self.object.email
+        try:
+            user_id = self.object.id
+            self.object.delete()
+
+        except AttributeError:
+            user_id = 'Unknown'
         # Prevent self-deletion
-        if user_to_delete == request.user:
+        if self.object == request.user:
             messages.error(request, _('You cannot delete your own account!'))
             return redirect(self.success_url)
         

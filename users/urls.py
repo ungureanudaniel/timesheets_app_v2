@@ -19,7 +19,7 @@ urlpatterns = [
     path('user/<int:pk>/update/', UserUpdateView.as_view(), name='user_update'),
     path('user/<int:pk>/delete/', UserDeleteView.as_view(), name='user_delete'),
     # path('password/<pk:id>/change_password/', CustomPasswordChangeView.as_view(), name='password_change'),
-    path('profile/<int:pk>/delete/', ProfileEditView.as_view(), name='user_delete'),
+#     path('profile/<int:pk>/delete/', ProfileEditView.as_view(), name='user_delete'),
     # password reset urls
     path('password_reset/', 
          auth_views.PasswordResetView.as_view(template_name='accounts/password_reset.html'), 

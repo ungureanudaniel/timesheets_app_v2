@@ -447,3 +447,175 @@ msgstr "Total Activități"
 
 msgid "Are you sure you want to delete this timesheet?"
 msgstr "Sunteți sigur că doriți să ștergeți aceste date?"
+
+#: users/templates/accounts/user_management.html:8
+msgid "User Management"
+msgstr "Gestionare Utilizatori"
+
+#: users/templates/accounts/user_management.html:9
+msgid "Manage system users and roles"
+msgstr "Gestionează utilizatorii și rolurile din sistem"
+
+#: users/templates/accounts/user_management.html:16
+msgid "Admins"
+msgstr "Administratori"
+
+#: users/templates/accounts/user_management.html:23
+msgid "Managers"
+msgstr "Manageri"
+
+#: users/templates/accounts/user_management.html:30
+msgid "Reporters"
+msgstr "Raportori"
+
+#: users/templates/accounts/user_management.html:38
+msgid "All Users"
+msgstr "Toți Utilizatorii"
+
+#: users/templates/accounts/user_management.html:41
+msgid "Add New User"
+msgstr "Adaugă Utilizator Nou"
+
+#: users/templates/accounts/user_management.html:48
+msgid "User"
+msgstr "Utilizator"
+
+#: users/templates/accounts/user_management.html:49
+msgid "Email"
+msgstr "Email"
+
+#: users/templates/accounts/user_management.html:50
+msgid "Role"
+msgstr "Rol"
+
+#: users/templates/accounts/user_management.html:51
+msgid "Status"
+msgstr "Status"
+
+#: users/templates/accounts/user_management.html:52
+msgid "Joined"
+msgstr "Înregistrat"
+
+#: users/templates/accounts/user_management.html:63
+msgid "You"
+msgstr "Tu"
+
+#: users/templates/accounts/user_management.html:78
+msgid "Active"
+msgstr "Activ"
+
+#: users/templates/accounts/user_management.html:78
+msgid "Inactive"
+msgstr "Inactiv"
+
+#: users/templates/accounts/user_management.html:105
+msgid "Previous"
+msgstr "Anterior"
+
+#: users/templates/accounts/user_management.html:110
+msgid "Page"
+msgstr "Pagina"
+
+#: users/templates/accounts/user_management.html:110
+msgid "of"
+msgstr "din"
+
+#: users/templates/accounts/user_management.html:115
+msgid "Next"
+msgstr "Următor"
+
+#: users/templates/accounts/user_management.html:123
+msgid "No users found"
+msgstr "Nu s-au găsit utilizatori"
+
+#: users/templates/accounts/user_management.html:124
+msgid "There are no users in the system."
+msgstr "Nu există utilizatori în sistem."
+
+#: users/templates/accounts/user_update.html:7
+msgid "Edit User"
+msgstr "Actualizare utilizator"
+
+#: users/templates/accounts/user_update.html:9
+msgid "Update user information"
+msgstr "Actualizare informații utilizator"
+
+#: users/templates/accounts/user_update.html:17
+msgid "Edit"
+msgstr "Editare"
+
+#: users/templates/accounts/user_update.html:35
+msgid "First Name"
+msgstr "Prenume"
+
+#: users/templates/accounts/user_update.html:49
+msgid "Last Name"
+msgstr "Nume de Familie"
+
+#: users/templates/accounts/user_update.html:83
+msgid "Update User"
+msgstr ""
+
+#: users/templates/accounts/user_update.html:95
+msgid "User Info"
+msgstr "Info User"
+
+#: users/templates/accounts/user_update.html:111
+msgid "Username:"
+msgstr "Nume user:"
+
+#: users/templates/accounts/user_update.html:112
+msgid "Joined:"
+msgstr ""
+
+#: users/templates/accounts/user_update.html:113
+msgid "Last Login:"
+msgstr "Ultima logare"
+
+#: users/templates/accounts/user_update.html:113
+msgid "Never"
+msgstr "Niciodată"
+
+#: users/templates/accounts/user_update.html:113
+msgid "Bio"
+msgstr "Bio"
+
+#: users/templates/accounts/user_update.html:113
+msgid "Profile Picture"
+msgstr "Fotografie de profil"
+
+#: users/templates/accounts/user_update.html:113
+msgid "Save Changes"
+msgstr "Salvare modificări"
+
+#: users/templates/accounts/user_update.html:113
+msgid "Recent Activity"
+msgstr "Activitate recentă"
+
+#: users/templates/accounts/user_update.html:113
+msgid "Remove user from system"
+msgstr "Ștergere utilizator din sistem"
+
+#: users/templates/accounts/user_update.html:113
+msgid "Confirm Deletion"
+msgstr "Confirmare ștergere"
+
+#: users/templates/accounts/user_delete.html:7
+msgid "Delete User"
+msgstr "Ștergere Utilizator"
+
+#: users/templates/accounts/user_delete.html:23
+msgid "Warning:"
+msgstr "Atenție:"
+
+#: users/templates/accounts/user_delete.html:24
+msgid "This action cannot be undone."
+msgstr "Această acțiune nu poate fi anulată."
+
+#: users/templates/accounts/user_delete.html:26
+msgid "Are you sure you want to delete this user?"
+msgstr "Sigur doriți să ștergeți acest utilizator?"
+
+#: users/templates/accounts/user_delete.html:47
+msgid "Yes, Delete User"
+msgstr "Da, Șterge Utilizator"

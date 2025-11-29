@@ -108,7 +108,7 @@ class UsernameEmailChangeForm(UserChangeForm):
             'placeholder': _('Enter last name'),
         })
         self.fields['email'].widget.attrs.update({
-            'class': 'form-control d-flex p-2 bd-highlight',
+            'class': 'form-control d-flex w-100 p-2 bd-highlight',
             'placeholder': _('Enter email'),
         })
 
@@ -183,6 +183,19 @@ class ManagerUserForm(forms.ModelForm):
             choice for choice in CustomUser.Role.choices 
             if choice[0] in ['REPORTER', 'MANAGER']
         ]
+        # Apply Bootstrap classes and custom styles to form fields
+        self.fields['first_name'].widget.attrs.update({
+            'class': 'form-control d-flex p-2 bd-highlight',
+            'placeholder': _('Enter first name'),
+        })
+        self.fields['last_name'].widget.attrs.update({
+            'class': 'form-control d-flex p-2 bd-highlight',
+            'placeholder': _('Enter last name'),
+        })
+        self.fields['email'].widget.attrs.update({
+            'class': 'form-control d-flex w-100 p-2 bd-highlight',
+            'placeholder': _('...'),
+        })
 
 
 class AdminUserForm(forms.ModelForm):
@@ -190,5 +203,36 @@ class AdminUserForm(forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = ['first_name', 'last_name', 'email', 'username', 'role', 'is_active', 'is_approved']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        instance = kwargs.get('instance')
+
+        if instance:
+            print(f"Editing user: {instance.username}")
+
+        # Managers can only assign REPORTER or MANAGER roles
+        self.fields['role'].choices = [
+            choice for choice in CustomUser.Role.choices 
+            if choice[0] in ['REPORTER', 'MANAGER']
+        ]
+        # Apply Bootstrap classes and custom styles to form fields
+        self.fields['username'].widget.attrs.update({
+            'class': 'form-control d-flex p-2 bd-highlight',
+            'placeholder': _('User name'),
+        })
+        self.fields['first_name'].widget.attrs.update({
+            'class': 'form-control d-flex p-2 bd-highlight',
+            'placeholder': _('Enter first name'),
+        })
+        self.fields['last_name'].widget.attrs.update({
+            'class': 'form-control d-flex p-2 bd-highlight',
+            'placeholder': _('Enter last name'),
+        })
+        self.fields['email'].widget.attrs.update({
+            'class': 'form-control d-flex w-100 p-2 bd-highlight',
+            'placeholder': _('...'),
+        })
 
 UserManagementForm = AdminUserForm
