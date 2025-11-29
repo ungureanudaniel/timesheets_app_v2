@@ -8,9 +8,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.INFO)
-logger.info("Logging is set up.")
-
 class CustomUserManager(BaseUserManager):
     """
     Custom manager where email is the unique identifier
@@ -18,11 +15,10 @@ class CustomUserManager(BaseUserManager):
     """
     def create_user(self, email, password=None, **extra_fields):
         """Create and save a regular user with the given email and password."""
-        # Normalize the email address
         if not email:
             raise ValueError(_('The Email field must be set'))
         email = self.normalize_email(email)
-        extra_fields.setdefault('is_active', True)  # optional default
+        extra_fields.setdefault('is_active', True)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -33,6 +29,7 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('role', CustomUser.Role.ADMIN)  # Auto-assign ADMIN role
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError(_('Superuser must have is_staff=True.'))
@@ -57,11 +54,24 @@ class CustomUser(AbstractUser):
     resume = models.FileField(upload_to='cv/', blank=True, null=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']  # only needed for createsuperuser
+    # Role field - CHOOSE ONE APPROACH: Either use this OR groups, not both
+    class Role(models.TextChoices):
+        REPORTER = 'REPORTER', _('Reporter')
+        MANAGER = 'MANAGER', _('Manager')
+        ADMIN = 'ADMIN', _('Admin')
+    
+    role = models.CharField(
+        max_length=20,
+        choices=Role.choices,
+        default=Role.REPORTER
+    )
 
-    objects = CustomUserManager()  # type: ignore[assignment]
-    # Permissions
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
+    objects = CustomUserManager()
+
+    # Groups and permissions (keep these for Django's permission system)
     groups = models.ManyToManyField(
         Group,
         verbose_name=_('groups'),
@@ -70,17 +80,16 @@ class CustomUser(AbstractUser):
             'The groups this user belongs to. A user will get all permissions '
             'granted to each of their groups.'
         ),
-        related_name="customuser_set",  # Add this line
-        related_query_name="customuser",  # Add this line
+        related_name="customuser_set",
+        related_query_name="customuser",
     )
-    # User Permissions
     user_permissions = models.ManyToManyField(
         Permission,
         verbose_name=_('user permissions'),
         blank=True,
         help_text=_('Specific permissions for this user.'),
-        related_name="customuser_set",  # Add this line
-        related_query_name="customuser",  # Add this line
+        related_name="customuser_set",
+        related_query_name="customuser",
     )
 
     @property
@@ -92,17 +101,48 @@ class CustomUser(AbstractUser):
     def get_full_name(self):
         """Official method for getting full name"""
         return self.full_name
-    
-    def assign_initial_group(self):
-        try:
-            group, created = Group.objects.get_or_create(name='REPORTER')  # Ensure the group exists
-            self.groups.add(group)  # Add user to the group
-            logger.debug(f"Assigned {self.email} to group 'REPORTER'.")
-        except Group.DoesNotExist:
-            logger.error("Group 'REPORTER' does not exist.")
 
+    # Role properties - FIXED: Check both role field AND superuser status
+    @property
+    def is_admin(self):
+        return self.role == self.Role.ADMIN or self.is_superuser
+    
+    @property
+    def is_manager(self):
+        return self.role == self.Role.MANAGER
+    
+    @property
+    def is_reporter(self):
+        return self.role == self.Role.REPORTER and not self.is_superuser
+
+    def assign_role_permissions(self):
+        """
+        Optional: Sync role field with groups for Django's permission system
+        Use this if you want to use Django's group-based permissions alongside your role field
+        """
+        # Remove from all role groups
+        self.groups.remove(*Group.objects.filter(name__in=['ADMIN', 'MANAGER', 'REPORTER']))
+        
+        # Add to role-specific group
+        group, created = Group.objects.get_or_create(name=self.role)
+        self.groups.add(group)
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        
+        # Auto-assign ADMIN role to superusers
+        if self.is_superuser and self.role != self.Role.ADMIN:
+            self.role = self.Role.ADMIN
+        
+        super().save(*args, **kwargs)
+        
+        # Optional: Sync with groups for permission system
+        self.assign_role_permissions()
+        
+        # Assign default REPORTER group to new regular users (optional)
+        if is_new and not self.groups.exists() and self.role == self.Role.REPORTER:
+            group, created = Group.objects.get_or_create(name='REPORTER')
+            self.groups.add(group)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
-
-    
+        return f"{self.first_name} {self.last_name}" if self.first_name or self.last_name else self.email

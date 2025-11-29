@@ -100,129 +100,129 @@ $(document).ready(function() {
     //     $('#selectedDate').val(newDate);
     // });
 });
-// $(document).ready(function () {
-//     // Define Romanian locale for Moment.js
-//     moment.defineLocale('ro', {
-//         months: 'Ianuarie_Februarie_Martie_Aprilie_Mai_Iunie_Iulie_August_Septebrie_Octombrie_Noiembrie_Decembrie'.split('_'),
-//         monthsShort: 'Ian_Feb_Mar_Apr_Mai_Iun_Iul_Aug_Sep_Oct_Noi_Dec'.split('_'),
-//         weekdays: 'Duminică_Luni_Marți_Miercuri_Joi_Vineri_Sâmbătă'.split('_'),
-//         weekdaysShort: 'Dum_Lun_Mar_Mie_Joi_Vin_Sâm'.split('_'),
-//         weekdaysMin: 'Du_Lu_Ma_Mi_Jo_Vi_Sâ'.split('_'),
-//         week: {
-//             dow: 1, // Monday is the first day of the week.
-//             doy: 4  // The week that contains Jan 4th is the first week of the year.
-//         },
-//         // Add other locale settings as needed
-//     });
-//     var calendar = $('#calendar').fullCalendar({
-//         header: {
-//             left: 'prev,next today',
-//             center: 'title',
-//             right: 'month,agendaWeek,agendaDay'
-//         },
-//         locale: 'currentLocale',
-//         events: '/get_timesheets/',
-//         selectable: true,
-//         selectHelper: true,
-//         editable: true,
-//         eventLimit: true,
-//         // When a date is selected, open the modal
-//         select: function (start, end, allDay) {
-//             var date = $.fullCalendar.formatDate(start, "DD-MM-YYYY");
+$(document).ready(function () {
+    // Define Romanian locale for Moment.js
+    moment.defineLocale('ro', {
+        months: 'Ianuarie_Februarie_Martie_Aprilie_Mai_Iunie_Iulie_August_Septebrie_Octombrie_Noiembrie_Decembrie'.split('_'),
+        monthsShort: 'Ian_Feb_Mar_Apr_Mai_Iun_Iul_Aug_Sep_Oct_Noi_Dec'.split('_'),
+        weekdays: 'Duminică_Luni_Marți_Miercuri_Joi_Vineri_Sâmbătă'.split('_'),
+        weekdaysShort: 'Dum_Lun_Mar_Mie_Joi_Vin_Sâm'.split('_'),
+        weekdaysMin: 'Du_Lu_Ma_Mi_Jo_Vi_Sâ'.split('_'),
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 4  // The week that contains Jan 4th is the first week of the year.
+        },
+        // Add other locale settings as needed
+    });
+    var calendar = $('#calendar').fullCalendar({
+        header: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'month,agendaWeek,agendaDay'
+        },
+        locale: 'currentLocale',
+        events: '/get_timesheets/',
+        selectable: true,
+        selectHelper: true,
+        editable: true,
+        eventLimit: true,
+        // When a date is selected, open the modal
+        select: function (start, end, allDay) {
+            var date = $.fullCalendar.formatDate(start, "DD-MM-YYYY");
 
-//             // Set the date in the hidden input field in the modal form
-//             $('#modalDate').val(date);
+            // Set the date in the hidden input field in the modal form
+            $('#modalDate').val(date);
 
-//             // Update modal title (optional)
-//             $('#timesheetModalLabel').text('Enter Timesheet Data for ' + date);
+            // Update modal title (optional)
+            $('#timesheetModalLabel').text('Enter Timesheet Data for ' + date);
             
-//             // Show the modal
-//             $('#timesheetModal').modal('show');
-//         },
-//             error: function() {
-//                 alert('Failed to load the fuckin modal');
-//         },
-//         eventResize: function (event) {
-//             var start = $.fullCalendar.formatDate(event.start, "Y-MM-DD HH:mm:ss");
-//             var end = $.fullCalendar.formatDate(event.end, "Y-MM-DD HH:mm:ss");
-//             var title = event.title;
-//             var id = event.id;
-//             $.ajax({
-//                 type: "GET",
-//                 url: '/update',
-//                 data: {'title': title, 'start': start, 'end': end, 'id': id},
-//                 dataType: "json",
-//                 success: function (data) {
-//                     calendar.fullCalendar('refetchEvents');
-//                     alert('Event Update');
-//                 },
-//                 error: function (data) {
-//                     alert('There is a problem!!!');
-//                 }
-//             });
-//         },
+            // Show the modal
+            $('#timesheetModal').modal('show');
+        },
+            error: function() {
+                alert('Failed to load the fuckin modal');
+        },
+        eventResize: function (event) {
+            var start = $.fullCalendar.formatDate(event.start, "Y-MM-DD HH:mm:ss");
+            var end = $.fullCalendar.formatDate(event.end, "Y-MM-DD HH:mm:ss");
+            var title = event.title;
+            var id = event.id;
+            $.ajax({
+                type: "GET",
+                url: '/update',
+                data: {'title': title, 'start': start, 'end': end, 'id': id},
+                dataType: "json",
+                success: function (data) {
+                    calendar.fullCalendar('refetchEvents');
+                    alert('Event Update');
+                },
+                error: function (data) {
+                    alert('There is a problem!!!');
+                }
+            });
+        },
 
-//         eventDrop: function (event) {
-//             var start = $.fullCalendar.formatDate(event.start, "Y-MM-DD HH:mm:ss");
-//             var end = $.fullCalendar.formatDate(event.end, "Y-MM-DD HH:mm:ss");
-//             var title = event.title;
-//             var id = event.id;
-//             $.ajax({
-//                 type: "GET",
-//                 url: '/update',
-//                 data: {'title': title, 'start': start, 'end': end, 'id': id},
-//                 dataType: "json",
-//                 success: function (data) {
-//                     calendar.fullCalendar('refetchEvents');
-//                     alert('Event Update');
-//                 },
-//                 error: function (data) {
-//                     alert('There is a problem!!!');
-//                 }
-//             });
-//         },
+        eventDrop: function (event) {
+            var start = $.fullCalendar.formatDate(event.start, "Y-MM-DD HH:mm:ss");
+            var end = $.fullCalendar.formatDate(event.end, "Y-MM-DD HH:mm:ss");
+            var title = event.title;
+            var id = event.id;
+            $.ajax({
+                type: "GET",
+                url: '/update',
+                data: {'title': title, 'start': start, 'end': end, 'id': id},
+                dataType: "json",
+                success: function (data) {
+                    calendar.fullCalendar('refetchEvents');
+                    alert('Event Update');
+                },
+                error: function (data) {
+                    alert('There is a problem!!!');
+                }
+            });
+        },
 
-//         eventClick: function (event) {
-//             if (confirm("Are you sure you want to remove it?")) {
-//                 var id = event.id;
-//                 $.ajax({
-//                     type: "GET",
-//                     url: '/remove',
-//                     data: {'id': id},
-//                     dataType: "json",
-//                     success: function (data) {
-//                         calendar.fullCalendar('refetchEvents');
-//                         alert('Event Removed');
-//                     },
-//                     error: function (data) {
-//                         alert('There is a problem!!!');
-//                     }
-//                 });
+        eventClick: function (event) {
+            if (confirm("Are you sure you want to remove it?")) {
+                var id = event.id;
+                $.ajax({
+                    type: "GET",
+                    url: '/remove',
+                    data: {'id': id},
+                    dataType: "json",
+                    success: function (data) {
+                        calendar.fullCalendar('refetchEvents');
+                        alert('Event Removed');
+                    },
+                    error: function (data) {
+                        alert('There is a problem!!!');
+                    }
+                });
+            }
+        },
+
+    });
+});
+// $(document).on('submit', '#timesheetForm', function(event) {
+//     event.preventDefault();  // Prevent the default form submission
+
+//     var formData = $(this).serialize();  // Get the form data
+
+//     $.ajax({
+//         url: $(this).attr('action'),  // This will be '/create_timesheet/'
+//         type: 'POST',
+//         data: formData,
+//         success: function(response) {
+//             if (response.status === 'success') {
+//                 $('#timesheetModal').modal('hide');  // Hide the modal
+//                 alert('Timesheet created successfully!');  // Optionally show a success message
+//                 $('#calendar').fullCalendar('refetchEvents');  // Refresh the calendar events
+//             } else {
+//                 alert(response.message);  // Show error message if any
 //             }
 //         },
-
+//         error: function() {
+//             alert('An error occurred while creating the timesheet.');
+//         }
 //     });
 // });
-// // $(document).on('submit', '#timesheetForm', function(event) {
-// //     event.preventDefault();  // Prevent the default form submission
-
-// //     var formData = $(this).serialize();  // Get the form data
-
-// //     $.ajax({
-// //         url: $(this).attr('action'),  // This will be '/create_timesheet/'
-// //         type: 'POST',
-// //         data: formData,
-// //         success: function(response) {
-// //             if (response.status === 'success') {
-// //                 $('#timesheetModal').modal('hide');  // Hide the modal
-// //                 alert('Timesheet created successfully!');  // Optionally show a success message
-// //                 $('#calendar').fullCalendar('refetchEvents');  // Refresh the calendar events
-// //             } else {
-// //                 alert(response.message);  // Show error message if any
-// //             }
-// //         },
-// //         error: function() {
-// //             alert('An error occurred while creating the timesheet.');
-// //         }
-// //     });
-// // });

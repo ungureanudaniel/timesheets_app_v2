@@ -3,7 +3,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.views.static import serve
-from .views import CredentialsEditView, CustomLogoutView, CustomSignupView, CustomLoginView, CustomPasswordChangeView, ProfileView, ProfileEditView, UserListView
+from .views import CredentialsEditView, CustomLogoutView, UserUpdateView, UserDeleteView, CustomSignupView, CustomLoginView, CustomPasswordChangeView, ProfileView, ProfileEditView, UserListView
 from django.utils.translation import gettext_lazy as _
 
 app_name = 'users'
@@ -16,6 +16,8 @@ urlpatterns = [
     path('profile/<int:pk>/edit/', ProfileEditView.as_view(), name='profile_edit'),
     path('profile/<int:pk>/change_username/', CredentialsEditView.as_view(), name='credentials_change'),
     path('user_management/', UserListView.as_view(), name='user_management'),
+    path('user/<int:pk>/update/', UserUpdateView.as_view(), name='user_update'),
+    path('user/<int:pk>/delete/', UserDeleteView.as_view(), name='user_delete'),
     # path('password/<pk:id>/change_password/', CustomPasswordChangeView.as_view(), name='password_change'),
     path('profile/<int:pk>/delete/', ProfileEditView.as_view(), name='user_delete'),
     # password reset urls

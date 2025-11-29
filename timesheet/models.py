@@ -51,14 +51,13 @@ class Timesheet(models.Model):
             return f'timesheet_images/user_{self.user.pk}/{self.date}/{filename}'
 
     def worked_hours(self):
+        """Calculate worked hours based on start and end time"""
         if self.start_time and self.end_time:
+            # Convert to datetime objects for calculation
             start_dt = timezone.datetime.combine(self.date, self.start_time)
             end_dt = timezone.datetime.combine(self.date, self.end_time)
             
-            # Handle overnight shifts
-            if end_dt < start_dt:
-                end_dt += timezone.timedelta(days=1)
-                
+            # Calculate difference in hours
             duration = end_dt - start_dt
             hours = duration.total_seconds() / 3600
             return round(hours, 2)

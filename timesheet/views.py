@@ -1,9 +1,10 @@
+from collections import defaultdict
 import json
 from django import forms
 from django.urls import reverse_lazy
 from django.views.generic import ListView
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from django.forms import ValidationError
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -94,9 +95,46 @@ class TimesheetListView(LoginRequiredMixin, generic.View):
 class GetTimesheetsView(LoginRequiredMixin, generic.View):
     def get(self, request):
         user = request.user
-        calendar_events = get_user_timesheets(user)  # Use the helper function
+        month = request.GET.get('month')
+        year = request.GET.get('year')
 
-        return JsonResponse(calendar_events, safe=False)  # Return JSON response
+        # Filter by month and year if provided
+        if month and year:
+            start_date = date(int(year), int(month), 1)
+            end_date = (start_date + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+            timesheets = Timesheet.objects.filter(
+                user=user,
+                date__range=[start_date, end_date]
+            ).select_related('activity', 'fundssource')
+        else:
+            # Default to current month
+            today = timezone.now().date()
+            start_date = today.replace(day=1)
+            end_date = (start_date + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+            timesheets = Timesheet.objects.filter(
+                user=user,
+                date__range=[start_date, end_date]
+            ).select_related('activity', 'fundssource')
+
+        # Serialize timesheet data
+        serialized_timesheets = []
+        for timesheet in timesheets:
+            serialized_timesheets.append({
+                'id': timesheet.id,
+                'date': timesheet.date.isoformat(),
+                'activity': {
+                    'name': timesheet.activity.name,
+                },
+                'start_time': timesheet.start_time.isoformat() if timesheet.start_time else None,
+                'end_time': timesheet.end_time.isoformat() if timesheet.end_time else None,
+                'worked_hours': timesheet.worked_hours(),
+                'description': timesheet.description,
+                'fundssource': {
+                    'name': timesheet.fundssource.name if timesheet.fundssource else None,
+                }
+            })
+        
+        return JsonResponse(serialized_timesheets, safe=False)
 
 
 # new timesheet

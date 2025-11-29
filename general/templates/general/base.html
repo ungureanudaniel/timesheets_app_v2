@@ -58,7 +58,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'home' %}">{% trans 'Home' %}</a>
                     </li>
-                    {% if user.is_staff or user.is_superuser %}
+                    {% if user.is_staff or user.is_superuser or user.is_admin or user.is_manager %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'dashboard' %}">{% trans 'Administration' %}</a>
                     </li>

@@ -168,3 +168,27 @@ class ProfileChangeForm(forms.ModelForm):
         if commit:
             user_profile.save()
         return user_profile
+
+
+class ManagerUserForm(forms.ModelForm):
+    """Form for managers to edit users (limited fields)"""
+    class Meta:
+        model = CustomUser
+        fields = ['first_name', 'last_name', 'email', 'role', 'is_active']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Managers can only assign REPORTER or MANAGER roles
+        self.fields['role'].choices = [
+            choice for choice in CustomUser.Role.choices 
+            if choice[0] in ['REPORTER', 'MANAGER']
+        ]
+
+
+class AdminUserForm(forms.ModelForm):
+    """Form for admins to edit users (all fields)"""
+    class Meta:
+        model = CustomUser
+        fields = ['first_name', 'last_name', 'email', 'username', 'role', 'is_active', 'is_approved']
+
+UserManagementForm = AdminUserForm
