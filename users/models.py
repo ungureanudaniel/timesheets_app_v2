@@ -144,5 +144,13 @@ class CustomUser(AbstractUser):
             group, created = Group.objects.get_or_create(name='REPORTER')
             self.groups.add(group)
 
+    def save(self, *args, **kwargs):
+        # Fix role field before saving
+        if hasattr(self.role, 'value'):
+            self.role = self.role.value
+        elif not isinstance(self.role, str):
+            self.role = str(self.role)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.first_name} {self.last_name}" if self.first_name or self.last_name else self.email
