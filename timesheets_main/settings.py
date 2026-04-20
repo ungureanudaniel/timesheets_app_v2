@@ -11,11 +11,6 @@ pymysql.install_as_MySQLdb()
 
 DatabaseWrapper.display_name = property(lambda self: "MySQL")
 
-from django.db.backends.base.base import BaseDatabaseWrapper
-
-# This forces Django to ignore the MariaDB version requirement
-BaseDatabaseWrapper.check_database_version_supported = lambda self: None
-
 load_dotenv(verbose=True)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
