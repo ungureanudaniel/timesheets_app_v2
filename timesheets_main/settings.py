@@ -5,6 +5,9 @@ from django.contrib.messages import constants as messages
 from django.utils.translation import gettext_lazy as _
 from django.urls import reverse_lazy
 from mysql.connector.django.base import DatabaseWrapper
+import pymysql
+
+pymysql.install_as_MySQLdb()
 
 DatabaseWrapper.display_name = property(lambda self: "MySQL")
 
@@ -141,6 +144,7 @@ DATABASES = {
         'OPTIONS': {
             'autocommit': True,
             'charset': 'utf8mb4',
+            'use_unicode': True,
             'init_command': "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
         },
     }
