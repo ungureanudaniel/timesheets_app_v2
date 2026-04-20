@@ -67,9 +67,27 @@ class PALActivitiesListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     def test_func(self):
         return self.request.user.is_staff or self.request.user.is_superuser
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        all_activities = Activity.objects.all()
+        sorted_list = natsorted(all_activities, key=lambda x: x.code)
+        
+        # manually set up pagination since we are sorting the list in memory with natsort
+        paginator = Paginator(sorted_list, self.paginate_by)
+        page_number = self.request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        context['activities'] = page_obj  # This matches context_object_name
+        context['page_obj'] = page_obj
+        context['is_paginated'] = page_obj.has_other_pages()
+        
+        return context
+
     def get_queryset(self):
-        qs = Activity.objects.all()
-        return natsorted(qs, key=lambda x: x.code)  # Sort by code using natsort for natural sorting
+        # return an empty list here because we are handling the 
+        # data logic entirely in get_context_data now.
+        return []
 
 class PALActivitiesUploadView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """
