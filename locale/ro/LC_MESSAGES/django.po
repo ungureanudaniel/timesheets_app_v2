@@ -619,3 +619,186 @@ msgstr "Sigur doriți să ștergeți acest utilizator?"
 #: users/templates/accounts/user_delete.html:47
 msgid "Yes, Delete User"
 msgstr "Da, Șterge Utilizator"
+
+msgid "Add New Timesheet"
+msgstr "Adaugă pontaj nou"
+
+msgid "Enter your activity details and upload supporting images"
+msgstr "Introdu detaliile activității și încarcă imagini doveditoare"
+
+msgid "Activity Information"
+msgstr "Informații activitate"
+
+msgid "Attachments"
+msgstr "Anexe"
+
+msgid "Upload Images"
+msgstr "Încarcă imagini"
+
+msgid "You can select multiple photos at once."
+msgstr "Poți selecta mai multe fotografii deodată."
+
+msgid "Back to List"
+msgstr "Înapoi la listă"
+
+msgid "All Timesheet Entries"
+msgstr "Toate înregistrările de pontaj"
+
+msgid "Images"
+msgstr "Imagini"
+
+msgid "No timesheets found"
+msgstr "Nu s-au găsit pontaje"
+
+msgid "Create Your First Timesheet"
+msgstr "Creează primul tău pontaj"
+
+msgid "Confirm Delete"
+msgstr "Confirmă ștergerea"
+
+msgid "Are you sure?"
+msgstr "Ești sigur?"
+
+msgid "You are about to delete the following entry:"
+msgstr "Ești pe cale să ștergi următoarea înregistrare:"
+
+msgid "Yes, Delete Permanently"
+msgstr "Da, șterge definitiv"
+
+msgid "Cancel and Go Back"
+msgstr "Anulează și întoarce-te"
+
+msgid "Update your timesheet entry"
+msgstr "Actualizează înregistrarea de pontaj"
+
+msgid "Current Images"
+msgstr "Imagini actuale"
+
+msgid "Are you sure you want to delete this image?"
+msgstr "Ești sigur că vrei să ștergi această imagine?"
+
+msgid "No images attached to this timesheet."
+msgstr "Nu există imagini atașate acestui pontaj."
+
+msgid "Add New Images"
+msgstr "Adaugă imagini noi"
+
+msgid "You can select multiple images to upload."
+msgstr "Poți selecta mai multe imagini pentru încărcare."
+
+msgid "Funds source"
+msgstr "Surse de finanțare"
+
+msgid "Analyze or add funds source"
+msgstr "Analizează sau adaugă surse de finanțare"
+
+msgid "Add new sources of funds"
+msgstr "Adaugă surse noi de finanțare"
+
+msgid "Funds Sources"
+msgstr "Surse de fonduri"
+
+msgid "Name"
+msgstr "Nume"
+
+msgid "No funds sources found."
+msgstr "Nu au fost găsite surse de finanțare."
+
+msgid "Activity Analytics"
+msgstr "Analiza activității"
+
+msgid "Analyze the activities and performance of your team"
+msgstr "Analizează activitățile și performanța echipei tale"
+
+msgid "Dashboard Menu"
+msgstr "Meniu Panou Control"
+
+msgid "Team Worked Hours"
+msgstr "Ore lucrate de echipă"
+
+msgid "Yearly Stats"
+msgstr "Statistici anuale"
+
+msgid "Team Dashboard"
+msgstr "Panou de control echipă"
+
+msgid "Worked Hours per Team Member (Current Month)"
+msgstr "Ore lucrate per membru de echipă (Luna curentă)"
+
+msgid "Worked Hours"
+msgstr "Ore lucrate"
+
+msgid "Holidays"
+msgstr "Concedii de odihnă"
+
+msgid "Sick Leaves"
+msgstr "Concedii medicale"
+
+msgid "Weekend Hours"
+msgstr "Ore de weekend"
+
+msgid "Yearly Worked Hours, Holidays, Sick Leaves, Weekend Hours"
+msgstr "Ore lucrate anual, Concedii, Concedii medicale, Ore weekend"
+
+msgid "Analytics"
+msgstr "Analiză"
+
+msgid "Activity program"
+msgstr "Program de activitate"
+
+msgid "Annual WorkPlan"
+msgstr "Plan anual de lucru"
+
+msgid "Users & Roles"
+msgstr "Utilizatori & Roluri"
+
+msgid "Activity Report"
+msgstr "Raport de activitate"
+
+msgid "User Information"
+msgstr "Informații utilizator"
+
+msgid "Full Name"
+msgstr "Nume complet"
+
+msgid "Short self description"
+msgstr "Scurtă descriere"
+
+msgid "Curriculum Vitae"
+msgstr "Curriculum Vitae"
+
+msgid "Edit Profile"
+msgstr "Editează profilul"
+
+msgid "No recent activity."
+msgstr "Nicio activitate recentă."
+
+msgid "Edit User Profile"
+msgstr "Editare profil utilizator"
+
+msgid "Edit Profile Information"
+msgstr "Editează informațiile profilului"
+
+msgid "Email Address"
+msgstr "Adresă de e-mail"
+
+msgid "Curriculum Vitae (PDF)"
+msgstr "Curriculum Vitae (PDF)"
+
+msgid "No bio available."
+msgstr "Nicio descriere disponibilă."
+
+msgid "No resume uploaded."
+msgstr "Niciun CV încărcat."
+
+msgid "Profile Photo"
+msgstr "Fotografie de profil"
+
+msgid "Edit your bio"
+msgstr "Editează descrierea ta"
+
+msgid "Profile Password"
+msgstr "Parolă profil"
+
+msgid "Attach CV (PDF)"
+msgstr "Atașează CV (PDF)"
