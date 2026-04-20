@@ -17,6 +17,19 @@ from django.contrib import messages
 from natsort import natsorted
 import openpyxl
 
+def sanitize_romanian(text):
+    if not text:
+        return ""
+    replacements = {
+        'ă': 'a', 'Ă': 'A',
+        'ș': 's', 'Ș': 'S',
+        'ț': 't', 'Ț': 'T',
+        'â': 'a', 'Â': 'A',
+        'î': 'i', 'Î': 'I'
+    }
+    for char, rep in replacements.items():
+        text = text.replace(char, rep)
+    return text
 
 # main admin dashboard view.
 def dashboard(request):
@@ -111,7 +124,7 @@ class PALActivitiesUploadView(LoginRequiredMixin, UserPassesTestMixin, CreateVie
                 code_index = headers.index('code')
                 name_index = headers.index('name')
 
-                # Using a transaction is faster and safer for bulk updates
+                # transaction
                 from django.db import transaction
                 with transaction.atomic():
                     for row in sheet.iter_rows(min_row=2, values_only=True):
@@ -119,7 +132,7 @@ class PALActivitiesUploadView(LoginRequiredMixin, UserPassesTestMixin, CreateVie
                             continue
 
                         code_val = row[code_index]
-                        name_val = row[name_index]
+                        name_val = sanitize_romanian(row[name_index])
 
                         if code_val:
                             # This handles both Creating and Updating
