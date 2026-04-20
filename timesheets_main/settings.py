@@ -7,10 +7,6 @@ from django.urls import reverse_lazy
 from mysql.connector.django.base import DatabaseWrapper
 import pymysql
 
-pymysql.install_as_MySQLdb()
-
-DatabaseWrapper.display_name = property(lambda self: "MySQL")
-
 load_dotenv(verbose=True)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
