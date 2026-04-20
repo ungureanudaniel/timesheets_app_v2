@@ -23,6 +23,7 @@ pandas
 pillow==11.2.1
 pymemcache==4.0.0
 python-dotenv==1.1.0
+natsort==8.4.0
 python-memcached==1.62
 pytz==2025.2
 reportlab==4.4.2
