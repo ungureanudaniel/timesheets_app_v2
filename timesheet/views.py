@@ -4,7 +4,8 @@ from django import forms
 from django.urls import reverse_lazy
 from django.views.generic import ListView
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from datetime import timedelta, datetime, timezone
+from datetime import timedelta, datetime
+from django.utils import timezone
 from django.forms import ValidationError
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -67,28 +68,23 @@ def get_user_timesheets(user):
     return calendar_events
 
 
-class TimesheetListView(LoginRequiredMixin, generic.View):
-    def get(self, request):
+class TimesheetListView(LoginRequiredMixin, ListView):
+    model = Timesheet
+    template_name = "timesheet/timesheets_list.html"
+    context_object_name = "timesheets"
+    paginate_by = 20
+
+    def get_queryset(self):
         # Get all timesheets for the user, ordered by date (newest first)
-        timesheets_list = Timesheet.objects.filter(user=request.user).select_related('activity', 'fundssource').prefetch_related('timesheet_images').order_by('-date', '-created_at')
-        
-        # Simple pagination - 20 items per page
-        paginator = Paginator(timesheets_list, 20)
-        page = request.GET.get('page')
-        
-        try:
-            timesheets = paginator.page(page)
-        except PageNotAnInteger:
-            timesheets = paginator.page(1)
-        except EmptyPage:
-            timesheets = paginator.page(paginator.num_pages)
-        
-        context = {
-            "timesheets": timesheets,
-            "form": TimesheetForm(),  # Form for the modal
-        }
-        
-        return render(request, "timesheet/timesheets_list.html", context)
+        return Timesheet.objects.filter(user=self.request.user)\
+            .select_related('activity', 'fundssource')\
+            .prefetch_related('timesheet_images')\
+            .order_by('-date', '-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form"] = TimesheetForm()
+        return context
 
 
 # this function uses the helper function to retrieve timesheet data and communicates with Ajax module in main.js
@@ -100,7 +96,7 @@ class GetTimesheetsView(LoginRequiredMixin, generic.View):
 
         # Filter by month and year if provided
         if month and year:
-            start_date = date(int(year), int(month), 1)
+            start_date = datetime.date(int(year), int(month), 1)
             end_date = (start_date + timedelta(days=32)).replace(day=1) - timedelta(days=1)
             timesheets = Timesheet.objects.filter(
                 user=user,
@@ -139,7 +135,7 @@ class GetTimesheetsView(LoginRequiredMixin, generic.View):
 
 # new timesheet
 class CreateTimesheetView(generic.CreateView):
-    template_name = "modals/create_timesheets.html"
+    template_name = "timesheet/create_timesheets.html"
     form_class = TimesheetForm
 
     def get(self, request):
@@ -147,6 +143,10 @@ class CreateTimesheetView(generic.CreateView):
         form = TimesheetForm(initial={'date': clicked_date})
 
         return render(request, self.template_name, {'form': form})
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user # Force the owner to be the logged-in user
+        return super().form_valid(form)
 
     def post(self, request):
         form = TimesheetForm(request.POST)
@@ -205,8 +205,9 @@ class UpdateTimesheetView(LoginRequiredMixin, generic.UpdateView):
 
 class DeleteTimesheetView(LoginRequiredMixin, generic.DeleteView):
     model = Timesheet
-    template_name = 'timesheet/delete_timesheets.html'  # Regular page template
+    template_name = 'timesheet/delete_confirm.html' 
     success_url = reverse_lazy('timesheet_list')
-    
+
     def get_queryset(self):
+        # Security: Only allow users to delete their own entries
         return Timesheet.objects.filter(user=self.request.user)

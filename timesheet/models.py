@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.utils import timezone
 from django.db import models
 from django.conf import settings
@@ -51,16 +53,16 @@ class Timesheet(models.Model):
             return f'timesheet_images/user_{self.user.pk}/{self.date}/{filename}'
 
     def worked_hours(self):
-        """Calculate worked hours based on start and end time"""
         if self.start_time and self.end_time:
-            # Convert to datetime objects for calculation
             start_dt = timezone.datetime.combine(self.date, self.start_time)
             end_dt = timezone.datetime.combine(self.date, self.end_time)
             
-            # Calculate difference in hours
+            if end_dt < start_dt:
+                # Handle overnight shift: add 1 day to end_dt
+                end_dt += timedelta(days=1)
+                
             duration = end_dt - start_dt
-            hours = duration.total_seconds() / 3600
-            return round(hours, 2)
+            return round(duration.total_seconds() / 3600, 2)
         return 0
 
     # This method is used to set the upload path for documents associated with the timesheet
@@ -72,7 +74,7 @@ class TimesheetImage(models.Model):
     This class creates db tables for images associated with timesheets
     """
     timesheet = models.ForeignKey(Timesheet, related_name='timesheet_images', on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='timesheet_images/')  # Simpler upload path
+    image = models.ImageField(upload_to='timesheet_images/') 
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

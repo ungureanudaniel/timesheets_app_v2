@@ -5,7 +5,6 @@
 {% block title %}{% trans 'Timesheet List' %}{% endblock %}
 
 {% block content %}
-<!-- Header -->
 <div class="header">
     <div class="container">
         <h1>{% trans 'Timesheets' %}</h1>
@@ -14,19 +13,18 @@
     </div>
 </div>
 
-<div class="container mt-4">
-
-    <!-- Timesheet List -->
+<div class="container mt-4 mb-4">
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="mb-0">{% trans 'All Timesheet Entries' %}</h4>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTimesheetModal">
+            <a href="{% url 'create_timesheet' %}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> {% trans 'Add New Timesheet' %}
-            </button>
+            </a>
         </div>
+        
         <div class="card-body">
             {% if timesheets %}
-                <p>{% trans "Found" %} {{ timesheets.paginator.count }} {% trans "timesheet(s)" %}</p>
+                <p>{% trans "Found" %} {{ page_obj.paginator.count }} {% trans "timesheet(s)" %}</p>
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
@@ -51,30 +49,18 @@
                                 <td>{{ timesheet.fundssource.name|default:"-" }}</td>
                                 <td>{{ timesheet.description|default:"-" }}</td>
                                 <td>
-                                    {% with image_count=timesheet.timesheet_images.count %}
+                                    {% with image_count=timesheet.timesheet_images.all|length %}
                                         {% if image_count > 0 %}
-                                        <a href="{% url 'timesheet_images' timesheet.id %}" 
-                                           class="badge bg-info text-decoration-none"
-                                           title="{% trans 'View attached images' %}">
-                                            <i class="fas fa-images"></i> {{ image_count }}
-                                        </a>
-                                        {% else %}
-                                        <span class="text-muted">-</span>
-                                        {% endif %}
+                                            <a href="{% url 'timesheet_images' timesheet.id %}" class="badge bg-info text-decoration-none">
+                                                <i class="fas fa-images"></i> {{ image_count }}
+                                            </a>
+                                        {% else %}<span class="text-muted">-</span>{% endif %}
                                     {% endwith %}
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <!-- Edit Button -->
-                                        <a href="{% url 'update_timesheet' timesheet.id %}" class="btn btn-primary" title="{% trans 'Edit' %}">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        
-                                        <!-- Delete Button -->
-                                        <a href="{% url 'delete_timesheet' timesheet.id %}" class="btn btn-danger" title="{% trans 'Delete' %}"
-                                           onclick="return confirm('{% trans 'Are you sure you want to delete this timesheet?' %}');">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
+                                        <a href="{% url 'update_timesheet' timesheet.id %}" class="btn btn-primary"><i class="fas fa-edit"></i></a>
+                                        <a href="{% url 'delete_timesheet' timesheet.id %}" class="btn btn-danger"><i class="fas fa-trash"></i></a>
                                     </div>
                                 </td>
                             </tr>
@@ -82,45 +68,18 @@
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Simple Pagination -->
-                {% if timesheets.has_other_pages %}
-                <nav>
-                    <ul class="pagination justify-content-center">
-                        {% if timesheets.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ timesheets.previous_page_number }}">{% trans 'Previous' %}</a>
-                        </li>
-                        {% endif %}
-                        
-                        <li class="page-item active">
-                            <span class="page-link">Page {{ timesheets.number }} of {{ timesheets.paginator.num_pages }}</span>
-                        </li>
-                        
-                        {% if timesheets.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ timesheets.next_page_number }}">{% trans 'Next' %}</a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-
             {% else %}
-            <div class="text-center py-5">
-                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
-                <h4>{% trans 'No timesheets found' %}</h4>
-                <p class="text-muted">{% trans 'You haven\'t created any timesheets yet.' %}</p>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTimesheetModal">
-                    <i class="fas fa-plus"></i> {% trans 'Create Your First Timesheet' %}
-                </button>
-            </div>
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <h4>{% trans 'No timesheets found' %}</h4>
+                    <a href="{% url 'create_timesheet' %}" class="btn btn-primary">
+                        {% trans 'Create Your First Timesheet' %}
+                    </a>
+                </div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<!-- Include Create Modal Only (since we're using direct URLs for edit/delete) -->
-{% include 'modals/create_timesheets.html' with form=form %}
 
 {% endblock %}

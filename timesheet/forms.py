@@ -5,9 +5,6 @@ from django.utils.translation import gettext_lazy as _
 
 
 class TimesheetForm(forms.ModelForm):
-    """Form for creating and updating timesheets."""
-
-    # Add a date field with today as default
     date = forms.DateField(
         widget=forms.DateInput(attrs={
             'type': 'date', 
@@ -19,21 +16,19 @@ class TimesheetForm(forms.ModelForm):
 
     class Meta:
         model = Timesheet
-        fields = '__all__'
-        # fields = ['fundssource', 'date', 'start_time', 'end_time', 'activity', 'description']
+        # Explicitly excluded 'user' so the form doesn't fail validation 
+        # when the user field is missing from the POST data
+        fields = ['fundssource', 'date', 'start_time', 'end_time', 'activity', 'description']
         widgets = {
-            'fundssource': forms.Select(attrs={'class': 'form-control', 'placeholder': _('Choose funding source')}),
+            'fundssource': forms.Select(attrs={'class': 'form-control'}),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'activity': forms.Select(attrs={'class': 'form-control', 'placeholder': _('Choose activity')}),
-            'description': forms.TextInput(attrs={'class': 'form-control timesheet-description', 'rows': 4, 'placeholder': _('Describe activity')}), }
+            'activity': forms.Select(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}), 
+        }
 
-    def __init__(self, *args, selected_date=None, **kwargs):
+    def __init__(self, *args, **kwargs):
+        selected_date = kwargs.pop('selected_date', None)
         super().__init__(*args, **kwargs)
         if selected_date:
-            # Set initial value for the date field
             self.fields['date'].initial = selected_date
-
-        # If editing an existing timesheet, use its date
-        if self.instance and self.instance.pk:
-            self.fields['date'].initial = self.instance.date

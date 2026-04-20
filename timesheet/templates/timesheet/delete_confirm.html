@@ -1,0 +1,44 @@
+{% extends 'general/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans 'Confirm Delete' %}{% endblock %}
+
+{% block content %}
+<div class="header">
+    <div class="container">
+        <h1>{% trans 'Delete Timesheet' %}</h1>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">{% trans 'Are you sure?' %}</h4>
+                </div>
+                <div class="card-body">
+                    <p>{% trans 'You are about to delete the following entry:' %}</p>
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item"><strong>{% trans 'Activity' %}:</strong> {{ object.activity.name }}</li>
+                        <li class="list-group-item"><strong>{% trans 'Date' %}:</strong> {{ object.date|date:"d M Y" }}</li>
+                        <li class="list-group-item"><strong>{% trans 'Description' %}:</strong> {{ object.description|default:"-" }}</li>
+                    </ul>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash-alt"></i> {% trans 'Yes, Delete Permanently' %}
+                            </button>
+                            <a href="{% url 'timesheet_list' %}" class="btn btn-secondary">
+                                {% trans 'Cancel and Go Back' %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
