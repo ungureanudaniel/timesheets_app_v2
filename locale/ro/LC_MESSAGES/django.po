@@ -835,3 +835,18 @@ msgstr "Atașează un CV nou"
 
 msgid "User name"
 msgstr "Nume utilizator"
+
+msgid "Funds source"
+msgstr "Sursă de finanțare"
+
+msgid "Start time"
+msgstr "Ora de început"
+
+msgid "End time"
+msgstr "Ora de sfârșit"
+
+msgid "Select activity"
+msgstr "Selectează activitatea"
+
+msgid "Enter description"
+msgstr "Introdu o descriere"
