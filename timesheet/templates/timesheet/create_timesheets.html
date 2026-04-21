@@ -19,9 +19,35 @@
                     <form method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
                         
-                        <div class="mb-4">
-                            <h5 class="border-bottom pb-2">{% trans "Activity Information" %}</h5>
-                            {{ form.as_p }}
+                        <div class="mb-3">
+                            <label class="form-label">{% trans "Funds Source" %}</label>
+                            {{ form.fundssource }}
+                            {% if form.fundssource.errors %}<div class="text-danger small">{{ form.fundssource.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{% trans "Start Time" %}</label>
+                                {{ form.start_time }}
+                                {% if form.start_time.errors %}<div class="text-danger small">{{ form.start_time.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{% trans "End Time" %}</label>
+                                {{ form.end_time }}
+                                {% if form.end_time.errors %}<div class="text-danger small">{{ form.end_time.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{% trans "Activity" %}</label>
+                            {{ form.activity }}
+                            {% if form.activity.errors %}<div class="text-danger small">{{ form.activity.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{% trans "Description" %}</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors }}</div>{% endif %}
                         </div>
 
                         <div class="mb-4">

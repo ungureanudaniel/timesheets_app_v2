@@ -836,7 +836,7 @@ msgstr "Atașează un CV nou"
 msgid "User name"
 msgstr "Nume utilizator"
 
-msgid "Funds source"
+msgid "Funds Source"
 msgstr "Sursă de finanțare"
 
 msgid "Start time"
