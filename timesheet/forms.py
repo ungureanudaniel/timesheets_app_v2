@@ -20,7 +20,7 @@ class TimesheetForm(forms.ModelForm):
         # when the user field is missing from the POST data
         fields = ['fundssource', 'date', 'start_time', 'end_time', 'activity', 'description']
         widgets = {
-            'fundssource': forms.Select(attrs={'class': 'form-control', 'placeholder': _('Funds source')}),
+            'fundssource': forms.Select(attrs={'class': 'form-control', 'placeholder': _('Funds Source')}),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control', 'placeholder': _('Start time')}),
             'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control', 'placeholder': _('End time')}),
             'activity': forms.Select(attrs={'class': 'form-control', 'placeholder': _('Select activity')}),
