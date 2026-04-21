@@ -24,7 +24,11 @@
                             {{ form.fundssource }}
                             {% if form.fundssource.errors %}<div class="text-danger small">{{ form.fundssource.errors }}</div>{% endif %}
                         </div>
-
+                        <div class="mb-3">
+                            <label class="form-label">{% trans "Date" %}</label>
+                            {{ form.date }}
+                            {% if form.date.errors %}<div class="text-danger small">{{ form.date.errors }}</div>{% endif %}
+                        </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">{% trans "Start Time" %}</label>

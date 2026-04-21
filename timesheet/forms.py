@@ -13,7 +13,7 @@ class TimesheetForm(forms.ModelForm):
         }),
         initial=timezone.now().date()
     )
-
+    
     class Meta:
         model = Timesheet
         # Explicitly excluded 'user' so the form doesn't fail validation 
@@ -28,7 +28,8 @@ class TimesheetForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        selected_date = kwargs.pop('selected_date', None)
         super().__init__(*args, **kwargs)
-        if selected_date:
-            self.fields['date'].initial = selected_date
+        if not self.initial.get('date'):
+            self.initial['date'] = timezone.now().date().isoformat()
+        
+        self.fields['date'].label = _("Date")
