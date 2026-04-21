@@ -418,9 +418,6 @@ msgstr "Anulează"
 msgid "Delete"
 msgstr "Șterge"
 
-msgid "Select Activity"
-msgstr "Selectează Activitate"
-
 msgid "Select Funding Source"
 msgstr "Selectează Sursă Finanțare"
 
@@ -850,3 +847,9 @@ msgstr "Selectează activitatea"
 
 msgid "Enter description"
 msgstr "Introdu o descriere"
+
+msgid "Work Activity Report"
+msgstr "Raport de activitate"
+
+msgid "Hrs"
+msgstr "Ore"

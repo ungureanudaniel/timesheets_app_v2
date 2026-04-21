@@ -33,14 +33,6 @@
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
-                    <h3>{{ average_hours|floatformat:2 }}</h3>
-                    <p class="text-muted">{% trans "Average Hours" %}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
                     <h3>{{ period }}</h3>
                     <p class="text-muted">{% trans "Period" %}</p>
                 </div>
@@ -78,23 +70,21 @@
                     <table class="table table-striped">
                         <thead>
                             <tr>
+                                <th>{% trans "Date" %}</th>
                                 <th>{% trans "Activity Code" %}</th>
                                 <th>{% trans "Activity Name" %}</th>
                                 <th>{% trans "Funding Source" %}</th>
                                 <th>{% trans "Total Hours" %}</th>
-                                <th>{% trans "Entries" %}</th>
-                                <th>{% trans "Average Hours" %}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for entry in report_data %}
                             <tr>
+                                <td>{{ entry.date|date:"d M Y" }}</td>
                                 <td>{{ entry.activity__code }}</td>
                                 <td>{{ entry.activity__name }}</td>
                                 <td>{{ entry.fundssource__name|default:"-" }}</td>
                                 <td>{{ entry.total_hours|floatformat:2 }}</td>
-                                <td>{{ entry.entries }}</td>
-                                <td>{{ entry.avg_hours|floatformat:2 }}</td>
                             </tr>
                             {% empty %}
                             <tr>
@@ -110,7 +100,6 @@
                                 <td colspan="3" class="text-end"><strong>{% trans "Totals:" %}</strong></td>
                                 <td><strong>{{ total_hours|floatformat:2 }}</strong></td>
                                 <td><strong>{{ total_entries }}</strong></td>
-                                <td><strong>{{ average_hours|floatformat:2 }}</strong></td>
                             </tr>
                         </tfoot>
                         {% endif %}
