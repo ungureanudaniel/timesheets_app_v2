@@ -802,3 +802,36 @@ msgstr "Parolă profil"
 
 msgid "Attach CV (PDF)"
 msgstr "Atașează CV (PDF)"
+
+msgid "Username or Email"
+msgstr "Nume de utilizator sau E-mail"
+
+msgid "Enter your username or email"
+msgstr "Introdu numele de utilizator sau adresa de e-mail"
+
+msgid "This username or email is not registered. Please check your username or email, or sign up for an account."
+msgstr "Acest utilizator sau e-mail nu este înregistrat. Te rugăm să verifici datele sau să creezi un cont nou."
+
+msgid "Your account is pending approval. Please contact an administrator."
+msgstr "Contul tău așteaptă aprobarea unui administrator. Te rugăm să ne contactezi."
+
+msgid "Enter first name"
+msgstr "Introdu prenumele"
+
+msgid "Enter last name"
+msgstr "Introdu numele"
+
+msgid "Enter email"
+msgstr "Introdu adresa de e-mail"
+
+msgid "Write a short description of yourself"
+msgstr "Scrie o scurtă descriere despre tine"
+
+msgid "Attach picture of you"
+msgstr "Atașează o poză cu tine"
+
+msgid "Attach a new resume"
+msgstr "Atașează un CV nou"
+
+msgid "User name"
+msgstr "Nume utilizator"
