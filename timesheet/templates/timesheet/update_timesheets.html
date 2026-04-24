@@ -68,7 +68,7 @@
                                 <img src="{{ image.image.url }}" class="card-img-top" alt="Timesheet image" style="height: 150px; object-fit: cover;">
                                 <div class="card-body text-center">
                                     <small class="text-muted d-block">{{ image.uploaded_at|date:"M d, Y" }}</small>
-                                    <a href="{% url 'delete_timesheet_image' image.id %}" 
+                                    <a href="{% url 'delete_timesheet' image.id %}" 
                                        class="btn btn-sm btn-outline-danger mt-1"
                                        onclick="return confirm('{% trans 'Are you sure you want to delete this image?' %}');">
                                         <i class="fas fa-trash"></i> {% trans 'Delete' %}

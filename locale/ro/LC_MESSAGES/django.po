@@ -385,7 +385,7 @@ msgid "Custom Report"
 msgstr "Raport Personalizat"
 
 #: reports/views.py
-msgid "View and manage all your timesheet entries"
+msgid "View and manage all timesheet entries"
 msgstr "Vizualizați și administrați activitățile"
 
 #: reports/views.py
@@ -749,9 +749,6 @@ msgstr "Plan anual de lucru"
 msgid "Users & Roles"
 msgstr "Utilizatori & Roluri"
 
-msgid "Activity Report"
-msgstr "Raport de activitate"
-
 msgid "User Information"
 msgstr "Informații utilizator"
 
@@ -853,3 +850,88 @@ msgstr "Raport de activitate"
 
 msgid "Hrs"
 msgstr "Ore"
+
+msgid "Employee"
+msgstr "Angajat"
+
+msgid "Select Employee"
+msgstr "Selectează angajat"
+
+msgid "All Employees"
+msgstr "Listă angajați"
+
+msgid "Filter by Date"
+msgstr "Filtrează după dată"
+
+msgid "Apply"
+msgstr "Aplică"
+
+msgid "Reset"
+msgstr "Reset"
+
+msgid "Add Entry"
+msgstr "Adaugă pontaj"
+
+msgid "Timesheet Entries"
+msgstr "Listă pontaje"
+
+msgid "results"
+msgstr "resultate"
+
+# General Titles and Headers
+msgid "Weekly Activity Programs"
+msgstr "Programe de Activitate Săptămânale"
+
+msgid "Manage and view all activity programs"
+msgstr "Gestionează și vizualizează toate programele de activitate"
+
+msgid "Add New Program"
+msgstr "Adaugă Program Nou"
+
+# Statistics and Tables
+msgid "Total Programs"
+msgstr "Total Programe"
+
+msgid "Activity Programs List"
+msgstr "Lista Programelor de Activitate"
+
+msgid "Registration No."
+msgstr "Nr. Înregistrare"
+
+msgid "Activity Title"
+msgstr "Titlu Activitate"
+
+msgid "Edit Program"
+msgstr "Editează Programul"
+
+msgid "Delete Program"
+msgstr "Șterge Programul"
+
+msgid "View Details"
+msgstr "Vezi Detalii"
+
+msgid "Are you sure you want to delete this program?"
+msgstr "Ești sigur că vrei să ștergi acest program?"
+
+# Pagination and Empty States
+msgid "Showing %(start_index)s to %(end_index)s of %(count)s entries"
+msgstr "Afișare de la %(start_index)s la %(end_index)s din %(count)s intrări"
+
+msgid "No Activity Programs Found"
+msgstr "Nu au fost găsite programe de activitate"
+
+msgid "Get started by creating your first activity program."
+msgstr "Începe prin a crea primul tău program de activitate."
+
+msgid "Create First Program"
+msgstr "Creează Primul Program"
+
+# Javascript Functionality
+msgid "Search programs..."
+msgstr "Caută programe..."
+
+msgid "Export"
+msgstr "Exportă"
+
+msgid "Export to CSV"
+msgstr "Exportă în format CSV"

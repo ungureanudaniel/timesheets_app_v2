@@ -2,27 +2,82 @@
 {% load i18n %}
 
 {% block content %}
-<!-- Header -->
-    <div class="header">
-        <div class="container">
-           <h1>{% trans 'Reports' %}</h1>
-            <p>{% trans 'Generate a new report, using the filter buttons below' %}</p>
-            {% include 'includes/messages.html' %}
+<div class="header">
+    <div class="container">
+        <h1>{% trans 'Reports' %}</h1>
+        <p>{% trans 'Generate a new report, using the filter buttons below' %}</p>
+        {% include 'includes/messages.html' %}
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2>{% trans "Generate Work Report" %}</h2>
+            <hr>
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">{% trans "Employee" %}</label>
+                    {{ form.user }}
+                    {% if form.user.help_text %}
+                        <div class="form-text">{{ form.user.help_text }}</div>
+                    {% endif %}
+                    {{ form.user.errors }}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">{% trans "Report Period" %}</label>
+                        {{ form.period }}
+                        {{ form.period.errors }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">{% trans "Report Type" %}</label>
+                        {{ form.report_type }}
+                        {{ form.report_type.errors }}
+                    </div>
+                </div>
+
+                <div id="custom-date-section" class="row {% if form.period.value != 'custom' %}d-none{% endif %}">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Start Date" %}</label>
+                        {{ form.custom_start_date }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "End Date" %}</label>
+                        {{ form.custom_end_date }}
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="fas fa-file-invoice"></i> {% trans "Generate Report" %}
+                    </button>
+                    <a href="{% url 'timesheet_list' %}" class="btn btn-outline-secondary">
+                        {% trans "Cancel" %}
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
-<div class="container mt-4">
-    <h2>{% trans "Generate Work Report" %}</h2>
-    <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label class="form-label">{% trans "Report Period" %}</label>
-            {{ form.period }}
-        </div>
-        <div class="mb-3">
-            <label class="form-label">{% trans "Report Type" %}</label>
-            {{ form.report_type }}
-        </div>
-        <button type="submit" class="btn btn-primary">{% trans "Generate Report" %}</button>
-    </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const periodSelect = document.querySelector('select[name="period"]');
+        const customSection = document.getElementById('custom-date-section');
+
+        if (periodSelect) {
+            periodSelect.addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    customSection.classList.remove('d-none');
+                } else {
+                    customSection.classList.add('d-none');
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

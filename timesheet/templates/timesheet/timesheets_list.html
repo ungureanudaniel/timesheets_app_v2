@@ -8,59 +8,116 @@
 <div class="header">
     <div class="container">
         <h1>{% trans 'Timesheets' %}</h1>
-        <p class="text-muted">{% trans 'View and manage all your timesheet entries' %}</p>
+        <p class="text-muted">{% trans 'View and manage all timesheet entries' %}</p>
         {% include 'includes/messages.html' %}
     </div>
 </div>
 
 <div class="container mt-4 mb-4">
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">{% trans 'All Timesheet Entries' %}</h4>
-            <a href="{% url 'create_timesheet' %}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> {% trans 'Add New Timesheet' %}
+    
+    <div class="card mb-4 bg-light shadow-sm">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label fw-bold">{% trans "Select Employee" %}</label>
+                    <select name="reporter_id" class="form-select">
+                        <option value="">{% trans "All Employees" %}</option>
+                        {% for e in available_employees %}
+                            <option value="{{ reporter.id }}" {% if selected_reporter_id == reporter.id|stringformat:"i" %}selected{% endif %}>
+                                {{ reporter.get_full_name|default:reporter.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">{% trans "Filter by Date" %}</label>
+                    <input type="date" name="date_filter" class="form-control" value="{{ request.GET.date_filter }}">
+                </div>
+
+                <div class="col-md-3">
+                    <div class="d-grid gap-2 d-md-flex">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="fas fa-filter"></i> {% trans "Apply" %}
+                        </button>
+                        <a href="{% url 'timesheet_list' %}" class="btn btn-outline-secondary">
+                            {% trans "Reset" %}
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white py-3">
+            <h4 class="mb-0 text-primary">{% trans 'Timesheet Entries' %}</h4>
+            <a href="{% url 'create_timesheet' %}" class="btn btn-success">
+                <i class="fas fa-plus"></i> {% trans 'Add Entry' %}
+            </a>
+            <a href="{% url 'generate_report' %}" class="btn btn-warning">
+                <i class="fas fa-plus"></i> {% trans 'Generate Report' %}
             </a>
         </div>
         
-        <div class="card-body">
-            {% if timesheets %}
-                <p>{% trans "Found" %} {{ page_obj.paginator.count }} {% trans "timesheet(s)" %}</p>
+        <div class="card-body p-0"> {% if timesheets %}
+                <div class="p-3 border-bottom">
+                    <span class="text-muted small">{% trans "Found" %} <strong>{{ page_obj.paginator.count }}</strong> {% trans "results" %}</span>
+                </div>
                 <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
                             <tr>
+                                <th>{% trans 'Reporter' %}</th>
                                 <th>{% trans 'Date' %}</th>
                                 <th>{% trans 'Activity' %}</th>
-                                <th>{% trans 'Start Time' %}</th>
-                                <th>{% trans 'End Time' %}</th>
+                                <th>{% trans 'Worked Hours' %}</th>
                                 <th>{% trans 'Funding Source' %}</th>
                                 <th>{% trans 'Description' %}</th>
                                 <th>{% trans 'Images' %}</th>
-                                <th>{% trans 'Actions' %}</th>
+                                <th class="text-end px-4">{% trans 'Actions' %}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for timesheet in timesheets %}
                             <tr>
-                                <td>{{ timesheet.date|date:"d M Y" }}</td>
-                                <td>{{ timesheet.activity.name }}</td>
-                                <td>{{ timesheet.start_time|time:"H:i"|default:"-" }}</td>
-                                <td>{{ timesheet.end_time|time:"H:i"|default:"-" }}</td>
-                                <td>{{ timesheet.fundssource.name|default:"-" }}</td>
-                                <td>{{ timesheet.description|default:"-" }}</td>
                                 <td>
-                                    {% with image_count=timesheet.timesheet_images.all|length %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.75rem;">
+                                            {{ timesheet.user.username|slice:":2"|upper }}
+                                        </div>
+                                        <span class="small fw-bold">{{ timesheet.user.get_full_name|default:timesheet.user.username }}</span>
+                                    </div>
+                                </td>
+                                <td>{{ timesheet.date|date:"d M Y" }}</td>
+                                <td>
+                                    <span class="d-block fw-bold small">{{ timesheet.activity.code }}</span>
+                                    <span class="text-muted extra-small">{{ timesheet.activity.name|truncatechars:20 }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ timesheet.worked_hours }}</span>
+                                </td>
+                                <td class="small text-muted">{{ timesheet.fundssource.name|default:"-" }}</td>
+                                <td class="small text-muted">{{ timesheet.description|truncatechars:30 }}</td>
+                                <td>
+                                    {% with image_count=timesheet.timesheet_images.count %}
                                         {% if image_count > 0 %}
                                             <a href="{% url 'timesheet_images' timesheet.id %}" class="badge bg-info text-decoration-none">
                                                 <i class="fas fa-images"></i> {{ image_count }}
                                             </a>
-                                        {% else %}<span class="text-muted">-</span>{% endif %}
+                                        {% else %}
+                                            <span class="text-muted small">-</span>
+                                        {% endif %}
                                     {% endwith %}
                                 </td>
-                                <td>
+                                <td class="text-end px-4">
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{% url 'update_timesheet' timesheet.id %}" class="btn btn-primary"><i class="fas fa-edit"></i></a>
-                                        <a href="{% url 'delete_timesheet' timesheet.id %}" class="btn btn-danger"><i class="fas fa-trash"></i></a>
+                                        <a href="{% url 'update_timesheet' timesheet.id %}" class="btn btn-outline-primary" title="{% trans 'Edit' %}">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'delete_timesheet' timesheet.id %}" class="btn btn-outline-danger" title="{% trans 'Delete' %}">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -72,14 +129,41 @@
                 <div class="text-center py-5">
                     <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
                     <h4>{% trans 'No timesheets found' %}</h4>
-                    <a href="{% url 'create_timesheet' %}" class="btn btn-primary">
-                        {% trans 'Create Your First Timesheet' %}
+                    <p class="text-muted">{% trans 'Try adjusting your filters or create a new entry.' %}</p>
+                    <a href="{% url 'create_timesheet' %}" class="btn btn-primary mt-2">
+                        {% trans 'Create Entry' %}
                     </a>
                 </div>
             {% endif %}
         </div>
+
+        {% if is_paginated %}
+        <div class="card-footer bg-white py-3">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&reporter_id={{ selected_reporter_id }}&date_filter={{ request.GET.date_filter }}">{% trans 'Previous' %}</a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&reporter_id={{ selected_reporter_id }}&date_filter={{ request.GET.date_filter }}">{% trans 'Next' %}</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
     </div>
 </div>
 
-
+<style>
+    .extra-small { font-size: 0.75rem; }
+    .table-hover tbody tr:hover { background-color: rgba(0,0,0,.02); }
+    .form-label { margin-bottom: 0.25rem; }
+</style>
 {% endblock %}
