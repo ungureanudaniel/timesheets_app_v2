@@ -13,22 +13,31 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 from io import BytesIO
+from users.models import CustomUser
 import openpyxl
 from openpyxl.styles import Font, Alignment
 import calendar
 from django.utils.translation import gettext as _
+
+User = CustomUser
 
 class ReportGeneratorView(LoginRequiredMixin, FormView):
     template_name = 'reports/generate_report.html'
     form_class = ReportPeriodForm
     success_url = reverse_lazy('report_results')
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user  # This is the "user" that __init__ pops
+        return kwargs
+
     def form_valid(self, form):
         period = form.cleaned_data['period']
         report_type = form.cleaned_data['report_type']
         custom_start = form.cleaned_data.get('custom_start_date')
         custom_end = form.cleaned_data.get('custom_end_date')
-        
+        selected_user = form.cleaned_data.get('user')
+
         # Calculate date range
         today = timezone.now().date()
         
@@ -49,7 +58,7 @@ class ReportGeneratorView(LoginRequiredMixin, FormView):
             'end_date': end_date.isoformat(),
             'period': period,
             'report_type': report_type,
-            'user_id': self.request.user.id
+            'user_id': selected_user.id if selected_user else None,
         }
         return super().form_valid(form)
 
@@ -62,12 +71,35 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
         
         if not report_data:
             return context
-            
+
+        # 1. GET THE USER ID ONCE
+        # We prioritize the ID in the session (selected by manager)
+        user_id = report_data.get('user_id')
+        if not user_id:
+            user_id = self.request.user.id 
+
+        # 2. FETCH THE USER OBJECT
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        try:
+            context['report_user'] = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            context['report_user'] = self.request.user
+            user_id = self.request.user.id
+
+        # 3. CONVERT DATES
         start_date = datetime.strptime(report_data.get('start_date'), '%Y-%m-%d').date()
         end_date = datetime.strptime(report_data.get('end_date'), '%Y-%m-%d').date()
-        period = report_data.get('period', 'weekly')
-        
-        # Set report titles
+
+        # 4. THE FILTER (Run this ONLY ONCE)
+        # This specific 'timesheets' variable is passed to ALL helpers
+        timesheets = Timesheet.objects.filter(
+            user_id=user_id,
+            date__range=[start_date, end_date]
+        ).select_related('activity', 'fundssource')
+
+        # --- Start Title Logic ---
+        period = report_data.get('period', 'weekly') 
         if period == 'custom':
             context['report_title'] = _("Custom Period Report")
             context['period_detail'] = f"{start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
@@ -77,14 +109,10 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
         else:
             context['report_title'] = _("Monthly Report")
             context['period_detail'] = f"{_(calendar.month_name[start_date.month])} {start_date.year}"
-        
-        # Get timesheets for period
-        timesheets = Timesheet.objects.filter(
-            user_id=report_data.get('user_id'),
-            date__range=[start_date, end_date]
-        ).select_related('activity', 'fundssource')
-        
-        # Generate report data
+        # --- End Title Logic ---
+
+        # 5. GENERATE DATA
+        # Both these methods receive the EXACT SAME filtered 'timesheets'
         if report_data.get('report_type') == 'summary':
             context['report_type'] = 'summary'
             context['report_data'] = self._generate_summary_report(timesheets)
@@ -92,21 +120,19 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
             context['report_type'] = 'detailed'
             context['report_data'] = self._generate_detailed_report(timesheets)
         
-        # Overall statistics
-        total_hours = 0
-        for timesheet in timesheets:
-            hours = self._calculate_hours(timesheet)
-            total_hours += hours
+        # 6. OVERALL STATISTICS
+        total_hours = sum(self._calculate_hours(ts) for ts in timesheets)
         
+        count = timesheets.count()
         context['total_hours'] = total_hours
-        context['total_entries'] = timesheets.count()
-        context['average_hours'] = total_hours / timesheets.count() if timesheets.count() > 0 else 0
+        context['total_entries'] = count
+        context['average_hours'] = total_hours / count if count > 0 else 0
         context['start_date'] = start_date
         context['end_date'] = end_date
         context['period'] = period
         
         return context
-    
+
     def _calculate_hours(self, timesheet):
         """Calculate hours from start_time and end_time (both are time objects)"""
         if timesheet.start_time and timesheet.end_time:
@@ -151,24 +177,22 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
         return sorted(summary_data, key=lambda x: x['activity__code'])
     
     def _generate_detailed_report(self, timesheets):
-        """Generate detailed report with all timesheet entries including images"""
         detailed_data = []
-        # Use prefetch_related for images to avoid slow loading
+        # Note the prefetch name here must match your model's related_name
         timesheets_with_imgs = timesheets.prefetch_related('timesheet_images').order_by('date', 'start_time')
         
-        for timesheet in timesheets_with_imgs:
-            hours = self._calculate_hours(timesheet)
+        for ts in timesheets_with_imgs:
+            hours = self._calculate_hours(ts)
             detailed_data.append({
-                'timesheet': timesheet,
+                'date': ts.date,
                 'hours': hours,
-                'date': timesheet.date,
-                'activity_code': timesheet.activity.code,
-                'activity_name': timesheet.activity.name,
-                'fundssource_name': timesheet.fundssource.name if timesheet.fundssource else '',
-                'description': timesheet.description or '',
-                'start_time': timesheet.start_time,
-                'end_time': timesheet.end_time,
-                'images': timesheet.images.all()  # Add images to the dictionary
+                'fundssource_name': ts.fundssource.name if ts.fundssource else '',
+                'activity_code': ts.activity.code,
+                'description': ts.description or '',
+                'start_time': ts.start_time,
+                'end_time': ts.end_time,
+                # Use 'timesheet_images' if that is your related_name
+                'images': ts.timesheet_images.all() 
             })
         return detailed_data
 

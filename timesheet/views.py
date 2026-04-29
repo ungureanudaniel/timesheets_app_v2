@@ -12,7 +12,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views import generic
 from .forms import TimesheetForm
-from django.contrib.auth import get_user_model
+from users.models import CustomUser
+# from django.contrib.auth import get_user_model
 from .models import Timesheet, TimesheetImage
 from django.db.models import Q, Count
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -23,7 +24,7 @@ from calendar import monthrange
 from django.utils.dateparse import parse_date
 import datetime
 
-User = get_user_model()
+User = CustomUser  # Assuming you have a custom user model defined in users.models
 
 def get_user_timesheets(user):
     """Helper function to get timesheets for the given user."""

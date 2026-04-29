@@ -190,7 +190,7 @@ msgid "Administration"
 msgstr "Administrare"
 
 #: general/base.html
-msgid "Timesheet List"
+msgid "Timesheets List"
 msgstr "Listă activități"
 
 # Reports
@@ -935,3 +935,18 @@ msgstr "Exportă"
 
 msgid "Export to CSV"
 msgstr "Exportă în format CSV"
+
+msgid "Current Week"
+msgstr "Săptămâna curentă"
+
+msgid "Current Month"
+msgstr "Luna curentă"
+
+msgid "Last Week"
+msgstr "Săptămâna trecută"
+
+msgid "Last Month"
+msgstr "Luna trecută"
+
+msgid "Custom Range"
+msgstr "Alege o perioadă"

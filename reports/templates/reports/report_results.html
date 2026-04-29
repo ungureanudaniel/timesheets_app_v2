@@ -78,13 +78,13 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for entry in report_data %}
+                            {% for row in report_data %}
                             <tr>
-                                <td>{{ entry.date|date:"d M Y" }}</td>
-                                <td>{{ entry.activity__code }}</td>
-                                <td>{{ entry.activity__name }}</td>
-                                <td>{{ entry.fundssource__name|default:"-" }}</td>
-                                <td>{{ entry.total_hours|floatformat:2 }}</td>
+                                <td>{{ row.date|date:"d M Y" }}</td>
+                                <td>{{ row.activity__code }}</td>
+                                <td>{{ row.activity__name }}</td>
+                                <td>{{ row.fundssource__name|default:"-" }}</td>
+                                <td>{{ row.total_hours|floatformat:2 }}</td>
                             </tr>
                             {% empty %}
                             <tr>
@@ -129,16 +129,16 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for entry in report_data %}
+                            {% for row in report_data %}
                             <tr>
-                                <td>{{ entry.date|date:"d M Y" }}</td>
-                                <td>{{ entry.start_time|time:"H:i"|default:"-" }}</td>
-                                <td>{{ entry.end_time|time:"H:i"|default:"-" }}</td>
-                                <td>{{ entry.activity_code }}</td>
-                                <td>{{ entry.activity_name }}</td>
-                                <td>{{ entry.fundssource_name|default:"-" }}</td>
-                                <td>{{ entry.hours|floatformat:2 }}</td>
-                                <td>{{ entry.description|truncatewords:10 }}</td>
+                                <td>{{ row.date|date:"d M Y" }}</td>
+                                <td>{{ row.start_time|time:"H:i"|default:"-" }}</td>
+                                <td>{{ row.end_time|time:"H:i"|default:"-" }}</td>
+                                <td>{{ row.activity_code }}</td>
+                                <td>{{ row.activity_name }}</td>
+                                <td>{{ row.fundssource_name|default:"-" }}</td>
+                                <td>{{ row.hours|floatformat:2 }}</td>
+                                <td>{{ row.description|truncatewords:50 }}</td>
                             </tr>
                             {% empty %}
                             <tr>
