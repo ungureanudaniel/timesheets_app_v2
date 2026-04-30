@@ -1,0 +1,24 @@
+{% extends 'general/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Images uploaded by {{ timesheet.user.get_full_name }} on {{ timesheet.date }}</h1>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary">Back to Report</a>
+    </div>
+
+    <div class="row g-3">
+        {% for img in timesheet.timesheet_images.all %}
+            <div class="col-md-4 col-lg-3">
+                <div class="card shadow-sm">
+                    <img src="{{ img.image.url }}" class="card-img-top" alt="Timesheet evidence" style="height: 200px; object-fit: cover;">
+                    <div class="card-body text-center">
+                        <a href="{{ img.image.url }}" target="_blank" class="btn btn-sm btn-primary">View Full Size</a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <p>No images found for this entry.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

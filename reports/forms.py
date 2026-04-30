@@ -13,7 +13,6 @@ class ReportPeriodForm(forms.Form):
         ('last_month', _('Last Month')),
         ('custom', _('Custom Range')),
     ]
-    TYPE_CHOICES = [('summary', _('Summary')), ('detailed', _('Detailed'))]
     
     # Define the field with an empty queryset initially to prevent leaks
     user = forms.ModelChoiceField(
@@ -23,7 +22,6 @@ class ReportPeriodForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     period = forms.ChoiceField(choices=PERIOD_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
-    report_type = forms.ChoiceField(choices=TYPE_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
     custom_start_date = forms.DateField(
         required=False, 
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})

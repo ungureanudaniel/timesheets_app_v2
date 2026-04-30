@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.utils import timezone
 from django.db import models
@@ -65,6 +65,25 @@ class Timesheet(models.Model):
             return round(duration.total_seconds() / 3600, 2)
         return 0
 
+    @property
+    def duration_decimal(self):
+        """Returns hours as 8.5"""
+        if self.start_time and self.end_time:
+            start = datetime.combine(datetime.today(), self.start_time)
+            end = datetime.combine(datetime.today(), self.end_time)
+            if end < start:
+                end += timedelta(days=1)
+            return (end - start).total_seconds() / 3600
+        return 0
+
+    @property
+    def duration_display(self):
+        """Returns formatted string '8h 30m'"""
+        total_hours = self.duration_decimal
+        hours = int(total_hours)
+        minutes = int(round((total_hours - hours) * 60))
+        return f"{hours}h {minutes:02d}m"
+        
     # This method is used to set the upload path for documents associated with the timesheet
     def __str__(self):
         return f"Timesheet for {self.user.username}"

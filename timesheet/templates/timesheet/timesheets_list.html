@@ -89,20 +89,26 @@
                                         <span class="small fw-bold">{{ timesheet.user.get_full_name|default:timesheet.user.username }}</span>
                                     </div>
                                 </td>
-                                <td>{{ timesheet.date|date:"d M Y" }}</td>
+                                <td>
+                                    <span class="badge bg-{{ timesheet.status_color }}" 
+                                        title="Day Total: {{ day_total }} hours">
+                                        ● <!-- This is a small circle icon -->
+                                    </span>
+                                    {{ timesheet.date }}{{ timesheet.date|date:"d M Y" }}
+                                </td>
                                 <td>
                                     <span class="d-block fw-bold small">{{ timesheet.activity.code }}</span>
                                     <span class="text-muted extra-small">{{ timesheet.activity.name|truncatechars:20 }}</span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-dark border">{{ timesheet.worked_hours }}</span>
+                                    <span class="badge bg-light text-dark border">{{ timesheet.duration_display }}</span>
                                 </td>
                                 <td class="small text-muted">{{ timesheet.fundssource.name|default:"-" }}</td>
                                 <td class="small text-muted">{{ timesheet.description|truncatechars:30 }}</td>
                                 <td>
                                     {% with image_count=timesheet.timesheet_images.count %}
                                         {% if image_count > 0 %}
-                                            <a href="{% url 'timesheet_images' timesheet.id %}" class="badge bg-info text-decoration-none">
+                                            <a href="{% url 'timesheet_images_detail' timesheet.id %}" class="badge bg-info text-decoration-none">
                                                 <i class="fas fa-images"></i> {{ image_count }}
                                             </a>
                                         {% else %}

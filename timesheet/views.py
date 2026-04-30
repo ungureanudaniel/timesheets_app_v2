@@ -2,7 +2,7 @@ from collections import defaultdict
 import json
 from django import forms
 from django.urls import reverse_lazy
-from django.views.generic import ListView
+from django.views.generic import ListView, DetailView
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from datetime import timedelta, datetime
 from django.utils import timezone
@@ -15,7 +15,7 @@ from .forms import TimesheetForm
 from users.models import CustomUser
 # from django.contrib.auth import get_user_model
 from .models import Timesheet, TimesheetImage
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
@@ -115,53 +115,32 @@ class TimesheetListView(LoginRequiredMixin, ListView):
         context["selected_employee"] = self.request.GET.get("employee", '')
         # Keep the search term in the box after the page refreshes
         context["selected_date"] = self.request.GET.get('date_filter', '')
+        for ts in context['timesheets']:
+            day_entries = Timesheet.objects.filter(user=ts.user, date=ts.date)
+            
+            total_day_hours = sum(entry.duration_decimal for entry in day_entries)
+
+            limit = 6.0 if ts.date.weekday() == 4 else 8.5
+            
+            if total_day_hours >= limit:
+                ts.status_color = "success"  # Green
+            elif total_day_hours > 0:
+                ts.status_color = "warning"  # Yellow
+            else:
+                ts.status_color = "danger"   # Red
         return context
 
+class TimesheetImageDetailView(LoginRequiredMixin, DetailView):
+    model = Timesheet
+    template_name = 'timesheet/timesheet_images.html'
+    context_object_name = 'timesheet'
 
-# this function uses the helper function to retrieve timesheet data and communicates with Ajax module in main.js
-# class GetTimesheetsView(LoginRequiredMixin, generic.View):
-#     def get(self, request):
-#         user = request.user
-#         month = request.GET.get('month')
-#         year = request.GET.get('year')
-
-#         # Filter by month and year if provided
-#         if month and year:
-#             start_date = datetime.date(int(year), int(month), 1)
-#             end_date = (start_date + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-#             timesheets = Timesheet.objects.filter(
-#                 user=user,
-#                 date__range=[start_date, end_date]
-#             ).select_related('activity', 'fundssource')
-#         else:
-#             # Default to current month
-#             today = timezone.now().date()
-#             start_date = today.replace(day=1)
-#             end_date = (start_date + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-#             timesheets = Timesheet.objects.filter(
-#                 user=user,
-#                 date__range=[start_date, end_date]
-#             ).select_related('activity', 'fundssource')
-
-#         # Serialize timesheet data
-#         serialized_timesheets = []
-#         for timesheet in timesheets:
-#             serialized_timesheets.append({
-#                 'id': timesheet.id,
-#                 'date': timesheet.date.isoformat(),
-#                 'activity': {
-#                     'name': timesheet.activity.name,
-#                 },
-#                 'start_time': timesheet.start_time.isoformat() if timesheet.start_time else None,
-#                 'end_time': timesheet.end_time.isoformat() if timesheet.end_time else None,
-#                 'worked_hours': timesheet.worked_hours(),
-#                 'description': timesheet.description,
-#                 'fundssource': {
-#                     'name': timesheet.fundssource.name if timesheet.fundssource else None,
-#                 }
-#             })
-        
-#         return JsonResponse(serialized_timesheets, safe=False)
+    def get_queryset(self):
+        # Security: Users can only see their own images unless they are staff/managers
+        user = self.request.user
+        if user.is_staff or user.groups.filter(name='Managers').exists():
+            return Timesheet.objects.all()
+        return Timesheet.objects.filter(user=user)
 
 
 # new timesheet
@@ -210,8 +189,16 @@ class CreateTimesheetView(generic.CreateView):
         return redirect('timesheet_list')
 
     def form_invalid(self, form):
+        # Default error message
         messages.error(self.request, _('Please correct the errors below.'))
-        print("Form errors:", form.errors)  # Still helpful for debugging
+        
+        # Check if the "Daily Limit" error is present
+        if '__all__' in form.errors:
+            for error in form.errors['__all__']:
+                if "Limit exceeded" in error or "Maximum allowed" in error:
+                    messages.warning(self.request, error)
+
+        print("Form errors:", form.errors)
         return super().form_invalid(form)
 
 

@@ -33,11 +33,6 @@
                         {{ form.period }}
                         {{ form.period.errors }}
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">{% trans "Report Type" %}</label>
-                        {{ form.report_type }}
-                        {{ form.report_type.errors }}
-                    </div>
                 </div>
 
                 <div id="custom-date-section" class="row {% if form.period.value != 'custom' %}d-none{% endif %}">

@@ -210,8 +210,8 @@ msgstr "Raport Lunar"
 msgid "Summary Report"
 msgstr "Raport Sumar"
 
-msgid "Detailed Report"
-msgstr "Raport Detaliat"
+msgid "Detailed Activity Report"
+msgstr "Raport de Activitate Detaliat"
 
 msgid "Print Report"
 msgstr "Tipărește Raport"
@@ -950,3 +950,15 @@ msgstr "Luna trecută"
 
 msgid "Custom Range"
 msgstr "Alege o perioadă"
+
+msgid "Images uploaded by {{ timesheet.user.get_full_name }} on {{ timesheet.date }}"
+msgstr "Imagini încărcate de {{ timesheet.user.get_full_name }} pe {{ timesheet.date }}"
+
+msgid "Grand Total:"
+msgstr "Total general:"
+
+msgid "Change Parameters"
+msgstr "Schimbă parametri"
+
+msgid "Hours per Activity Code"
+msgstr "Număr de ore pe cod activitate"
