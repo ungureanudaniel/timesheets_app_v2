@@ -71,6 +71,69 @@ def get_user_timesheets(user):
 
     return calendar_events
 
+import calendar
+from datetime import date, datetime, timedelta
+from django.views.generic import TemplateView
+from django.utils.safestring import mark_safe
+
+
+class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
+    template_name = 'timesheet/calendar.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Get year and month from URL or use current
+        today = date.today()
+        year = int(self.request.GET.get('year', today.year))
+        month = int(self.request.GET.get('month', today.month))
+        
+        # Generate calendar days
+        cal = calendar.Calendar(firstweekday=0) # Monday start
+        month_days = cal.monthdatescalendar(year, month)
+        
+        # Fetch all timesheets for this user in this month at once (Efficient)
+        timesheets = Timesheet.objects.filter(
+            user=user, 
+            date__year=year, 
+            date__month=month
+        )
+        
+        # Build a dictionary of {date: total_hours}
+        daily_totals = {}
+        for ts in timesheets:
+            daily_totals[ts.date] = daily_totals.get(ts.date, 0) + ts.duration_decimal
+
+        # Format calendar data with status colors
+        calendar_data = []
+        for week in month_days:
+            week_data = []
+            for day in week:
+                if day.month != month:
+                    status = "muted" # Day from prev/next month
+                else:
+                    total = daily_totals.get(day, 0)
+                    target = 6.0 if day.weekday() == 4 else 8.5
+                    
+                    if total >= target:
+                        status = "success" # Green
+                    elif total > 0:
+                        status = "warning" # Yellow
+                    else:
+                        status = "danger"  # Red
+                
+                week_data.append({'day': day, 'status': status, 'total': daily_totals.get(day, 0)})
+            calendar_data.append(week_data)
+
+        context.update({
+            'calendar_matrix': calendar_data,
+            'current_month': date(year, month, 1),
+            'prev_month': date(year, month, 1) - timedelta(days=1),
+            'next_month': date(year, month, 1) + timedelta(days=32),
+        })
+        return context
+
 
 class TimesheetListView(LoginRequiredMixin, ListView):
     model = Timesheet
@@ -117,7 +180,7 @@ class TimesheetListView(LoginRequiredMixin, ListView):
         context["selected_date"] = self.request.GET.get('date_filter', '')
         for ts in context['timesheets']:
             day_entries = Timesheet.objects.filter(user=ts.user, date=ts.date)
-            
+
             total_day_hours = sum(entry.duration_decimal for entry in day_entries)
 
             limit = 6.0 if ts.date.weekday() == 4 else 8.5

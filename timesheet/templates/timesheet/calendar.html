@@ -1,0 +1,95 @@
+{% extends 'general/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans 'Timesheet List' %}{% endblock %}
+
+{% block content %}
+<div class="header">
+    <div class="container">
+        <h1>{% trans 'Timesheets' %}</h1>
+        <p class="text-muted">{% trans 'View and manage all timesheet entries' %}</p>
+        {% include 'includes/messages.html' %}
+    </div>
+</div>
+
+<style>
+    .calendar-table { table-layout: fixed; border-collapse: collapse; }
+    .calendar-day { 
+        height: 120px; 
+        transition: background 0.3s; 
+        vertical-align: top;
+        border: 1px solid #dee2e6;
+    }
+    .calendar-day:hover { background-color: #f8f9fa !important; }
+    .day-number { font-size: 1.1rem; color: #6c757d; }
+    .status-indicator {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-top: 5px;
+    }
+    .muted-day { background-color: #e9ecef; opacity: 0.5; }
+</style>
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+            <h3 class="mb-0">{{ current_month|date:"F Y" }}</h3>
+            <div class="btn-group">
+                <a href="?month={{ prev_month.month }}&year={{ prev_month.year }}" class="btn btn-outline-secondary">&larr;</a>
+                <a href="?month={% now 'm' %}&year={% now 'Y' %}" class="btn btn-outline-secondary">Today</a>
+                <a href="?month={{ next_month.month }}&year={{ next_month.year }}" class="btn btn-outline-secondary">&rarr;</a>
+            </div>
+        </div>
+        
+        <div class="card-body p-0">
+            <table class="table calendar-table mb-0">
+                <thead class="bg-light">
+                    <tr class="text-center">
+                        <th>{% trans "Mon" %}</th><th>{% trans "Tue" %}</th>
+                        <th>{% trans "Wed" %}</th><th>{% trans "Thu" %}</th>
+                        <th>{% trans "Fri" %}</th><th>{% trans "Sat" %}</th>
+                        <th>{% trans "Sun" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for week in calendar_matrix %}
+                    <tr>
+                        {% for item in week %}
+                        <td class="calendar-day {% if item.status == 'muted' %}muted-day{% endif %}">
+                            <div class="d-flex justify-content-between">
+                                <span class="day-number">{{ item.day.day }}</span>
+                                {% if item.status != "muted" %}
+                                    <span class="status-indicator bg-{{ item.status }}"></span>
+                                {% endif %}
+                            </div>
+
+                            {% if item.status != "muted" %}
+                            <div class="text-center mt-2">
+                                <div class="small fw-bold">{{ item.total|floatformat:1 }}h</div>
+                                <a href="{% url 'create_timesheet' %}?date={{ item.day|date:'Y-m-d' }}" 
+                                   class="btn btn-sm btn-link p-0 text-decoration-none" style="font-size: 0.75rem;">
+                                   + {% trans "Add Entry" %}
+                                </a>
+                            </div>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="card-footer bg-white">
+            <div class="d-flex gap-3 small">
+                <span><i class="status-indicator bg-success"></i> {% trans "Completed" %}</span>
+                <span><i class="status-indicator bg-warning"></i> {% trans "Partial" %}</span>
+                <span><i class="status-indicator bg-danger"></i> {% trans "Missing" %}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

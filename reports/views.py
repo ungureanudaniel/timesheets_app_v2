@@ -149,7 +149,8 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
             if day_of_week <= 3:  # Monday-Thursday
                 capped_decimal = min(decimal_hours, 8.5)
             elif day_of_week == 4:  # Friday
-                friday_deadline = datetime.combine(timesheet.date, datetime.strptime("14:00", "%H:%M").time())            
+                friday_deadline = datetime.combine(timesheet.date, datetime.strptime("14:00", "%H:%M").time())     
+                   
             # Format the human-readable string
             h = int(decimal_hours)
             m = int(round((decimal_hours - h) * 60))

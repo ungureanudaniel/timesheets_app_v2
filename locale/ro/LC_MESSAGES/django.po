@@ -962,3 +962,12 @@ msgstr "Schimbă parametri"
 
 msgid "Hours per Activity Code"
 msgstr "Număr de ore pe cod activitate"
+
+msgid "Completed"
+msgstr "Complet"
+
+msgid "Partial"
+msgstr "Partial"
+
+msgid "Missing"
+msgstr "Lipsă"

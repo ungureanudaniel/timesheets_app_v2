@@ -20,7 +20,15 @@
                 
                 <div class="mb-3">
                     <label class="form-label fw-bold">{% trans "Employee" %}</label>
+                    
                     {{ form.user }}
+
+                    {% if not request.user.is_superuser %}
+                        <div class="form-control-plaintext p-2 border rounded bg-light">
+                            <i class="fas fa-user me-2"></i> {{ request.user.get_full_name|default:request.user.username }}
+                        </div>
+                    {% endif %}
+
                     {% if form.user.help_text %}
                         <div class="form-text">{{ form.user.help_text }}</div>
                     {% endif %}
