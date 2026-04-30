@@ -102,8 +102,10 @@ class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
         
         # Build a dictionary of {date: total_hours}
         daily_totals = {}
+        count_images = {}
         for ts in timesheets:
             daily_totals[ts.date] = daily_totals.get(ts.date, 0) + ts.duration_decimal
+            count_images[ts.date] = count_images.get(ts.date, 0) + 1
 
         # Format calendar data with status colors
         calendar_data = []
@@ -123,7 +125,7 @@ class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
                     else:
                         status = "danger"  # Red
                 
-                week_data.append({'day': day, 'status': status, 'total': daily_totals.get(day, 0)})
+                week_data.append({'day': day, 'status': status, 'total': daily_totals.get(day, 0), 'images': count_images.get(day, 0)})
             calendar_data.append(week_data)
 
         context.update({

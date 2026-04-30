@@ -69,6 +69,8 @@
                             {% if item.status != "muted" %}
                             <div class="text-center mt-2">
                                 <div class="small fw-bold">{{ item.total|floatformat:1 }}h</div>
+                                <div class="small fw-bold">{{ item.images }} pics</div>
+
                                 <a href="{% url 'create_timesheet' %}?date={{ item.day|date:'Y-m-d' }}" 
                                    class="btn btn-sm btn-link p-0 text-decoration-none" style="font-size: 0.75rem;">
                                    + {% trans "Add Entry" %}
