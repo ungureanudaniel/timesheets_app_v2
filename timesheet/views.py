@@ -114,18 +114,26 @@ class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
             for day in week:
                 if day.month != month:
                     status = "muted" # Day from prev/next month
+                    total_decimal = 0
+                    total_hm = ""
                 else:
-                    total = daily_totals.get(day, 0)
+                    total_decimal = daily_totals.get(day, 0)
+                    # conversion to hours and minutes
+                    hours = int(total_decimal)
+                    minutes = int(round((total_decimal - hours) * 60))
+                    total_hm = f"{hours}h {minutes}m" if total_decimal > 0 else "0h"
+
+                    # Determine status color based on hours
                     target = 6.0 if day.weekday() == 4 else 8.5
                     
-                    if total >= target:
+                    if total_decimal >= target:
                         status = "success" # Green
-                    elif total > 0:
+                    elif total_decimal > 0:
                         status = "warning" # Yellow
                     else:
                         status = "danger"  # Red
                 
-                week_data.append({'day': day, 'status': status, 'total': daily_totals.get(day, 0), 'images': count_images.get(day, 0)})
+                week_data.append({'day': day, 'status': status, 'total_decimal': total_decimal, 'total_hm': total_hm, 'images': count_images.get(day, 0)})
             calendar_data.append(week_data)
 
         context.update({
@@ -251,7 +259,7 @@ class CreateTimesheetView(generic.CreateView):
             TimesheetImage.objects.create(timesheet=self.object, image=f)
 
         messages.success(self.request, _('Timesheet created successfully!'))
-        return redirect('timesheet_list')
+        return redirect('timesheet_calendar')
 
     def form_invalid(self, form):
         # Default error message
@@ -271,7 +279,7 @@ class UpdateTimesheetView(LoginRequiredMixin, generic.UpdateView):
     model = Timesheet
     form_class = TimesheetForm
     template_name = 'timesheet/update_timesheets.html'
-    success_url = reverse_lazy('timesheet_list')
+    success_url = reverse_lazy('timesheet_calendar')
     
     def get_queryset(self):
         return Timesheet.objects.filter(user=self.request.user)
@@ -291,7 +299,7 @@ class UpdateTimesheetView(LoginRequiredMixin, generic.UpdateView):
 class DeleteTimesheetView(LoginRequiredMixin, generic.DeleteView):
     model = Timesheet
     template_name = 'timesheet/delete_confirm.html' 
-    success_url = reverse_lazy('timesheet_list')
+    success_url = reverse_lazy('timesheet_calendar')
 
     def get_queryset(self):
         # Security: Only allow users to delete their own entries

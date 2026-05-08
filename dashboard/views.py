@@ -3,6 +3,8 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.urls import reverse_lazy
 from django.utils import timezone
+
+from timesheets_main import settings
 from .forms import PALActivitiesUploadForm, FundsSourceForm, PALActivityForm
 from django.db.models import Count, Sum, F, ExpressionWrapper, fields, FloatField, Q
 from dashboard.forms import ActivityProgramForm
@@ -16,6 +18,53 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from natsort import natsorted
 import openpyxl
+
+from django.http import HttpResponse, HttpResponseForbidden
+from django.utils import timezone
+from datetime import timedelta
+from django.core.mail import send_mail
+from django.db.models import Count
+from timesheet.models import Timesheet
+
+def automated_task_runner(request):
+    # Security check: Only let the pinger in
+    secret_key = settings.TASK_RUNNER_KEY
+    if request.GET.get('key') != secret_key:
+        return HttpResponseForbidden("Invalid Key")
+
+    task = request.GET.get('task')
+    today = timezone.now().date()
+
+    if task == "monday_summary":
+        # 1. Send Office Summary + 2. Weekly Reminder to Reporters
+        send_office_weekly_summary(today)
+        return HttpResponse("Monday tasks completed")
+
+    elif task == "friday_reminder":
+        # 3. Friday Afternoon Reminder
+        send_reporter_reminders("Friday Reminder: Please finish your reports before the weekend!")
+        return HttpResponse("Friday reminders sent")
+
+    elif task == "monthly_report":
+        # 4. 1st of the Month Reminder
+        send_reporter_reminders("Monthly Reminder: It is the 1st of the month. Please finalize last month's report.")
+        return HttpResponse("Monthly reminders sent")
+
+    return HttpResponse("No task specified")
+
+# Helper functions to keep it clean
+def send_office_weekly_summary(today):
+    last_week = today - timedelta(days=7)
+    summary = Timesheet.objects.filter(date__range=[last_week, today - timedelta(days=1)])\
+        .values('user__username').annotate(days=Count('date', distinct=True))
+    
+    body = "Weekly Audit:\n" + "\n".join([f"{s['user__username']}: {s['days']} days" for s in summary])
+    send_mail("Weekly Summary", body, "system@company.com", ["office@company.com"])
+
+def send_reporter_reminders(msg):
+    from django.contrib.auth.models import User
+    emails = User.objects.filter(is_staff=False).values_list('email', flat=True)
+    send_mail("Report Reminder", msg, "system@company.com", list(emails))
 
 def sanitize_romanian(text):
     if not text:

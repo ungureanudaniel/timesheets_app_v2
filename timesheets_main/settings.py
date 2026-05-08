@@ -62,6 +62,8 @@ AUTHENTICATION_BACKENDS = [
     'users.auth_backend.EmailOrUsernameModelBackend',  # Your custom backend
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+TASK_RUNNER_KEY = os.getenv('TASK_RUNNER_KEY', 'default_task_runner_key')
 AUTH_USER_MODEL = 'users.CustomUser'
 # Axes Configuration
 AXES_FAILURE_LIMIT = 5  # Lock after 5 failed attempts

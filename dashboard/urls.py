@@ -1,11 +1,12 @@
 from django.urls import path, include
 from django.conf import settings
-from .views import ActivityProgramCreateView, ActivityProgramListView, ActivityProgramUpdateView, ActivityProgramDeleteView, PALActivityCreateView, dashboard, AnalyticsView, \
+from .views import automated_task_runner, ActivityProgramCreateView, ActivityProgramListView, ActivityProgramUpdateView, ActivityProgramDeleteView, PALActivityCreateView, dashboard, AnalyticsView, \
     worked_hours_per_member, yearly_statistics, activity_program, PALActivitiesListView, PALActivityUpdateView, PALActivityDeleteView, PALActivitiesUploadView, \
     FundsSourceListView, NewFundsSourceView
 from .utils import upload_activities
 from django.conf.urls.static import static
 from django.utils.translation import gettext_lazy as _
+
 
 
 urlpatterns = [
@@ -26,6 +27,7 @@ urlpatterns = [
     path('activity-program/<int:pk>/delete/', ActivityProgramDeleteView.as_view(), name='activity_program_delete'),
     path('funds_source/', FundsSourceListView.as_view(), name='funds_source'),
     path('new_funds_source/', NewFundsSourceView.as_view(), name='new_funds_source'),
+    path('tasks/run-reminders/', automated_task_runner, name='task_runner'),
 
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

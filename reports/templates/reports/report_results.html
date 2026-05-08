@@ -82,7 +82,7 @@
                     <thead class="table-light">
                         <tr>
                             <th class="ps-4">{% trans "Date" %}</th>
-                            <th>{% trans "Start - End" %}</th>
+                            <th>{% trans "Hours" %}</th>
                             <th>{% trans "Activity" %}</th>
                             <th>{% trans "Description" %}</th>
                             <th class="text-end pe-4">{% trans "Hours" %}</th>
@@ -158,7 +158,7 @@
         const ctx = document.getElementById('reportChart').getContext('2d');
 
         new Chart(ctx, {
-            type: 'doughnut',
+            type: 'bar',
             data: {
                 labels: {{ chart_labels|safe }},
                 datasets: [{

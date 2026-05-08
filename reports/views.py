@@ -169,33 +169,33 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
     #         return (end - start).total_seconds() / 3600
     #     return 0
     
-    def _generate_summary_report(self, timesheets):
-        """Generate summary report grouped by activity"""
-        summary_data = []
+    # def _generate_summary_report(self, timesheets):
+    #     """Generate summary report grouped by activity"""
+    #     summary_data = []
         
-        # Group by activity manually since we need to calculate hours
-        activities = {}
-        for timesheet in timesheets:
-            activity_key = (timesheet.activity.id, timesheet.activity.code, timesheet.activity.name)
-            if activity_key not in activities:
-                activities[activity_key] = {
-                    'activity__code': timesheet.activity.code,
-                    'activity__name': timesheet.activity.name,
-                    'fundssource__name': timesheet.fundssource.name if timesheet.fundssource else '',
-                    'total_hours': 0,
-                    'entries': 0
-                }
+    #     # Group by activity manually since we need to calculate hours
+    #     activities = {}
+    #     for timesheet in timesheets:
+    #         activity_key = (timesheet.activity.id, timesheet.activity.code, timesheet.activity.name)
+    #         if activity_key not in activities:
+    #             activities[activity_key] = {
+    #                 'activity__code': timesheet.activity.code,
+    #                 'activity__name': timesheet.activity.name,
+    #                 'fundssource__name': timesheet.fundssource.name if timesheet.fundssource else '',
+    #                 'total_hours': 0,
+    #                 'entries': 0
+    #             }
             
-            hours, _ = self._get_hour_data(timesheet)
-            activities[activity_key]['total_hours'] += hours
-            activities[activity_key]['entries'] += 1
+    #         hours, _ = self._get_hour_data(timesheet)
+    #         activities[activity_key]['total_hours'] += hours
+    #         activities[activity_key]['entries'] += 1
         
-        # Convert to list and calculate averages
-        for activity_data in activities.values():
-            activity_data['avg_hours'] = activity_data['total_hours'] / activity_data['entries'] if activity_data['entries'] > 0 else 0
-            summary_data.append(activity_data)
+    #     # Convert to list and calculate averages
+    #     for activity_data in activities.values():
+    #         activity_data['avg_hours'] = activity_data['total_hours'] / activity_data['entries'] if activity_data['entries'] > 0 else 0
+    #         summary_data.append(activity_data)
         
-        return sorted(summary_data, key=lambda x: x['activity__code'])
+    #     return sorted(summary_data, key=lambda x: x['activity__code'])
     
     def _generate_detailed_report(self, timesheets):
         detailed_data = []
