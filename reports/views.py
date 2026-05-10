@@ -401,23 +401,52 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
             ts_images = ts.timesheet_images.all()
             if ts_images:
                 img_list = []
+                # Define max width for an image in a 3-column layout
+                # (Page width 595 - margins 60) / 3 = approx 178 points
+                max_img_width = 1.8 * inch 
+                
                 for img_obj in ts_images:
                     try:
+                        # Load image
                         img = Image(img_obj.image.path)
-                        aspect = img.imageHeight / float(img.imageWidth)
-                        img.drawHeight = 1.2 * inch
-                        img.drawWidth = (1.2 * inch) / aspect
+                        
+                        # Get original dimensions
+                        i_width = img.imageWidth
+                        i_height = img.imageHeight
+                        aspect = i_height / float(i_width)
+
+                        # Rescale logic
+                        img.drawWidth = max_img_width
+                        img.drawHeight = max_img_width * aspect
+                        
+                        # Safety check: if image is too tall, shrink it further
+                        if img.drawHeight > 2.5 * inch:
+                            img.drawHeight = 2.5 * inch
+                            img.drawWidth = (2.5 * inch) / aspect
+
                         img_list.append(img)
-                    except: continue
+                    except Exception as e:
+                        continue
                 
                 if img_list:
+                    # Split into rows of 3
                     rows = [img_list[i:i + 3] for i in range(0, len(img_list), 3)]
-                    img_table = Table(rows, hAlign='CENTER')
-                    wrapper = Table([[img_table]], colWidths=[7.3 * inch])
+                    
+                    # Create the image table
+                    img_table = Table(rows, colWidths=[2.2 * inch] * 3) # Force columns to stay in bounds
+                    img_table.setStyle(TableStyle([
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 5),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+                    ]))
+                    
+                    # Wrap in a container table to keep it centered on A4
+                    wrapper = Table([[img_table]], colWidths=[doc.width])
                     wrapper.setStyle(TableStyle([
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                        ('TOPPADDING', (0, 0), (-1, -1), 5),
-                        ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+                        ('TOPPADDING', (0, 0), (-1, -1), 10),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
                     ]))
                     elements.append(wrapper)
 
