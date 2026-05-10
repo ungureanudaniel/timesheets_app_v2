@@ -224,36 +224,38 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
             })
         return detailed_data
 
-from PIL import Image
-from io import BytesIO
+# from PIL import Image
+# from io import BytesIO
 
-def process_image_for_pdf(image_field, max_size=(800, 800)):
-    """
-    Takes an ImageField, resizes it, compresses it, 
-    and returns a BytesIO object for the PDF.
-    """
-    # Open the image using Pillow
-    img = Image.open(image_field)
+# def process_image_for_pdf(image_field, max_size=(800, 800)):
+#     """
+#     Takes an ImageField, resizes it, compresses it, 
+#     and returns a BytesIO object for the PDF.
+#     """
+#     # Open the image using Pillow
+#     img = Image.open(image_field)
     
-    # Convert to RGB if it's RGBA (prevents errors with JPEGs)
-    if img.mode in ("RGBA", "P"):
-        img = img.convert("RGB")
+#     # Convert to RGB if it's RGBA (prevents errors with JPEGs)
+#     if img.mode in ("RGBA", "P"):
+#         img = img.convert("RGB")
     
-    # 1. Resize: Maintain aspect ratio
-    img.thumbnail(max_size, Image.Resampling.LANCZOS)
+#     # 1. Resize: Maintain aspect ratio
+#     img.thumbnail(max_size, Image.Resampling.LANCZOS)
     
-    # 2. Compress: Save to a buffer with reduced quality
-    output_buffer = BytesIO()
-    img.save(output_buffer, format="JPEG", quality=70, optimize=True)
-    output_buffer.seek(0)
+#     # 2. Compress: Save to a buffer with reduced quality
+#     output_buffer = BytesIO()
+#     img.save(output_buffer, format="JPEG", quality=70, optimize=True)
+#     output_buffer.seek(0)
     
-    return output_buffer
+#     return output_buffer
 
 import os
 from django.conf import settings
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import base64
+from reportlab.lib.utils import ImageReader
 from io import BytesIO
 from reportlab.platypus import Image, Spacer
 from reportlab.lib.units import inch
@@ -419,26 +421,52 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
                     ]))
                     elements.append(wrapper)
 
-        # --- 6. SIGNATURE SECTION ---
+        # --- 6. SIGNATURE SECTION (Updated) ---
         elements.append(Spacer(1, 0.5 * inch))
-        sig_path = report_data.get('signature_path') # Or fetch from session/database
+        
+        # Get the base64 string from the session
+        sig_base64 = report_data.get('signature_base64')
 
-        if sig_path and os.path.exists(sig_path):
-            sig_img = Image(sig_path)
-            sig_img.drawHeight = 1.0 * inch
-            sig_img.drawWidth = 2.0 * inch
-            
-            # Create a small table for the signature and a line
-            sig_table = Table([
-                [sig_img],
-                [Paragraph("Semnătură angajat", styles['Normal'])]
-            ], colWidths=[2.5 * inch])
-            
-            sig_table.setStyle(TableStyle([
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('LINEABOVE', (0, 1), (0, 1), 1, colors.black), # Line above the label
-            ]))
-            elements.append(sig_table)
+        if sig_base64 and "," in sig_base64:
+            try:
+                # 1. Strip the header (data:image/png;base64,)
+                format, imgstr = sig_base64.split(';base64,')
+                
+                # 2. Decode the base64 string
+                img_data = base64.b64decode(imgstr)
+                
+                # 3. Create a ReportLab Image from the decoded bytes
+                sig_io = BytesIO(img_data)
+                sig_img = Image(sig_io)
+                
+                # 4. Set dimensions
+                sig_img.drawHeight = 0.8 * inch
+                sig_img.drawWidth = 2.0 * inch
+                
+                # 5. Build Signature Table
+                sig_table = Table([
+                    [sig_img],
+                    [Paragraph("Semnătură angajat", styles['Normal'])]
+                ], colWidths=[2.5 * inch])
+                
+                sig_table.setStyle(TableStyle([
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('LINEABOVE', (0, 1), (0, 1), 0.5, colors.black),
+                    ('TOPPADDING', (1, 0), (1, 0), 5),
+                ]))
+                
+                elements.append(sig_table)
+            except Exception as e:
+                # If something goes wrong, we append a blank line for manual signing
+                elements.append(Paragraph("__________________________", styles['Normal']))
+                elements.append(Paragraph("Semnătură angajat", styles['Normal']))
+        else:
+            # Fallback if no digital signature was provided
+            elements.append(Spacer(1, 0.3 * inch))
+            elements.append(Paragraph("__________________________", styles['Normal']))
+            elements.append(Paragraph("Semnătură angajat", styles['Normal']))
+
+        # --- BUILD AND RETURN ---
         doc.build(elements)
         buffer.seek(0)
         response = HttpResponse(buffer, content_type='application/pdf')
