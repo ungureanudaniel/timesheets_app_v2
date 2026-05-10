@@ -21,13 +21,20 @@
                     <i class="fas fa-calendar-alt me-1"></i> {{ period_detail }}
                 </p>
             </div>
+            <!-- Replace your existing Export PDF button with this -->
             <div class="btn-group">
                 <button onclick="window.print()" class="btn btn-outline-secondary">
                     <i class="fas fa-print"></i> {% trans "Print" %}
                 </button>
-                <a href="{% url 'export_pdf' %}" class="btn btn-danger">
-                    <i class="fas fa-file-pdf"></i> {% trans "Export PDF" %}
-                </a>
+                
+                <!-- Hidden form to handle the signature data -->
+                <form id="pdf-export-form" action="{% url 'export_pdf' %}" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="signature_data" id="signature-data">
+                    <button type="button" id="btn-open-sig" class="btn btn-danger">
+                        <i class="fas fa-file-pdf"></i> {% trans "Export PDF" %}
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -200,4 +207,70 @@
     .table-light { background-color: #f8f9fa !important; }
 }
 </style>
+<!-- SIGNATURE MODAL -->
+            <div id="sig-modal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85);">
+                <div style="background:white; margin:10% auto; padding:20px; width:95%; max-width:500px; border-radius:15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); text-align:center;">
+                    <h4 class="mb-3">{% trans "Semnătură necesară" %}</h4>
+                    <p class="text-muted small">{% trans "Vă rugăm să semnați în caseta de mai jos pentru a finaliza exportul." %}</p>
+                    
+                    <div style="background:#f9f9f9; border:1px solid #ddd; border-radius:8px;">
+                        <canvas id="signature-pad" style="width:100%; height:200px; cursor: crosshair; touch-action: none;"></canvas>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn btn-secondary" id="btn-close-sig">{% trans "Anulează" %}</button>
+                        <button type="button" class="btn btn-outline-danger" id="btn-clear-sig">{% trans "Șterge" %}</button>
+                        <button type="button" class="btn btn-success" id="btn-submit-sig">{% trans "Semnează & Descarcă" %}</button>
+                    </div>
+                </div>
+            </div>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById("sig-modal");
+        const canvas = document.getElementById("signature-pad");
+        const signaturePad = new SignaturePad(canvas, {
+            penColor: "rgb(0, 0, 128)" 
+        });
+
+        // 1. Open Modal
+        document.getElementById("btn-open-sig").addEventListener("click", () => {
+            modal.style.display = "block";
+            resizeCanvas();
+        });
+
+        // 2. Close Modal
+        document.getElementById("btn-close-sig").addEventListener("click", () => {
+            modal.style.display = "none";
+        });
+
+        // 3. Clear Pad
+        document.getElementById("btn-clear-sig").addEventListener("click", () => {
+            signaturePad.clear();
+        });
+
+        // 4. Submit Form
+        document.getElementById("btn-submit-sig").addEventListener("click", () => {
+            if (signaturePad.isEmpty()) {
+                alert("{% trans 'Vă rugăm să introduceți semnătura.' %}");
+                return;
+            }
+            
+            // Set the hidden input value and submit
+            document.getElementById("signature-data").value = signaturePad.toDataURL();
+            document.getElementById("pdf-export-form").submit();
+            
+            // Close modal after a short delay so user doesn't get confused
+            setTimeout(() => { modal.style.display = "none"; }, 500);
+        });
+
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            signaturePad.clear();
+        }
+    });
+</script>
 {% endblock %}

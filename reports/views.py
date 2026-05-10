@@ -38,6 +38,21 @@ class ReportGeneratorView(LoginRequiredMixin, FormView):
         custom_end = form.cleaned_data.get('custom_end_date')
         selected_user = form.cleaned_data.get('user')
 
+
+        import base64
+        from django.core.files.base import ContentFile
+
+        # Inside your FormView/form_valid
+        signature_data = self.request.POST.get('signature_data')
+        if signature_data:
+            # Remove the metadata header from the string
+            format, imgstr = signature_data.split(';base64,') 
+            ext = format.split('/')[-1] 
+            data = ContentFile(base64.b64decode(imgstr), name='signature.' + ext)
+            # Save 'data' to a model field or temporary storage
+            # Then store the path in session
+            self.request.session['signature_path'] = saved_instance.signature_field.path
+
         if selected_user:
             target_user_id = selected_user.id
         else:
@@ -404,11 +419,43 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
                     ]))
                     elements.append(wrapper)
 
+        # --- 6. SIGNATURE SECTION ---
+        elements.append(Spacer(1, 0.5 * inch))
+        sig_path = report_data.get('signature_path') # Or fetch from session/database
+
+        if sig_path and os.path.exists(sig_path):
+            sig_img = Image(sig_path)
+            sig_img.drawHeight = 1.0 * inch
+            sig_img.drawWidth = 2.0 * inch
+            
+            # Create a small table for the signature and a line
+            sig_table = Table([
+                [sig_img],
+                [Paragraph("Semnătură angajat", styles['Normal'])]
+            ], colWidths=[2.5 * inch])
+            
+            sig_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('LINEABOVE', (0, 1), (0, 1), 1, colors.black), # Line above the label
+            ]))
+            elements.append(sig_table)
         doc.build(elements)
         buffer.seek(0)
         response = HttpResponse(buffer, content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="activity_report.pdf"'
         return response
+
+    def post(self, request, *args, **kwargs):
+        # This receives the signature data
+        signature_data = request.POST.get('signature_data')
+        
+        # Store it in the session so the GET part of the PDF logic can find it
+        report_data = request.session.get('report_data', {})
+        report_data['signature_base64'] = signature_data
+        request.session['report_data'] = report_data
+        
+        # Now call the same logic as the GET method to return the PDF
+        return self.get(request, *args, **kwargs)
 
     def _generate_pie_chart(self, data_dict):
         plt.figure(figsize=(6, 6)) # Keep it square to prevent vertical distortion
