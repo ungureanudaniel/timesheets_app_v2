@@ -942,6 +942,12 @@ msgstr "Săptămâna curentă"
 msgid "Current Month"
 msgstr "Luna curentă"
 
+msgid "Current Year"
+msgstr "Anul curent"
+
+msgid "Last Year"
+msgstr "Anul trecut"
+
 msgid "Last Week"
 msgstr "Săptămâna trecută"
 
@@ -971,3 +977,6 @@ msgstr "Partial"
 
 msgid "Missing"
 msgstr "Lipsă"
+
+msgid "Work Days (8h 30m)"
+msgstr "Zile lucrate (8h 30m)"

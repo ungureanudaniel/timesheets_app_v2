@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import sys
 
 from django.utils import timezone
 from django.db import models
@@ -83,10 +84,14 @@ class Timesheet(models.Model):
         hours = int(total_hours)
         minutes = int(round((total_hours - hours) * 60))
         return f"{hours}h {minutes:02d}m"
-        
+
     # This method is used to set the upload path for documents associated with the timesheet
     def __str__(self):
         return f"Timesheet for {self.user.username}"
+
+from PIL import Image
+from io import BytesIO
+from django.core.files.uploadedfile import InMemoryUploadedFile
 
 class TimesheetImage(models.Model):
     """
@@ -95,6 +100,34 @@ class TimesheetImage(models.Model):
     timesheet = models.ForeignKey(Timesheet, related_name='timesheet_images', on_delete=models.CASCADE)
     image = models.ImageField(upload_to='timesheet_images/') 
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def compress_image(self, uploaded_image):
+        img = Image.open(uploaded_image)
+        
+        # Convert to RGB (required for JPEG)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+
+        # 1. Resize: Set a max width of 1200px (plenty for reports)
+        max_width = 1200
+        if img.width > max_width:
+            output_size = (max_width, int((max_width / img.width) * img.height))
+            img = img.resize(output_size, Image.Resampling.LANCZOS)
+
+        # 2. Compress
+        output_io_stream = BytesIO()
+        img.save(output_io_stream, format='JPEG', quality=70, optimize=True)
+        output_io_stream.seek(0)
+
+        # 3. Wrap back into a Django-friendly file
+        return InMemoryUploadedFile(
+            output_io_stream,
+            'ImageField',
+            f"{uploaded_image.name.split('.')[0]}.jpg",
+            'image/jpeg',
+            sys.getsizeof(output_io_stream),
+            None
+        )
 
     def __str__(self):
         return f"Image for {self.timesheet.user.username} on {self.timesheet.date}"

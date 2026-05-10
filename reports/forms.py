@@ -11,15 +11,17 @@ class ReportPeriodForm(forms.Form):
         ('last_week', _('Last Week')),
         ('current_month', _('Current Month')),
         ('last_month', _('Last Month')),
+        ('current_year', _('Current Year')),
+        ('last_year', _('Last Year')),
         ('custom', _('Custom Range')),
     ]
     
     # Define the field with an empty queryset initially to prevent leaks
-    user = forms.ModelChoiceField(
+    user = forms.ModelMultipleChoiceField(
         queryset=CustomUser.objects.none(), 
         required=False, 
         label=_("Employee"),
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.CheckboxSelectMultiple()
     )
     period = forms.ChoiceField(choices=PERIOD_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
     custom_start_date = forms.DateField(
@@ -43,9 +45,8 @@ class ReportPeriodForm(forms.Form):
             if is_manager:
                 # Fill the dropdown with all active employees for Managers
                 self.fields['user'].queryset = CustomUser.objects.filter(is_active=True).order_by('last_name')
-                self.fields['user'].empty_label = _("Select an employee")
             else:
                 # Regular users only see themselves
                 self.fields['user'].queryset = CustomUser.objects.filter(id=request_user.id)
-                self.fields['user'].initial = request_user.id
+                self.fields['user'].initial = [request_user.id]
                 self.fields['user'].widget = forms.HiddenInput()

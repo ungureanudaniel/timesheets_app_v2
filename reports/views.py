@@ -35,30 +35,50 @@ class ReportGeneratorView(LoginRequiredMixin, FormView):
         period = form.cleaned_data['period']
         custom_start = form.cleaned_data.get('custom_start_date')
         custom_end = form.cleaned_data.get('custom_end_date')
-        selected_user = form.cleaned_data.get('user')
+        selected_users = form.cleaned_data.get('user')
+
+        if selected_users.exists():
+            user_ids = list(selected_users.values_list('id', flat=True))  # Get IDs of all selected users for the report
 
         # Calculate date range
         today = timezone.now().date()
-        
-        if custom_start and custom_end:
-            start_date = custom_start
-            end_date = custom_end
-            period = f'{start_date} to {end_date}'
-        elif period == 'weekly':
+        start_date = today
+        end_date = today
+
+        if period == 'current_week':
             start_date = today - timedelta(days=today.weekday())
             end_date = start_date + timedelta(days=6)
-            period = f'{start_date} to {end_date}'
-        else:  # monthly
+        elif period == 'last_week':
+            start_date = today - timedelta(days=today.weekday() + 7)
+            end_date = start_date + timedelta(days=6)
+        elif period == 'current_month':
             start_date = today.replace(day=1)
             end_date = (start_date + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-            period = f'{start_date} to {end_date}'
+        elif period == 'last_month':
+            start_date = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
+            end_date = start_date + timedelta(days=calendar.monthrange(start_date.year, start_date.month)[1] - 1)
+        elif period == 'last_year':
+            start_date = today.replace(year=today.year - 1, month=1, day=1)
+            end_date = today.replace(year=today.year - 1, month=12, day=31)
+        elif period == 'current_year':
+            start_date = today.replace(month=1, day=1)
+            end_date = today.replace(month=12, day=31)
+        elif period == 'custom' and (not custom_start or not custom_end):
+            form.add_error(None, _("Please provide both start and end dates for the custom range."))
+            return self.form_invalid(form)
+        elif custom_start and custom_end:
+            start_date = custom_start
+            end_date = custom_end
+        else:
+            form.add_error('period', _("Invalid period selection."))
+            return self.form_invalid(form)
         
         # Store in session for results view
         self.request.session['report_data'] = {
             'start_date': start_date.isoformat(),
             'end_date': end_date.isoformat(),
-            'period': period,
-            'user_id': selected_user.id if selected_user else None,
+            'period_label': str(dict(form.fields['period'].choices).get(period, period)),
+            'user_ids': user_ids if selected_users.exists() else None,
         }
         return super().form_valid(form)
 
@@ -160,43 +180,6 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
         
         return 0, "0h 00m"
     
-    # def _calculate_hours(self, timesheet):
-    #     if timesheet.start_time and timesheet.end_time:
-    #         start = datetime.combine(datetime.today(), timesheet.start_time)
-    #         end = datetime.combine(datetime.today(), timesheet.end_time)
-    #         if end < start:
-    #             end += timedelta(days=1)
-    #         return (end - start).total_seconds() / 3600
-    #     return 0
-    
-    # def _generate_summary_report(self, timesheets):
-    #     """Generate summary report grouped by activity"""
-    #     summary_data = []
-        
-    #     # Group by activity manually since we need to calculate hours
-    #     activities = {}
-    #     for timesheet in timesheets:
-    #         activity_key = (timesheet.activity.id, timesheet.activity.code, timesheet.activity.name)
-    #         if activity_key not in activities:
-    #             activities[activity_key] = {
-    #                 'activity__code': timesheet.activity.code,
-    #                 'activity__name': timesheet.activity.name,
-    #                 'fundssource__name': timesheet.fundssource.name if timesheet.fundssource else '',
-    #                 'total_hours': 0,
-    #                 'entries': 0
-    #             }
-            
-    #         hours, _ = self._get_hour_data(timesheet)
-    #         activities[activity_key]['total_hours'] += hours
-    #         activities[activity_key]['entries'] += 1
-        
-    #     # Convert to list and calculate averages
-    #     for activity_data in activities.values():
-    #         activity_data['avg_hours'] = activity_data['total_hours'] / activity_data['entries'] if activity_data['entries'] > 0 else 0
-    #         summary_data.append(activity_data)
-        
-    #     return sorted(summary_data, key=lambda x: x['activity__code'])
-    
     def _generate_detailed_report(self, timesheets):
         detailed_data = []
         # Note the prefetch name here must match your model's related_name
@@ -218,9 +201,37 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
             })
         return detailed_data
 
+from PIL import Image
+from io import BytesIO
+
+def process_image_for_pdf(image_field, max_size=(800, 800)):
+    """
+    Takes an ImageField, resizes it, compresses it, 
+    and returns a BytesIO object for the PDF.
+    """
+    # Open the image using Pillow
+    img = Image.open(image_field)
+    
+    # Convert to RGB if it's RGBA (prevents errors with JPEGs)
+    if img.mode in ("RGBA", "P"):
+        img = img.convert("RGB")
+    
+    # 1. Resize: Maintain aspect ratio
+    img.thumbnail(max_size, Image.Resampling.LANCZOS)
+    
+    # 2. Compress: Save to a buffer with reduced quality
+    output_buffer = BytesIO()
+    img.save(output_buffer, format="JPEG", quality=70, optimize=True)
+    output_buffer.seek(0)
+    
+    return output_buffer
+
 import os
 from django.conf import settings
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from io import BytesIO
 from reportlab.platypus import Image, Spacer
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
@@ -293,7 +304,7 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
         total_days = total_hours_decimal / standard_day
         
         summary_table_data = [
-            [_('Total Time'), _('Work Days (8.5h)'), _('Entries')],
+            [_('Total Time'), _('Work Days (8h 30m)'), _('Entries')],
             [
                 self._format_hours_to_hm(total_hours_decimal), 
                 f"{total_days:.2f}", 
@@ -405,6 +416,48 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
         plt.savefig(chart_buffer, format='png', bbox_inches='tight')
         plt.close()
         chart_buffer.seek(0)
+        return chart_buffer
+
+    def _generate_bar_chart(self, data_dict):
+        # Filter data to remove zeros (makes the chart cleaner)
+        clean_data = {k: v for k, v in data_dict.items() if v > 0}
+        
+        if not clean_data:
+            # Fallback if no data exists to prevent Matplotlib crash
+            clean_data = {"No Data": 0}
+
+        labels = list(clean_data.keys())
+        values = list(clean_data.values())
+
+        # Adjust figure height based on the number of items
+        fig_height = max(4, len(labels) * 0.5)
+        plt.figure(figsize=(8, fig_height))
+        
+        # Font setup for diacritics
+        plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'sans-serif']
+        plt.rcParams['font.family'] = 'sans-serif'
+
+        # Create horizontal bars
+        bars = plt.barh(labels, values, color='#007bff')
+
+        # Add labels to the end of each bar for clarity
+        for bar in bars:
+            width = bar.get_width()
+            plt.text(width + 0.1, bar.get_y() + bar.get_height()/2, 
+                    f'{width}h', va='center', fontsize=10)
+
+        plt.xlabel('Hours Worked')
+        plt.title('Work Distribution')
+        
+        # Improve layout so labels aren't cut off
+        plt.tight_layout()
+
+        # Save to memory buffer
+        chart_buffer = BytesIO()
+        plt.savefig(chart_buffer, format='png', bbox_inches='tight', dpi=300)
+        plt.close()
+        chart_buffer.seek(0)
+        
         return chart_buffer
 
     def _calculate_hours(self, timesheet):
