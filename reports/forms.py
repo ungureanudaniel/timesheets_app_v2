@@ -6,7 +6,6 @@ from users.models import CustomUser
 class ReportPeriodForm(forms.Form):
     # 1. Expanded Period Choices
     PERIOD_CHOICES = [
-        ('today', _('Today')),
         ('current_week', _('Current Week')),
         ('last_week', _('Last Week')),
         ('current_month', _('Current Month')),
@@ -17,11 +16,11 @@ class ReportPeriodForm(forms.Form):
     ]
     
     # Define the field with an empty queryset initially to prevent leaks
-    user = forms.ModelMultipleChoiceField(
+    user = forms.ModelChoiceField(
         queryset=CustomUser.objects.none(), 
         required=False, 
         label=_("Employee"),
-        widget=forms.CheckboxSelectMultiple()
+        widget=forms.Select(attrs={'class': 'form-control', 'placeholder': _("Selectează un angajat")})
     )
     period = forms.ChoiceField(choices=PERIOD_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
     custom_start_date = forms.DateField(
@@ -45,6 +44,7 @@ class ReportPeriodForm(forms.Form):
             if is_manager:
                 # Fill the dropdown with all active employees for Managers
                 self.fields['user'].queryset = CustomUser.objects.filter(is_active=True).order_by('last_name')
+                self.fields['user'].widget.attrs['placeholder'] = _("Selectează un angajat")
             else:
                 # Regular users only see themselves
                 self.fields['user'].queryset = CustomUser.objects.filter(id=request_user.id)

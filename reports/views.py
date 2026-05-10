@@ -35,10 +35,12 @@ class ReportGeneratorView(LoginRequiredMixin, FormView):
         period = form.cleaned_data['period']
         custom_start = form.cleaned_data.get('custom_start_date')
         custom_end = form.cleaned_data.get('custom_end_date')
-        selected_users = form.cleaned_data.get('user')
+        selected_user = form.cleaned_data.get('user')
 
-        if selected_users.exists():
-            user_ids = list(selected_users.values_list('id', flat=True))  # Get IDs of all selected users for the report
+        if selected_user:
+            target_user_id = selected_user.id
+        else:
+            target_user_id = self.request.user.id
 
         # Calculate date range
         today = timezone.now().date()
@@ -78,7 +80,7 @@ class ReportGeneratorView(LoginRequiredMixin, FormView):
             'start_date': start_date.isoformat(),
             'end_date': end_date.isoformat(),
             'period_label': str(dict(form.fields['period'].choices).get(period, period)),
-            'user_ids': user_ids if selected_users.exists() else None,
+            'user_ids': target_user_id if target_user_id else []
         }
         return super().form_valid(form)
 
@@ -93,15 +95,25 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
         if not report_data:
             return context
         
-        # 1. Identify User and Dates
-        user_id = report_data.get('user_id') or self.request.user.pk
         start_date = datetime.strptime(report_data.get('start_date'), '%Y-%m-%d').date()
         end_date = datetime.strptime(report_data.get('end_date'), '%Y-%m-%d').date()
 
-        from django.contrib.auth import get_user_model
-        context['report_user'] = get_user_model().objects.get(id=user_id)
+        session_user_id = report_data.get('user_id')
+    
+        if session_user_id:
+            user_id = session_user_id
+        else:
+            user_id = self.request.user.pk
 
-        # 2. Fetch Timesheets (Optimized)
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        try:
+            report_user = User.objects.get(id=user_id)
+            context['report_user'] = report_user
+        except User.DoesNotExist:
+            context['report_user'] = self.request.user
+            user_id = self.request.user.pk
+
         timesheets = Timesheet.objects.filter(
             user_id=user_id,
             date__range=[start_date, end_date]
@@ -109,7 +121,6 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
             img_nr=Count('timesheet_images')
         ).order_by('date', 'start_time')
 
-        # 3. Process Data
         detailed_data = []
         activity_totals = {}
         grand_total_decimal = 0
@@ -118,7 +129,6 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
             hours_dec, hours_str = self._get_hour_data(ts)
             grand_total_decimal += hours_dec
             
-            # Table Data
             detailed_data.append({
                 'id': ts.pk,
                 'date': ts.date,
@@ -133,10 +143,10 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
 
             code = ts.activity.code
             activity_totals[code] = activity_totals.get(code, 0) + hours_dec
-            # Calculate final total string
+        
         total_h = int(grand_total_decimal)
         total_m = int(round((grand_total_decimal - total_h) * 60))
-        # 4. Final Context
+        
         context.update({
             'report_title': _("Detailed Activity Report"),
             'period_detail': f"{start_date.strftime('%d %b %Y')} - {end_date.strftime('%d %b %Y')}",
@@ -154,11 +164,9 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
         Example: (8.5, "8h 30m")
         """
         if timesheet.start_time and timesheet.end_time:
-            # We use datetime.combine because you can't subtract 'time' objects directly
             start = datetime.combine(datetime.today(), timesheet.start_time)
             end = datetime.combine(datetime.today(), timesheet.end_time)
             
-            # If end_time is earlier than start_time (e.g., 22:00 to 02:00), it's the next day
             if end < start:
                 end += timedelta(days=1)
             
@@ -171,7 +179,6 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
             elif day_of_week == 4:  # Friday
                 friday_deadline = datetime.combine(timesheet.date, datetime.strptime("14:00", "%H:%M").time())     
                    
-            # Format the human-readable string
             h = int(decimal_hours)
             m = int(round((decimal_hours - h) * 60))
             display_string = f"{h}h {m:02d}m"
