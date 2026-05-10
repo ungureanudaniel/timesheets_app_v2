@@ -2,13 +2,14 @@ from django.views.generic import FormView, TemplateView
 from django.db.models import Sum, Count, Avg
 from django.utils import timezone
 from django.urls import reverse_lazy
+from matplotlib.ticker import FuncFormatter
 from timesheet.models import Timesheet
 from .forms import ReportPeriodForm
 from datetime import timedelta, datetime
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
@@ -271,7 +272,7 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
 
         buffer = BytesIO()
         # Adjusted margins to fit content better
-        doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
         elements = []
         styles = getSampleStyleSheet()
         
@@ -333,13 +334,18 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
         if activity_totals:
             chart_buffer = self._generate_bar_chart(activity_totals)
             chart_img = Image(chart_buffer)
-            chart_img.drawHeight = 3.0 * inch
-            chart_img.drawWidth = 3.0 * inch 
+            
+            available_width = 535.27
+            
+            aspect = chart_img.imageHeight / float(chart_img.imageWidth)
+            
+            chart_img.drawWidth = available_width
+            chart_img.drawHeight = available_width * aspect
             elements.append(chart_img)
             elements.append(Spacer(1, 0.3 * inch))
 
         # --- 5. DETAILED LOG LOOP ---
-        elements.append(Paragraph(_("Detailed Log"), styles['Heading2']))
+        elements.append(Paragraph(_("Detalii"), styles['Heading2']))
         current_date = None
         
         for ts in timesheets:
@@ -363,7 +369,7 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
                 ]
             ]
             
-            t = Table(entry_data, colWidths=[0.8*inch, 1.8*inch, 1.0*inch, 0.7*inch, 3.0*inch])
+            t = Table(entry_data, colWidths=[0.8*inch, 1.7*inch, 1.0*inch, 0.7*inch, 3.2*inch])
             t.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -431,14 +437,20 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
         
         if not clean_data:
             # Fallback if no data exists to prevent Matplotlib crash
-            clean_data = {"No Data": 0}
+            clean_data = {"Date lipsă": 0}
 
         labels = list(clean_data.keys())
         values = list(clean_data.values())
 
+        # Helper function for formatting
+        def format_duration(decimal_hours):
+            h = int(decimal_hours)
+            m = int(round((decimal_hours - h) * 60))
+            return f"{h}h {m:02d}m"
+    
         # Adjust figure height based on the number of items
         fig_height = max(4, len(labels) * 0.5)
-        plt.figure(figsize=(8, fig_height))
+        plt.figure(figsize=(20, fig_height))
         
         # Font setup for diacritics
         plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'sans-serif']
@@ -450,13 +462,17 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
         # Add labels to the end of each bar for clarity
         for bar in bars:
             width = bar.get_width()
-            plt.text(width + 0.1, bar.get_y() + bar.get_height()/2, 
-                    f'{width}h', va='center', fontsize=10)
-
-        plt.xlabel('Hours Worked')
-        plt.title('Work Distribution')
+            if width > 0:
+                formatted_label = format_duration(width)
+                plt.text(width + 0.1, bar.get_y() + bar.get_height()/2, 
+                        formatted_label, va='center', fontsize=12, fontweight='bold')
         
-        # Improve layout so labels aren't cut off
+        from matplotlib.ticker import FuncFormatter
+        plt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format_duration(x)))
+
+        plt.xlabel('Ore lucrate')
+        plt.title('Distribuția orelor pe activități')
+        
         plt.tight_layout()
 
         # Save to memory buffer
