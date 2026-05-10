@@ -80,8 +80,9 @@ class ReportGeneratorView(LoginRequiredMixin, FormView):
             'start_date': start_date.isoformat(),
             'end_date': end_date.isoformat(),
             'period_label': str(dict(form.fields['period'].choices).get(period, period)),
-            'user_ids': target_user_id if target_user_id else []
+            'user_id': target_user_id
         }
+        self.request.session.modified = True
         return super().form_valid(form)
 
 
@@ -91,7 +92,6 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         report_data = self.request.session.get('report_data', {})
-        
         if not report_data:
             return context
         
