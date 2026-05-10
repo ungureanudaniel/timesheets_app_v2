@@ -980,3 +980,7 @@ msgstr "Lipsă"
 
 msgid "Work Days (8h 30m)"
 msgstr "Zile lucrate (8h 30m)"
+
+msgid "Total Time"
+msgstr "Total ore"
+
