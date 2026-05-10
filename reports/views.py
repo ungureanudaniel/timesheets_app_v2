@@ -322,9 +322,9 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
         elements.append(st)
         elements.append(Spacer(1, 0.3 * inch))
 
-        # --- 4. PIE CHART ---
+        # --- 4. BAR CHART ---
         if activity_totals:
-            chart_buffer = self._generate_pie_chart(activity_totals)
+            chart_buffer = self._generate_bar_chart(activity_totals)
             chart_img = Image(chart_buffer)
             chart_img.drawHeight = 3.0 * inch
             chart_img.drawWidth = 3.0 * inch 

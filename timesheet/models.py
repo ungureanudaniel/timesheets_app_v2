@@ -101,6 +101,12 @@ class TimesheetImage(models.Model):
     image = models.ImageField(upload_to='timesheet_images/') 
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        if not self.pk or (self.image and hasattr(self.image, 'file')):
+            if not isinstance(self.image.file, BytesIO):
+                self.image = self.compress_image(self.image)
+        super().save(*args, **kwargs)
+
     def compress_image(self, uploaded_image):
         img = Image.open(uploaded_image)
         
