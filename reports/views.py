@@ -268,7 +268,7 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         report_data = request.session.get('report_data', {})
         if not report_data:
-            return HttpResponse("No report data found")
+            return HttpResponse("Nu s-au găsit date pentru raport.")
 
         buffer = BytesIO()
         # Adjusted margins to fit content better
@@ -359,7 +359,7 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
 
             h = self._calculate_hours(ts)
             entry_data = [
-                [_('Time'), _('Activity'), _('Source'), _('Hrs'), _('Description')],
+                [_('Time'), _('Activity'), _('Funds source'), _('Hrs'), _('Description')],
                 [
                     f"{ts.start_time.strftime('%H:%M')}-{ts.end_time.strftime('%H:%M')}",
                     Paragraph(f"<b>{ts.activity.code}</b><br/>{ts.activity.name}", styles['Normal']),
