@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'general',
     'users',
+    'registries',
     'reports',
     'dashboard',
     'timesheet',
@@ -59,7 +60,7 @@ INSTALLED_APPS = [
 AUTH_TOKEN_LENGTH = 100
 AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesStandaloneBackend',
-    'users.auth_backend.EmailOrUsernameModelBackend',  # Your custom backend
+    'users.auth_backend.EmailOrUsernameModelBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 

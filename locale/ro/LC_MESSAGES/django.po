@@ -396,6 +396,9 @@ msgstr "Nu s-a găsit nici o activitate. Creați una!"
 msgid "Found"
 msgstr "S-au găsit"
 
+msgid "Sector registry"
+msgstr "Registru de sector"
+
 #: reports/views.py
 msgid "timesheet(s)"
 msgstr "activități"

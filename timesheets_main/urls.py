@@ -19,6 +19,7 @@ urlpatterns += i18n_patterns(
     path('administration/', include('dashboard.urls')),
     path('reports/', include('reports.urls')),
     path('accounts/', include('users.urls')),
+    path('documents/', include('registries.urls')),
 )
 
 # ------------add custom media path for production mode-----------

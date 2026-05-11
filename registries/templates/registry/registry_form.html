@@ -1,0 +1,57 @@
+{% extends 'general/base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">{% trans "Înregistrare Document Nou" %}</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        {# Handle Global Errors #}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label class="form-label font-weight-bold">{{ form.doc_number.label }}</label>
+                            {{ form.doc_number }}
+                            {% if form.doc_number.errors %}<div class="text-danger small">{{ form.doc_number.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.doc_date.label }}</label>
+                            {{ form.doc_date }}
+                            {% if form.doc_date.errors %}<div class="text-danger small">{{ form.doc_date.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.explanation.label }}</label>
+                            {{ form.explanation }}
+                            {% if form.explanation.errors %}<div class="text-danger small">{{ form.explanation.errors }}</div>{% endif %}
+                        </div>
+
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'registry_list' %}" class="btn btn-outline-secondary">
+                                {% trans "Anulează" %}
+                            </a>
+                            <button type="submit" class="btn btn-success px-4">
+                                <i class="fas fa-check"></i> {% trans "Salvează Numărul" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
