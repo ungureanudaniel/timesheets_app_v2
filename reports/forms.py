@@ -48,5 +48,5 @@ class ReportPeriodForm(forms.Form):
             else:
                 # Regular users only see themselves
                 self.fields['user'].queryset = CustomUser.objects.filter(id=request_user.id)
-                self.fields['user'].initial = [request_user.id]
+                self.fields['user'].initial = request_user.id
                 self.fields['user'].widget = forms.HiddenInput()
