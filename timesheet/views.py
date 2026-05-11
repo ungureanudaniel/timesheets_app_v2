@@ -243,8 +243,6 @@ class CreateTimesheetView(generic.CreateView):
         # Create the instance but don't save to DB yet
         self.object = form.save(commit=False)
 
-        # If manager selected a user in the dropdown, use that.
-        # Otherwise (for regular users), force it to be the logged-in user.
         selected_user = form.cleaned_data.get('user')
         if is_manager and selected_user:
             self.object.user = selected_user
@@ -286,6 +284,10 @@ class UpdateTimesheetView(LoginRequiredMixin, generic.UpdateView):
         return Timesheet.objects.filter(user=self.request.user)
     
     def form_valid(self, form):
+        self.object = form.save(commit=False)
+        if not form.cleaned_data.get('user'):
+            form.instance.user = self.get_object().user
+        
         response = super().form_valid(form)
 
         # Handle new image uploads

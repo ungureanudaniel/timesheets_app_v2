@@ -49,8 +49,10 @@ class TimesheetForm(forms.ModelForm):
             self.fields['user'].widget = forms.HiddenInput()
             self.fields['user'].required = False
  
-        if not self.initial.get('date'):
-            self.initial['date'] = timezone.now().date().isoformat()
+        if self.instance and self.instance.pk:
+            self.fields['user'].initial = self.instance.user_id
+        else:
+            self.fields['user'].initial = self.requesting_user.id
 
     def clean(self):
         cleaned_data = super().clean()
@@ -65,7 +67,7 @@ class TimesheetForm(forms.ModelForm):
             end_dt = datetime.combine(date, end_time)
             
             if end_dt <= start_dt:
-                raise forms.ValidationError(_("End time must be after start time."))
+                raise forms.ValidationError(_("Ora de final trebuie să fie după ora început."))
 
             current_entry_hours = (end_dt - start_dt).total_seconds() / 3600
             day_of_week = date.weekday()
@@ -96,7 +98,7 @@ class TimesheetForm(forms.ModelForm):
                     limit = 6.0
                     day_name = _("Friday")
                     if end_time > datetime.strptime("14:00", "%H:%M").time():
-                        raise forms.ValidationError(_("Friday work must end by 14:00."))
+                        raise forms.ValidationError("Programul de vineri se termină la ora 14:00.")
                 else:
                     limit = 8.5
                     day_name = _("Weekend")
@@ -106,15 +108,11 @@ class TimesheetForm(forms.ModelForm):
                     rem_h = int(remaining)
                     rem_m = int((remaining * 60) % 60)
                     
-                    raise forms.ValidationError(
-                        _("Limit exceeded for %(day)s. You have %(exist)s recorded. You can only add %(rem_h)sh %(rem_m)sm more.") % {
-                            'day': day_name,
-                            'exist': self._format_hours(existing_hours),
-                            'rem_h': rem_h,
-                            'rem_m': rem_m
-                        }
-                    )
-
+                    formatted_exist = self._format_hours(existing_hours)
+                    error_msg = _(f"Limită depășită pentru {day_name}! Ai deja {formatted_exist} înregistrate.")
+                    
+                    raise forms.ValidationError(error_msg)
+                    
         return cleaned_data
 
     def _format_hours(self, decimal_hours):
