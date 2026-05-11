@@ -98,7 +98,7 @@ class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
             user=user, 
             date__year=year, 
             date__month=month
-        )
+        ).order_by('-date', '-start_time')
         
         # Build a dictionary of {date: total_hours}
         daily_totals = {}
@@ -133,12 +133,13 @@ class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
                     else:
                         status = "danger"  # Red
                 
-                week_data.append({'day': day, 'status': status, 'total_decimal': total_decimal, 'total_hm': total_hm, 'images': count_images.get(day, 0), 'timesheets': timesheets})
+                week_data.append({'day': day, 'status': status, 'total_decimal': total_decimal, 'total_hm': total_hm, 'images': count_images.get(day, 0)})
             calendar_data.append(week_data)
 
         context.update({
             'calendar_matrix': calendar_data,
             'current_month': date(year, month, 1),
+            'timesheets': timesheets,
             'prev_month': date(year, month, 1) - timedelta(days=1),
             'next_month': date(year, month, 1) + timedelta(days=32),
         })
