@@ -960,6 +960,12 @@ msgstr "Alege o perioadă"
 msgid "Images uploaded by {{ timesheet.user.get_full_name }} on {{ timesheet.date }}"
 msgstr "Imagini încărcate de {{ timesheet.user.get_full_name }} pe {{ timesheet.date }}"
 
+msgid "Limit exceeded for %(day)s. You have %(exist)s recorded. You can only add %(rem_h)sh %(rem_m)sm more."
+msgstr "Limită depășită pentru %(day)s. Ai introdus %(exist) înregistrări. Mai poți introduce %(rem_h)sh %(rem_m)sm."
+
+msgid "End time must be after start time."
+msgstr "Ora final trebuie să fie după ora început."
+
 msgid "Grand Total:"
 msgstr "Total general:"
 

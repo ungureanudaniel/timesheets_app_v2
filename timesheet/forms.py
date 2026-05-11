@@ -83,32 +83,37 @@ class TimesheetForm(forms.ModelForm):
                 existing_hours += (e - s).total_seconds() / 3600
 
             total_day_hours = existing_hours + current_entry_hours
+            limit = 8.5
+            day_name = _("Work Day")
 
-            if day_of_week <= 3:  # Mon-Thu
-                limit = 8.5
-                day_name = _("Monday-Thursday")
-            elif day_of_week == 4:  # Friday
-                limit = 6.0
-                day_name = _("Friday")
-                if end_time > datetime.strptime("14:00", "%H:%M").time():
-                    raise forms.ValidationError(_("Friday work must end by 14:00."))
-            else:
-                limit = 0  # Assuming no weekend work, adjust if needed
+            if date and end_time:
+                day_of_week = date.weekday()
 
-            if total_day_hours > limit:
-                remaining = max(0, limit - existing_hours)
-                rem_h = int(remaining)
-                rem_m = int((remaining * 60) % 60)
-                
-                raise forms.ValidationError(
-                    _("Limit exceeded for %(day)s. You have %(exist)s recorded. "
-                      "You can only add %(rem_h)sh %(rem_m)sm more.") % {
-                        'day': day_name,
-                        'exist': self._format_hours(existing_hours),
-                        'rem_h': rem_h,
-                        'rem_m': rem_m
-                    }
-                )
+                if day_of_week <= 3:  # Mon-Thu
+                    limit = 8.5
+                    day_name = _("Monday-Thursday")
+                elif day_of_week == 4:  # Friday
+                    limit = 6.0
+                    day_name = _("Friday")
+                    if end_time > datetime.strptime("14:00", "%H:%M").time():
+                        raise forms.ValidationError(_("Friday work must end by 14:00."))
+                else:
+                    limit = 8.5
+                    day_name = _("Weekend")
+
+                if total_day_hours > limit:
+                    remaining = max(0, limit - existing_hours)
+                    rem_h = int(remaining)
+                    rem_m = int((remaining * 60) % 60)
+                    
+                    raise forms.ValidationError(
+                        _("Limit exceeded for %(day)s. You have %(exist)s recorded. You can only add %(rem_h)sh %(rem_m)sm more.") % {
+                            'day': day_name,
+                            'exist': self._format_hours(existing_hours),
+                            'rem_h': rem_h,
+                            'rem_m': rem_m
+                        }
+                    )
 
         return cleaned_data
 
