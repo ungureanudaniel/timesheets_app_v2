@@ -966,6 +966,9 @@ msgstr "Limită depășită pentru %(day)s. Ai introdus %(exist) înregistrări.
 msgid "End time must be after start time."
 msgstr "Ora final trebuie să fie după ora început."
 
+msgid "Try adjusting your filters or create a new entry."
+msgstr "Încearcă să ajustezi filtrele sau introdu activități."
+
 msgid "Grand Total:"
 msgstr "Total general:"
 

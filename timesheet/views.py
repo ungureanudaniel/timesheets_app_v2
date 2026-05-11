@@ -93,7 +93,7 @@ class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
         cal = calendar.Calendar(firstweekday=0) # Monday start
         month_days = cal.monthdatescalendar(year, month)
         
-        # Fetch all timesheets for this user in this month at once (Efficient)
+        # Fetch all timesheets for this user in this month at once
         timesheets = Timesheet.objects.filter(
             user=user, 
             date__year=year, 
@@ -133,7 +133,7 @@ class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
                     else:
                         status = "danger"  # Red
                 
-                week_data.append({'day': day, 'status': status, 'total_decimal': total_decimal, 'total_hm': total_hm, 'images': count_images.get(day, 0)})
+                week_data.append({'day': day, 'status': status, 'total_decimal': total_decimal, 'total_hm': total_hm, 'images': count_images.get(day, 0), 'timesheets': timesheets})
             calendar_data.append(week_data)
 
         context.update({
