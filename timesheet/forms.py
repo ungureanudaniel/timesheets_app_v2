@@ -109,7 +109,7 @@ class TimesheetForm(forms.ModelForm):
                     rem_m = int((remaining * 60) % 60)
                     
                     formatted_exist = self._format_hours(existing_hours)
-                    error_msg = _(f"Limită depășită pentru {day_name}! Ai deja {formatted_exist} înregistrate.")
+                    error_msg = _(f"Limită de ore lucrate depășită pentru ziua respectivă! Poți introduce maxim {rem_h}h și {rem_m:02d}m în această zi.")
                     
                     raise forms.ValidationError(error_msg)
                     

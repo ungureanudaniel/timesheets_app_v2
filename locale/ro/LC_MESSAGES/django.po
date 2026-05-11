@@ -28,7 +28,7 @@ msgid "English"
 msgstr ""
 
 msgid "Create Timesheet"
-msgstr "Creează Foaia de Pontaj"
+msgstr "Introdu activitate nouă"
 
 msgid "month"
 msgstr "luna"
@@ -404,13 +404,16 @@ msgid "Actions"
 msgstr "Acțiuni"
 
 msgid "Edit Timesheet"
-msgstr "Editează Pontaj"
+msgstr "Editează activitate"
 
 msgid "Update Timesheet"
-msgstr "Actualizează Pontaj"
+msgstr "Actualizează activitate"
+
+msgid "Please correct the errors below."
+msgstr "Te rugăm corectează erorile de mai jos."
 
 msgid "Delete Timesheet"
-msgstr "Ștergeți Pontaj"
+msgstr "Ștergeți activitate"
 
 msgid "Cancel"
 msgstr "Anulează"
