@@ -1,103 +1,279 @@
 {% extends 'general/base.html' %}
 {% load i18n %}
 
+{% block title %}{% trans 'Edit Timesheet' %}{% endblock %}
+
 {% block content %}
 <div class="header">
     <div class="container">
         <h1>{% trans 'Edit Timesheet' %}</h1>
-        <p class="text-muted">{% trans 'Update your timesheet entry' %}</p>
+        <p class="text-muted">{% trans 'Update your timesheet entry details and manage supporting images' %}</p>
     </div>
 </div>
 {% include 'includes/messages.html' %}
 
-<div class="container mt-4">
-    <div class="card">
-        <div class="card-header">
-            <h4>{% trans 'Edit Timesheet' %}</h4>
-        </div>
-        <div class="card-body">
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="{{ form.date.id_for_label }}">{% trans 'Date' %}</label>
-                            {{ form.date }}
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="{{ form.activity.id_for_label }}">{% trans 'Activity' %}</label>
-                            {{ form.activity }}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="{{ form.start_time.id_for_label }}">{% trans 'Start Time' %}</label>
-                            {{ form.start_time }}
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="{{ form.end_time.id_for_label }}">{% trans 'End Time' %}</label>
-                            {{ form.end_time }}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="{{ form.fundssource.id_for_label }}">{% trans 'Funding Source' %}</label>
-                    {{ form.fundssource }}
-                </div>
-                
-                <div class="mb-3">
-                    <label for="{{ form.description.id_for_label }}">{% trans 'Description' %}</label>
-                    {{ form.description }}
-                </div>
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
 
-                <!-- Current Images Section -->
-                <div class="mb-4">
-                    <label class="form-label">{% trans 'Current Images' %}</label>
-                    <div class="row">
-                        {% for image in object.timesheet_images.all %}
-                        <div class="col-md-3 mb-3">
-                            <div class="card">
-                                <img src="{{ image.image.url }}" class="card-img-top" alt="Timesheet image" style="height: 150px; object-fit: cover;">
-                                <div class="card-body text-center">
-                                    <small class="text-muted d-block">{{ image.uploaded_at|date:"M d, Y" }}</small>
-                                    <a href="{% url 'delete_timesheet' image.id %}" 
-                                       class="btn btn-sm btn-outline-danger mt-1"
-                                       onclick="return confirm('{% trans 'Ești sigur că vrei să stergi această imagine?' %}');">
-                                        <i class="fas fa-trash"></i> {% trans 'Delete' %}
-                                    </a>
-                                </div>
+                        <!-- 1. Funding Source -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{% trans "Funds Source" %}</label>
+                            {{ form.fundssource }}
+                            {% if form.fundssource.errors %}<div class="text-danger small">{{ form.fundssource.errors }}</div>{% endif %}
+                        </div>
+
+                        <!-- 2. Date -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{% trans "Date" %}</label>
+                            {{ form.date }}
+                            {% if form.date.errors %}<div class="text-danger small">{{ form.date.errors }}</div>{% endif %}
+                        </div>
+
+                        <!-- 3. Times (Start / End) -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Start Time" %}</label>
+                                {{ form.start_time }}
+                                {% if form.start_time.errors %}<div class="text-danger small">{{ form.start_time.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "End Time" %}</label>
+                                {{ form.end_time }}
+                                {% if form.end_time.errors %}<div class="text-danger small">{{ form.end_time.errors }}</div>{% endif %}
                             </div>
                         </div>
-                        {% empty %}
-                        <div class="col-12">
-                            <p class="text-muted">{% trans 'No images attached to this timesheet.' %}</p>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
 
-                <!-- Add New Images Section -->
-                <div class="mb-3">
-                    <label for="new_images" class="form-label">{% trans 'Add New Images' %}</label>
-                    <input type="file" name="images" id="new_images" class="form-control" multiple accept="image/*">
-                    <div class="form-text">{% trans 'You can select multiple images to upload.' %}</div>
+                        <!-- 4. Leave Toggles (CO / CM) -->
+                        <div class="row mb-4 bg-light p-3 rounded border mx-0">
+                            <div class="col-md-6 mb-2 mb-md-0">
+                                <div class="form-check form-switch">
+                                    {{ form.is_annual_holiday }}
+                                    <label class="form-check-label fw-bold ms-2" for="{{ form.is_annual_holiday.id_for_label }}">
+                                        <i class="fas fa-umbrella-beach text-primary"></i> {% trans "Concediu de odihnă" %}
+                                    </label>
+                                </div>
+                                {% if form.is_annual_holiday.errors %}<div class="text-danger small">{{ form.is_annual_holiday.errors }}</div>{% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.is_sick_leave }}
+                                    <label class="form-check-label fw-bold ms-2" for="{{ form.is_sick_leave.id_for_label }}">
+                                        <i class="fas fa-medkit text-danger"></i> {% trans "Concediu medical" %}
+                                    </label>
+                                </div>
+                                {% if form.is_sick_leave.errors %}<div class="text-danger small">{{ form.is_sick_leave.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <!-- 5. Activity Field -->
+                        <div class="mb-3" id="activity-container">
+                            <label class="form-label fw-bold">{% trans "Activity" %}</label>
+                            {{ form.activity }}
+                            {% if form.activity.errors %}<div class="text-danger small">{{ form.activity.errors }}</div>{% endif %}
+                        </div>
+
+                        <!-- 6. Description Field -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{% trans "Description" %}</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors }}</div>{% endif %}
+                        </div>
+
+                        <!-- 7. Smart Submission Status -->
+                        <div class="row mb-4 mx-0">
+                            <div class="col-12 p-3 bg-light rounded border">
+                                <div class="form-check form-switch">
+                                    {{ form.submitted_to_smart }}
+                                    <label class="form-check-label fw-bold ms-2" for="{{ form.submitted_to_smart.id_for_label }}">
+                                        <i class="fas fa-cloud-upload-alt text-success"></i> {% trans "Activitate încărcată în Smart" %}
+                                    </label>
+                                </div>
+                                {% if form.submitted_to_smart.errors %}<div class="text-danger small">{{ form.submitted_to_smart.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <!-- 8. Image Gallery Control (Current Attachments) -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">{% trans "Current Images" %}</h5>
+                            <div class="row">
+                                {% for image in object.timesheet_images.all %}
+                                <div class="col-md-4 col-sm-6 mb-3">
+                                    <div class="card h-100 shadow-sm border text-center">
+                                        <img src="{{ image.image.url }}" class="card-img-top" alt="Timesheet image" style="height: 130px; object-fit: cover;">
+                                        <div class="card-body p-2 bg-light">
+                                            <small class="text-muted d-block mb-2">{{ image.uploaded_at|date:"M d, Y" }}</small>
+                                            <a href="{% url 'delete_timesheet' image.id %}" 
+                                               class="btn btn-sm btn-outline-danger w-100"
+                                               onclick="return confirm('{% trans 'Ești sigur că vrei să ștergi această imagine?' %}');">
+                                                <i class="fas fa-trash-alt"></i> {% trans 'Delete' %}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12">
+                                    <p class="text-muted small fallback-text font-italic">{% trans 'No images attached to this timesheet.' %}</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- 9. Image Upload Field (New Attachments) -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2">{% trans "Attachments" %}</h5>
+                            <label for="images" class="form-label fw-bold">{% trans "Upload New Images" %}</label>
+                            <input type="file" name="images" id="images" class="form-control" multiple accept="image/*">
+                            <small class="text-muted">{% trans "You can select multiple photos at once to append to this timesheet entry." %}</small>
+                        </div>
+
+                        <hr>
+
+                        <!-- Action Controls Footer -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'timesheet_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-primary px-5">
+                                <i class="fas fa-save"></i> {% trans "Update Timesheet" %}
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">{% trans 'Update Timesheet' %}</button>
-                    <a href="{% url 'timesheet_list' %}" class="btn btn-secondary">{% trans 'Cancel' %}</a>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Form Field Interactive Protection Script -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const holidayCheck = document.getElementById('{{ form.is_annual_holiday.id_for_label }}');
+        const sickCheck = document.getElementById('{{ form.is_sick_leave.id_for_label }}');
+        
+        // Target using names dynamically if strict target template ids are altered
+        const dateInput = document.querySelector('input[type="date"]') || document.getElementById('timesheet-date');
+        const fundsSourceInput = document.getElementById('{{ form.fundssource.id_for_label }}');
+        const activityInput = document.getElementById('{{ form.activity.id_for_label }}');
+        const startTimeInput = document.getElementById('{{ form.start_time.id_for_label }}');
+        const endTimeInput = document.getElementById('{{ form.end_time.id_for_label }}');
+
+        // Helper function to match text within dropdown options
+        function selectOptionByText(selectElement, textToFind) {
+            if (!selectElement) return;
+            const targetText = textToFind.toUpperCase();
+            for (let i = 0; i < selectElement.options.length; i++) {
+                if (selectElement.options[i].text.toUpperCase().includes(targetText)) {
+                    selectElement.selectedIndex = i;
+                    selectElement.dispatchEvent(new Event('change'));
+                    break;
+                }
+            }
+        }
+
+        // Dynamically compute hours based on selected day of week
+        function getLeaveHours() {
+            if (!dateInput || !dateInput.value) return { start: "08:00", end: "16:30" };
+            
+            const dateParts = dateInput.value.split('-');
+            const selectedDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+            const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 5 = Friday
+
+            return {
+                start: "08:00",
+                end: (dayOfWeek === 5) ? "14:00" : "16:30"
+            };
+        }
+
+        function lockField(field) {
+            if (!field) return;
+            field.readOnly = true;
+            field.style.backgroundColor = '#e9ecef';
+            field.style.opacity = '0.8';
+            
+            if (field.tagName === 'SELECT') {
+                field.style.pointerEvents = 'none';
+                field.addEventListener('keydown', preventSelectionChange);
+            }
+        }
+
+        function unlockField(field) {
+            if (!field) return;
+            field.readOnly = false;
+            field.style.backgroundColor = '';
+            field.style.opacity = '1';
+            
+            if (field.tagName === 'SELECT') {
+                field.style.pointerEvents = 'auto';
+                field.removeEventListener('keydown', preventSelectionChange);
+            }
+        }
+
+        function preventSelectionChange(e) {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === ' ') {
+                e.preventDefault();
+            }
+        }
+
+        function toggleFields() {
+            const isHoliday = holidayCheck && holidayCheck.checked;
+            const isSick = sickCheck && sickCheck.checked;
+            const isLeave = isHoliday || isSick;
+
+            if (isLeave) {
+                // Apply layout lock modifications
+                selectOptionByText(fundsSourceInput, 'RNP ROMSILVA');
+                selectOptionByText(activityInput, isHoliday ? 'CONCEDIU ANUAL' : 'CONCEDIU MEDICAL');
+
+                const targetHours = getLeaveHours();
+                if (startTimeInput) startTimeInput.value = targetHours.start;
+                if (endTimeInput) endTimeInput.value = targetHours.end;
+
+                [fundsSourceInput, activityInput, startTimeInput, endTimeInput].forEach(lockField);
+            } else {
+                // Restore interactivity safely
+                [fundsSourceInput, activityInput, startTimeInput, endTimeInput].forEach(unlockField);
+            }
+        }
+
+        // Bind cross-event loops
+        if (holidayCheck) {
+            holidayCheck.addEventListener('change', function() {
+                if (this.checked && sickCheck) sickCheck.checked = false;
+                toggleFields();
+            });
+        }
+
+        if (sickCheck) {
+            sickCheck.addEventListener('change', function() {
+                if (this.checked && holidayCheck) holidayCheck.checked = false;
+                toggleFields();
+            });
+        }
+
+        if (dateInput) {
+            dateInput.addEventListener('change', function() {
+                if ((holidayCheck && holidayCheck.checked) || (sickCheck && sickCheck.checked)) {
+                    toggleFields();
+                }
+            });
+        }
+
+        // Initialize state configuration natively on initial template load
+        toggleFields();
+    });
+</script>
 {% endblock %}

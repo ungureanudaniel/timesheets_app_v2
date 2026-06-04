@@ -336,3 +336,20 @@ body {
             margin: 5mm;
         }
     }
+/* Make custom switches look crisp and align beautifully with Bootstrap 5 templates */
+    .form-switch .form-check-input {
+        width: 2.5em;
+        cursor: pointer;
+    }
+    .form-check-input:checked {
+        background-color: var(--primary-color, #0d6efd);
+        border-color: var(--primary-color, #0d6efd);
+    }
+    #toggle_co:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+    #toggle_cm:checked {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
