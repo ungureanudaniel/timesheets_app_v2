@@ -142,15 +142,13 @@
                                 <td class="small text-muted">{{ timesheet.fundssource.name|default:"-" }}</td>
                                 <td class="small text-muted">{{ timesheet.description|truncatechars:30 }}</td>
                                 <td>
-                                    {% with image_count=timesheet.timesheet_images.count %}
-                                        {% if image_count > 0 %}
-                                            <a href="{% url 'timesheet_images_detail' timesheet.id %}" class="badge bg-info text-decoration-none">
-                                                <i class="fas fa-images"></i> {{ image_count }}
-                                            </a>
-                                        {% else %}
-                                            <span class="text-muted small">-</span>
-                                        {% endif %}
-                                    {% endwith %}
+                                    {% if timesheet.activities_count > 0 %}
+                                        <span class="badge bg-info text-dark border" title="{% trans 'Total daily activities logged' %}">
+                                            <i class="fas fa-list-check"></i> {{ timesheet.activities_count }} {% trans "Activities" %}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
                                 </td>
                                 <td class="text-end px-4">
                                     <div class="btn-group btn-group-sm">

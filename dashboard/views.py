@@ -1,3 +1,5 @@
+import calendar
+
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.core.paginator import Paginator
@@ -6,22 +8,23 @@ from django.utils import timezone
 
 from timesheets_main import settings
 from .forms import PALActivitiesUploadForm, FundsSourceForm, PALActivityForm
-from django.db.models import Count, Sum, F, ExpressionWrapper, fields, FloatField, Q
+from django.db.models import Count, Prefetch, Sum, F, ExpressionWrapper, fields, FloatField, Q
+from django.contrib.auth import get_user_model
 from dashboard.forms import ActivityProgramForm
 from dashboard.models import ActivityProgram
 from timesheet.models import Activity, FundsSource
 from users.models import CustomUser
 from timesheet.models import Timesheet
 from django.views import generic
-from django.views.generic import CreateView, ListView
+from django.views.generic import CreateView, ListView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from natsort import natsorted
 import openpyxl
-
+from django.views.generic import TemplateView
 from django.http import HttpResponse, HttpResponseForbidden
 from django.utils import timezone
-from datetime import timedelta
+from datetime import datetime, timedelta
 from django.core.mail import send_mail
 from django.db.models import Count
 from timesheet.models import Timesheet
@@ -131,6 +134,130 @@ class PALActivitiesListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         context['page_obj'] = page_obj
         context['is_paginated'] = page_obj.has_other_pages()
         
+        return context
+
+
+User = get_user_model()
+
+class HoursSummaryTableView(TemplateView):
+    template_name = "dashboard/hours_summary.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        request = self.request
+        
+        # Parse selected period or default to current month
+        period_query = request.GET.get('selected_period')
+        if not period_query:
+            current_date = datetime.now()
+            period_query = current_date.strftime('%Y-%m')
+
+        # Split into numerical items
+        year, month = map(int, period_query.split('-'))
+
+        # month and day names for display
+        ro_months = {
+            1: "Ianuarie", 2: "Februarie", 3: "Martie", 4: "Aprilie",
+            5: "Mai", 6: "Iunie", 7: "Iulie", 8: "August",
+            9: "Septembrie", 10: "Octombrie", 11: "Noiembrie", 12: "Decembrie"
+        }
+        ro_days_short = ["L", "M", "M", "J", "V", "S", "D"]
+
+        # Compute structural day lists for selected calendar space
+        num_days = calendar.monthrange(year, month)[1]
+        month_days_list = []
+        
+        for d in range(1, num_days + 1):
+            weekday_index = calendar.weekday(year, month, d)
+            month_days_list.append({
+                'day_num': d,
+                'day_letter': ro_days_short[weekday_index],
+                'is_weekend': weekday_index in [5, 6]  # Sat, Sun flags
+            })
+
+        context['current_period'] = period_query
+        context['current_month_year'] = f"{ro_months[month]} {year}"
+        context['month_days'] = month_days_list
+
+        # ====================================================================
+        # DATABASE AGGREGATION MATRIX
+        # ====================================================================
+        
+        # 1. Base Permissions Filter: Staff/Managers see all; others see only themselves
+        if request.user.is_staff or request.user.groups.filter(name='Managers').exists():
+            employees = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+        else:
+            employees = User.objects.filter(id=request.user.id)
+
+        # 2. Optimize database retrieval using Django's Prefetch object
+        monthly_timesheets = Timesheet.objects.filter(
+            date__year=year, 
+            date__month=month
+        ).select_related('activity')
+
+        employees = employees.prefetch_related(
+            Prefetch('timesheet_set', queryset=monthly_timesheets, to_attr='cached_month_timesheets')
+        )
+
+        employee_data = []
+        
+        for emp in employees:
+            # Build an empty day-by-day matrix container for the employee
+            days_matrix = {d: {'type': 'none', 'hours': ''} for d in range(1, num_days + 1)}
+            
+            total_hours_worked = 0.0
+            total_co_days = 0
+            total_cm_days = 0
+            worked_days_set = set() 
+
+            # Loop through pre-fetched records smoothly
+            for ts in emp.cached_month_timesheets:
+                day_number = ts.date.day
+                activity_code = ts.activity.code.upper() if ts.activity and ts.activity.code else ""
+                
+                # Identify entry state patterns
+                if "CO" in activity_code or "CONCEDIU ODIHNA" in activity_code:
+                    days_matrix[day_number] = {'type': 'CO', 'hours': 0}
+                    total_co_days += 1
+                elif "CM" in activity_code or "MEDICAL" in activity_code:
+                    days_matrix[day_number] = {'type': 'CM', 'hours': 0}
+                    total_cm_days += 1
+                else:
+                    # Safe check: if you have duration_decimal use it, otherwise fall back to timedeltas
+                    if hasattr(ts, 'duration_decimal') and ts.duration_decimal is not None:
+                        hours = float(ts.duration_decimal)
+                    elif ts.start_time and ts.end_time:
+                        # Fallback calculation using timedelta if decimal field doesn't exist
+                        today_dummy = datetime.today()
+                        dt1 = datetime.combine(today_dummy, ts.start_time)
+                        dt2 = datetime.combine(today_dummy, ts.end_time)
+                        hours = max(0.0, (dt2 - dt1).total_seconds() / 3600.0)
+                    else:
+                        hours = 8.0 # Default standard shift backup fallback
+                    
+                    # Accumulate daily split sets
+                    days_matrix[day_number] = {'type': 'work', 'hours': round(hours, 1)}
+                    total_hours_worked += hours
+                    
+                    # Exclude weekends from counting towards meal tickets
+                    if calendar.weekday(year, month, day_number) not in [5, 6]:
+                        worked_days_set.add(day_number)
+
+            # Standard Romanian Norm setup
+            weekdays_count = sum(1 for d in month_days_list if not d['is_weekend'])
+            norma_hours = weekdays_count * 8
+
+            employee_data.append({
+                'employee': emp,
+                'norma_hours': norma_hours,
+                'days_matrix': days_matrix,
+                'total_hours_worked': round(total_hours_worked, 1),
+                'total_co_days': total_co_days,
+                'total_cm_days': total_cm_days,
+                'meal_tickets_count': len(worked_days_set)
+            })
+
+        context['employee_data'] = employee_data
         return context
 
 class PALActivitiesUploadView(LoginRequiredMixin, UserPassesTestMixin, CreateView):

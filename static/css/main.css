@@ -245,3 +245,86 @@ body {
 .fc-day:hover {
     background-color: var(--light-blue) !important; /* Light blue highlight */
   }
+/* Custom styles for the pontaj table view */
+.report-card {
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        padding: 25px;
+    }
+    .table-pontaj {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+    .table-pontaj th, .table-pontaj td {
+        border: 1px solid #cbd5e1;
+        text-align: center;
+        padding: 6px 2px;
+        vertical-align: middle;
+        font-size: 11px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .table-pontaj thead th {
+        background-color: #f8fafc;
+        font-weight: 700;
+        color: #1c201d;
+    }
+    /* Grid colors directly modeled on image_4d7705.png */
+    .weekend-col {
+        background-color: #d1e7dd !important; /* Soft green matrix columns for S/D */
+        color: #0f5132;
+    }
+    .summary-header {
+        background-color: #e2e8f0 !important;
+        font-weight: bold;
+        color: #000;
+    }
+    .badge-co {
+        font-weight: 800;
+        color: #10644c; /* Using your theme colors */
+    }
+    .badge-cm {
+        font-weight: 800;
+        color: #dc3545; /* Crimson for health leaves */
+    }
+    
+    /* Screen styling optimization */
+    .report-meta-title {
+        color: var(--primary-color);
+        font-weight: 700;
+    }
+
+    /* Print layout rendering adjustments */
+    @media print {
+        .navbar, .footer, .no-print, header, footer {
+            display: none !important;
+        }
+        body {
+            background-color: #fff !important;
+            color: #000 !important;
+            padding: 0;
+            margin: 0;
+        }
+        .container, .container-fluid {
+            width: 100% !important;
+            max-width: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .report-card {
+            box-shadow: none !important;
+            border: none !important;
+            padding: 0 !important;
+        }
+        .table-pontaj th, .table-pontaj td {
+            border: 1px solid #000 !important;
+            color: #000 !important;
+        }
+        @page {
+            size: A4 landscape;
+            margin: 8mm;
+        }
+    }

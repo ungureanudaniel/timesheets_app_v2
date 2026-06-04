@@ -1,13 +1,13 @@
 from collections import defaultdict
 import json
 from django import forms
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView, DetailView
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from datetime import timedelta, datetime
 from django.utils import timezone
 from django.forms import ValidationError
-from django.http import JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views import generic
@@ -102,10 +102,10 @@ class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
         
         # Build a dictionary of {date: total_hours}
         daily_totals = {}
-        count_images = {}
+        count_activities = {}
         for ts in timesheets:
             daily_totals[ts.date] = daily_totals.get(ts.date, 0) + ts.duration_decimal
-            count_images[ts.date] = count_images.get(ts.date, 0) + 1
+            count_activities[ts.date] = count_activities.get(ts.date, 0) + 1
 
         # Format calendar data with status colors
         calendar_data = []
@@ -132,8 +132,7 @@ class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
                         status = "warning" # Yellow
                     else:
                         status = "danger"  # Red
-                
-                week_data.append({'day': day, 'status': status, 'total_decimal': total_decimal, 'total_hm': total_hm, 'images': count_images.get(day, 0)})
+                week_data.append({'day': day, 'status': status, 'total_decimal': total_decimal, 'total_hm': total_hm, 'activities': count_activities.get(day, 0)})
             calendar_data.append(week_data)
 
         context.update({
@@ -162,7 +161,7 @@ class TimesheetListView(LoginRequiredMixin, ListView):
             queryset = Timesheet.objects.filter(user=user)
 
         # 2. Filter by Reporter Name (Search)
-        employee_id = self.request.GET.get('employee')
+        employee_id = self.request.GET.get('reporter_id')
         if employee_id:
             queryset = queryset.filter(user_id=employee_id)
 
@@ -185,17 +184,20 @@ class TimesheetListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["available_reporters"] = User.objects.filter(is_active=True).order_by('first_name')
-        context["selected_employee"] = self.request.GET.get("employee", '')
-        # Keep the search term in the box after the page refreshes
-        context["selected_date"] = self.request.GET.get('date_filter', '')
+
+        context["available_reporters"] = User.objects.filter(is_active=True).order_by('first_name', 'last_name') # For dropdown filter
+        context["selected_reporter_id"] = self.request.GET.get("reporter_id", '') # To keep the selected employee in the dropdown
+        context["selected_date"] = self.request.GET.get('date_filter', '') # To keep the selected date in the filter
+        
         for ts in context['timesheets']:
-            day_entries = Timesheet.objects.filter(user=ts.user, date=ts.date)
+            day_entries = Timesheet.objects.filter(user=ts.user, date=ts.date) # Get all entries for that day
 
-            total_day_hours = sum(entry.duration_decimal for entry in day_entries)
 
-            limit = 6.0 if ts.date.weekday() == 4 else 8.5
+            total_day_hours = sum(entry.duration_decimal for entry in day_entries) # Calculate total hours for the day
+
+            limit = 6.0 if ts.date.weekday() == 4 else 8.5 # Friday has a different limit
             
+            # Determine status color based on total hours for the day
             if total_day_hours >= limit:
                 ts.status_color = "success"  # Green
             elif total_day_hours > 0:
@@ -249,6 +251,7 @@ class CreateTimesheetView(generic.CreateView):
         else:
             self.object.user = user
 
+
         # Save the object
         self.object.save()
 
@@ -278,25 +281,37 @@ class UpdateTimesheetView(LoginRequiredMixin, generic.UpdateView):
     model = Timesheet
     form_class = TimesheetForm
     template_name = 'timesheet/update_timesheets.html'
-    success_url = reverse_lazy('timesheet_calendar')
     
     def get_queryset(self):
         return Timesheet.objects.filter(user=self.request.user)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user  # Pass user context to form validation
+        return kwargs
     
     def form_valid(self, form):
         self.object = form.save(commit=False)
-        if not form.cleaned_data.get('user'):
-            form.instance.user = self.get_object().user
         
-        response = super().form_valid(form)
+        saved_date = form.cleaned_data.get('date')
 
-        # Handle new image uploads
+        if not form.cleaned_data.get('user'):
+            self.object.user = self.get_object().user
+        
+        self.object.save()
+        form.save_m2m()
+
+        # Handle image uploads
         images = self.request.FILES.getlist('images')
         for image in images:
             TimesheetImage.objects.create(timesheet=self.object, image=image)
 
         messages.success(self.request, 'Timesheet updated successfully!')
-        return response
+
+        if saved_date:
+            return HttpResponseRedirect(f"{reverse('timesheet_calendar')}?date={saved_date}")
+        
+        return HttpResponseRedirect(reverse('timesheet_calendar'))
 
 
 class DeleteTimesheetView(LoginRequiredMixin, generic.DeleteView):

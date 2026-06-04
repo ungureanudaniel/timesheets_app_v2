@@ -1,0 +1,121 @@
+{% extends 'general/base.html' %}
+{% load i18n %}
+{% load static %}
+{% load pontaj_tags %}
+
+{% block title %}{% trans "Foaie Colectivă de Prezență" %}{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid my-4">
+    
+    <!-- 1. Interactive Control Panel (No-Print Category) -->
+    <div class="card filter-panel p-3 mb-4 shadow-sm no-print">
+        <form method="GET" action="" id="month-filter-form" class="row align-items-center g-3">
+            <div class="col-md-4">
+                <label for="target_month" class="form-label fw-bold small text-muted text-uppercase mb-1">
+                    <i class="fas fa-calendar-alt me-1"></i> {% trans "Alegeți Luna pentru Pontaj" %}
+                </label>
+                <!-- HTML5 Month Input: format returns YYYY-MM -->
+                <input type="month" 
+                       id="target_month" 
+                       name="selected_period" 
+                       class="form-control month-picker-input"
+                       value="{{ current_period|default:'2026-01' }}"
+                       onchange="document.getElementById('month-filter-form').submit();">
+            </div>
+            <div class="col-md-8 text-end d-flex align-items-end justify-content-end gap-2 h-100 mt-md-4">
+                <a href="{% url 'timesheet_calendar' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> {% trans "Înapoi la Calendar" %}
+                </a>
+                <button type="button" onclick="window.print();" class="btn btn-primary d-flex align-items-center gap-2">
+                    <i class="fas fa-print"></i> {% trans "Printează Pontaj (PDF)" %}
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 2. Main Sheet Output Area -->
+    <div class="report-card">
+        <!-- Top Metadata Grid -->
+        <div class="row align-items-center border-bottom pb-3 mb-3">
+            <div class="col-md-4">
+                <small class="text-uppercase text-muted tracking-wider" style="font-size: 10px;">{% trans "Denumire Companie" %}</small>
+                <h5 class="fw-bold mb-0" style="color: var(--primary-color);">{{ company_name|default:"RNP ROMSILVA" }}</h5>
+                <span class="text-muted small">{{ park_administration|default:"Parcul Natural Bucegi" }}</span>
+            </div>
+            <div class="col-md-4 text-center">
+                <h4 class="text-uppercase fw-bold mb-1" style="color: var(--primary-color);">{% trans "Foaie colectivă de prezență" %}</h4>
+                <p class="text-secondary fw-semibold mb-0">{% trans "Pontaj lunar" %} — <span class="text-dark fw-bold">{{ current_month_year }}</span></p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge px-3 py-2 text-dark border bg-light">
+                    <i class="fas fa-business-time me-1"></i> {% trans "Status raport" %}: {% trans "Generat" %}
+                </span>
+            </div>
+        </div>
+
+        <!-- Scrollable/Print Matrix -->
+        <div class="table-responsive">
+            <table class="table-pontaj">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width: 40px;">{% trans "Nr. crt." %}</th>
+                        <th rowspan="2" style="width: 180px;">{% trans "Nume Prenume" %}</th>
+                        <th rowspan="2" style="width: 55px;">{% trans "Normă" %}</th>
+                        {% for day in month_days %}
+                            <th class="{% if day.is_weekend %}weekend-col{% endif %}">{{ day.day_num }}</th>
+                        {% endfor %}
+                        <th rowspan="2" class="summary-header" style="width: 60px;">{% trans "Total ore" %}</th>
+                        <th rowspan="2" class="summary-header" style="width: 45px;">{% trans "Zile CO" %}</th>
+                        <th rowspan="2" class="summary-header" style="width: 45px;">{% trans "Zile CM" %}</th>
+                        <th rowspan="2" class="summary-header" style="width: 55px;">{% trans "Tichete Masă" %}</th>
+                    </tr>
+                    <tr>
+                        {% for day in month_days %}
+                            <th class="{% if day.is_weekend %}weekend-col{% endif %} text-uppercase" style="font-size: 9px;">{{ day.day_letter }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in employee_data %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td class="text-start px-2 fw-bold text-dark">{{ row.employee.get_full_name|default:row.employee.username }}</td>
+                        <td class="text-muted">{{ row.norma_hours|default:"168" }}</td>
+                        
+                        {% for day in month_days %}
+                            {% with cell=row.days_matrix|dictget:day.day_num %}
+                                <td class="{% if day.is_weekend %}weekend-col{% endif %}">
+                                    {% if cell.type == 'work' %}
+                                        {{ cell.hours }}
+                                    {% elif cell.type == 'CO' %}
+                                        <span class="badge-co" title="{% trans 'Concediu Anual (Odihnă)' %}">CO</span>
+                                    {% elif cell.type == 'CM' %}
+                                        <span class="badge-cm" title="{% trans 'Concediu Medical' %}">CM</span>
+                                    {% else %}
+                                        &nbsp;
+                                    {% endif %}
+                                </td>
+                            {% endwith %}
+                        {% endfor %}
+
+                        <td class="fw-bold bg-light text-dark">{{ row.total_hours_worked }}</td>
+                        <td class="fw-bold text-success">{{ row.total_co_days|default:"0" }}</td>
+                        <td class="fw-bold text-danger">{{ row.total_cm_days|default:"0" }}</td>
+                        <td class="fw-bold text-primary bg-light">{{ row.meal_tickets_count|default:"0" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="38" class="text-center py-5 text-muted bg-light">
+                            <i class="fas fa-folder-open fa-2x mb-2 d-block"></i>
+                            {% trans "Nu s-au găsit înregistrări în baza de date pentru luna selectată." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

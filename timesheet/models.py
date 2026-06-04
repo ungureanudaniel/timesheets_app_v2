@@ -46,7 +46,7 @@ class Timesheet(models.Model):
     fundssource = models.ForeignKey(FundsSource, on_delete=models.CASCADE)
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
     description = models.TextField(blank=True)
-    # submitted = models.BooleanField(default=False)
+    submitted_to_smart = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
 
     # This method is used to set the upload path for images associated with the timesheet

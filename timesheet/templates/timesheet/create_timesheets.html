@@ -47,8 +47,28 @@
                                 {% if form.end_time.errors %}<div class="text-danger small">{{ form.end_time.errors }}</div>{% endif %}
                             </div>
                         </div>
-
-                        <div class="mb-3">
+                        <div class="row mb-4 bg-light p-3 rounded border mx-0">
+                            <div class="col-md-6 mb-2 mb-md-0">
+                                <div class="form-check form-switch">
+                                    {{ form.is_annual_holiday }}
+                                    <label class="form-check-label fw-bold ms-2" for="{{ form.is_annual_holiday.id_for_label }}">
+                                        <i class="fas fa-umbrella-beach text-primary"></i> {% trans "Concediu de odihnă" %}
+                                    </label>
+                                </div>
+                                {% if form.is_annual_holiday.errors %}<div class="text-danger small">{{ form.is_annual_holiday.errors }}</div>{% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.is_sick_leave }}
+                                    <label class="form-check-label fw-bold ms-2" for="{{ form.is_sick_leave.id_for_label }}">
+                                        <i class="fas fa-medkit text-danger"></i> {% trans "Concediu medical" %}
+                                    </label>
+                                </div>
+                                {% if form.is_sick_leave.errors %}<div class="text-danger small">{{ form.is_sick_leave.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3" id="activity-container">
                             <label class="form-label">{% trans "Activity" %}</label>
                             {{ form.activity }}
                             {% if form.activity.errors %}<div class="text-danger small">{{ form.activity.errors }}</div>{% endif %}
@@ -59,7 +79,17 @@
                             {{ form.description }}
                             {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors }}</div>{% endif %}
                         </div>
-
+                        <div class="row mb-4 bg-light p-3 rounded border mx-0">
+                            <div class="col-md-6 mb-2 mb-md-0">
+                                <div class="form-check form-switch">
+                                    {{ form.submitted_to_smart }}
+                                    <label class="form-check-label fw-bold ms-2" for="{{ form.submitted_to_smart.id_for_label }}">
+                                        <i class="fas fa-umbrella-beach text-primary"></i> {% trans "Activitate încărcată în Smart" %}
+                                    </label>
+                                </div>
+                                {% if form.submitted_to_smart.errors %}<div class="text-danger small">{{ form.submitted_to_smart.errors }}</div>{% endif %}
+                            </div>
+                        </div>
                         <div class="mb-4">
                             <h5 class="border-bottom pb-2">{% trans "Attachments" %}</h5>
                             <label for="images" class="form-label">{% trans "Upload Images" %}</label>
@@ -83,4 +113,124 @@
         </div>
     </div>
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const holidayCheck = document.getElementById('{{ form.is_annual_holiday.id_for_label }}');
+        const sickCheck = document.getElementById('{{ form.is_sick_leave.id_for_label }}');
+        const dateInput = document.getElementById('timesheet-date');
+        
+        const fundsSourceInput = document.getElementById('{{ form.fundssource.id_for_label }}');
+        const activityInput = document.getElementById('{{ form.activity.id_for_label }}');
+        const startTimeInput = document.getElementById('{{ form.start_time.id_for_label }}');
+        const endTimeInput = document.getElementById('{{ form.end_time.id_for_label }}');
+
+        // Helper function to match text within dropdown options
+        function selectOptionByText(selectElement, textToFind) {
+            if (!selectElement) return;
+            const targetText = textToFind.toUpperCase();
+            for (let i = 0; i < selectElement.options.length; i++) {
+                if (selectElement.options[i].text.toUpperCase().includes(targetText)) {
+                    selectElement.selectedIndex = i;
+                    // Trigger native change event in case other scripts listen to it
+                    selectElement.dispatchEvent(new Event('change'));
+                    break;
+                }
+            }
+        }
+
+        // Dynamically compute hours based on selected day of week
+        function getLeaveHours() {
+            if (!dateInput || !dateInput.value) return { start: "08:00", end: "16:30" };
+            
+            const dateParts = dateInput.value.split('-');
+            const selectedDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+            const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 5 = Friday
+
+            return {
+                start: "08:00",
+                end: (dayOfWeek === 5) ? "14:00" : "16:30"
+            };
+        }
+
+        function lockField(field) {
+            if (!field) return;
+            field.readOnly = true;
+            field.style.backgroundColor = '#e9ecef';
+            field.style.opacity = '0.8';
+            
+            // For <select> elements, pointer-events locks clicks, but keeps values valid for POST requests
+            if (field.tagName === 'SELECT') {
+                field.style.pointerEvents = 'none';
+                // Prevents keyboard changes on focus
+                field.addEventListener('keydown', preventSelectionChange);
+            }
+        }
+
+        function unlockField(field) {
+            if (!field) return;
+            field.readOnly = false;
+            field.style.backgroundColor = '';
+            field.style.opacity = '1';
+            
+            if (field.tagName === 'SELECT') {
+                field.style.pointerEvents = 'auto';
+                field.removeEventListener('keydown', preventSelectionChange);
+            }
+        }
+
+        function preventSelectionChange(e) {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === ' ') {
+                e.preventDefault();
+            }
+        }
+
+        function toggleFields() {
+            const isHoliday = holidayCheck && holidayCheck.checked;
+            const isSick = sickCheck && sickCheck.checked;
+            const isLeave = isHoliday || isSick;
+
+            if (isLeave) {
+                // Apply database text matchups
+                selectOptionByText(fundsSourceInput, 'RNP ROMSILVA');
+                selectOptionByText(activityInput, isHoliday ? 'CONCEDIU ANUAL' : 'CONCEDIU MEDICAL');
+
+                const targetHours = getLeaveHours();
+                if (startTimeInput) startTimeInput.value = targetHours.start;
+                if (endTimeInput) endTimeInput.value = targetHours.end;
+
+                // Lock visual UI elements
+                [fundsSourceInput, activityInput, startTimeInput, endTimeInput].forEach(lockField);
+            } else {
+                // Restore interactive access
+                [fundsSourceInput, activityInput, startTimeInput, endTimeInput].forEach(unlockField);
+            }
+        }
+
+        // Event binding safely
+        if (holidayCheck) {
+            holidayCheck.addEventListener('change', function() {
+                if (this.checked && sickCheck) sickCheck.checked = false;
+                toggleFields();
+            });
+        }
+
+        if (sickCheck) {
+            sickCheck.addEventListener('change', function() {
+                if (this.checked && holidayCheck) holidayCheck.checked = false;
+                toggleFields();
+            });
+        }
+
+        if (dateInput) {
+            dateInput.addEventListener('change', function() {
+                if ((holidayCheck && holidayCheck.checked) || (sickCheck && sickCheck.checked)) {
+                    toggleFields();
+                }
+            });
+        }
+
+        // Initialize immediately on load execution
+        toggleFields();
+    });
+</script>
 {% endblock %}

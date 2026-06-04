@@ -87,7 +87,7 @@ msgid "Reports"
 msgstr "Rapoarte"
 
 msgid "Timesheets"
-msgstr "Pontaje"
+msgstr "Activități"
 
 msgid "Track your working hours efficiently"
 msgstr "Urmărește eficient orele de lucru"
@@ -191,7 +191,11 @@ msgstr "Administrare"
 
 #: general/base.html
 msgid "Timesheets List"
-msgstr "Listă activități"
+msgstr "Listă înregistrări"
+
+#: general/base.html
+msgid "Hours Summary"
+msgstr "Pontaj"
 
 # Reports
 msgid "Generate Work Report"
@@ -395,6 +399,10 @@ msgstr "Nu s-a găsit nici o activitate. Creați una!"
 #: reports/views.py
 msgid "Found"
 msgstr "S-au găsit"
+
+#: reports/views.py
+msgid "Total daily activities logged"
+msgstr "Total activități înregistrate"
 
 msgid "Sector registry"
 msgstr "Registru de sector"
