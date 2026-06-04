@@ -238,10 +238,7 @@ class HoursSummaryTableView(TemplateView):
                     # Accumulate daily split sets
                     days_matrix[day_number] = {'type': 'work', 'hours': round(hours, 1)}
                     total_hours_worked += hours
-                    
-                    # Exclude weekends from counting towards meal tickets
-                    if calendar.weekday(year, month, day_number) not in [5, 6]:
-                        worked_days_set.add(day_number)
+                    worked_days_set.add(day_number)
 
             # Standard Romanian Norm setup
             weekdays_count = sum(1 for d in month_days_list if not d['is_weekend'])
