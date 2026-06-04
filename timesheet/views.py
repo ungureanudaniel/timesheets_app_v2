@@ -242,6 +242,10 @@ class CreateTimesheetView(generic.CreateView):
         user = self.request.user
         is_manager = user.is_staff or user.groups.filter(name='Managers').exists()
         
+        if not form.cleaned_data.get('activity'):
+            form.add_error('activity', _('O activitate validă este obligatorie.'))
+            return self.form_invalid(form)
+            
         # Create the instance but don't save to DB yet
         self.object = form.save(commit=False)
 
