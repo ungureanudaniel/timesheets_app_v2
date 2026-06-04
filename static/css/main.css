@@ -353,3 +353,20 @@ body {
         background-color: #dc3545;
         border-color: #dc3545;
     }
+.calendar-table { table-layout: fixed; border-collapse: collapse; }
+    .calendar-day { 
+        height: 120px; 
+        transition: background 0.3s; 
+        vertical-align: top;
+        border: 1px solid #dee2e6;
+    }
+    .calendar-day:hover { background-color: #f8f9fa !important; }
+    .day-number { font-size: 1.1rem; color: #6c757d; }
+    .status-indicator {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-top: 5px;
+    }
+    .muted-day { background-color: #e9ecef; opacity: 0.5; }

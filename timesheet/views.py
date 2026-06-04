@@ -2,7 +2,7 @@ from collections import defaultdict
 import json
 from django import forms
 from django.urls import reverse, reverse_lazy
-from django.views.generic import ListView, DetailView
+from django.views.generic import ListView, DetailView, TemplateView
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from datetime import timedelta, datetime
 from django.utils import timezone
@@ -73,9 +73,8 @@ def get_user_timesheets(user):
 
 import calendar
 from datetime import date, datetime, timedelta
-from django.views.generic import TemplateView
 from django.utils.safestring import mark_safe
-
+import holidays
 
 class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
     template_name = 'timesheet/calendar.html'
@@ -89,6 +88,8 @@ class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
         year = int(self.request.GET.get('year', today.year))
         month = int(self.request.GET.get('month', today.month))
         
+        ro_holidays = holidays.Romania(years=year)
+
         # Generate calendar days
         cal = calendar.Calendar(firstweekday=0) # Monday start
         month_days = cal.monthdatescalendar(year, month)
@@ -112,27 +113,44 @@ class TimesheetCalendarView(LoginRequiredMixin, TemplateView):
         for week in month_days:
             week_data = []
             for day in week:
+                # 1. Flag out-of-bounds padding days
                 if day.month != month:
-                    status = "muted" # Day from prev/next month
+                    status = "muted"
                     total_decimal = 0
                     total_hm = ""
+                    is_holiday = False
+                    holiday_name = ""
                 else:
                     total_decimal = daily_totals.get(day, 0)
-                    # conversion to hours and minutes
+
+                    is_holiday = day in ro_holidays
+                    holiday_name = ro_holidays.get(day, "") if is_holiday else ""
+
                     hours = int(total_decimal)
                     minutes = int(round((total_decimal - hours) * 60))
                     total_hm = f"{hours}h {minutes}m" if total_decimal > 0 else "0h"
 
-                    # Determine status color based on hours
+                    # Determine status color based on hours and holiday status
                     target = 6.0 if day.weekday() == 4 else 8.5
                     
                     if total_decimal >= target:
-                        status = "success" # Green
+                        status = "success" # Green (worked full target hours)
                     elif total_decimal > 0:
-                        status = "warning" # Yellow
+                        status = "warning" # Yellow (worked partial hours)
+                    elif is_holiday:
+                        status = "info"    # Blue (legal holiday, no hours recorded)
                     else:
-                        status = "danger"  # Red
-                week_data.append({'day': day, 'status': status, 'total_decimal': total_decimal, 'total_hm': total_hm, 'activities': count_activities.get(day, 0)})
+                        status = "danger"  # Red (missing working hours on regular day)
+
+                week_data.append({
+                    'day': day, 
+                    'status': status, 
+                    'total_decimal': total_decimal, 
+                    'total_hm': total_hm, 
+                    'activities': count_activities.get(day, 0),
+                    'is_holiday': is_holiday,       # Added for template matching
+                    'holiday_name': holiday_name     # Added for template matching
+                })
             calendar_data.append(week_data)
 
         context.update({
@@ -172,9 +190,17 @@ class TimesheetListView(LoginRequiredMixin, ListView):
                 Q(user__last_name__icontains=reporter_query) |
                 Q(user__username__icontains=reporter_query)
             )
-        # 3. Date Filtering
         # Allows admin to look at a specific day or month
         date_query = self.request.GET.get('date_filter')
+
+        month_query = self.request.GET.get('month_filter')
+        if month_query:
+            try:
+                month_date = parse_date(month_query + "-01")
+                if month_date:
+                    queryset = queryset.filter(date__year=month_date.year, date__month=month_date.month)
+            except ValueError:
+                pass  # Invalid month format, ignore the filter
         if date_query:
             queryset = queryset.filter(date=date_query)
 
@@ -183,27 +209,21 @@ class TimesheetListView(LoginRequiredMixin, ListView):
                        .order_by('-date', '-created_at')
 
     def get_context_data(self, **kwargs):
+        """Passes search dropdown data and retains filter selections inside form fields"""
         context = super().get_context_data(**kwargs)
+        user = self.request.user
 
-        context["available_reporters"] = User.objects.filter(is_active=True).order_by('first_name', 'last_name') # For dropdown filter
-        context["selected_reporter_id"] = self.request.GET.get("reporter_id", '') # To keep the selected employee in the dropdown
-        context["selected_date"] = self.request.GET.get('date_filter', '') # To keep the selected date in the filter
+        # Fill dropdown options depending on who is browsing
+        if user.is_staff or user.groups.filter(name='Managers').exists():
+            context['available_employees'] = User.objects.filter(is_active=True).order_by('first_name')
+        else:
+            context['available_employees'] = User.objects.filter(id=user.id)
+
+        # Retain filter states so values don't clear out when hitting "Apply"
+        context['selected_reporter_id'] = self.request.GET.get('reporter_id', '')
+        context['date_filter'] = self.request.GET.get('date_filter', '')
+        context['month_filter'] = self.request.GET.get('month_filter', '')
         
-        for ts in context['timesheets']:
-            day_entries = Timesheet.objects.filter(user=ts.user, date=ts.date) # Get all entries for that day
-
-
-            total_day_hours = sum(entry.duration_decimal for entry in day_entries) # Calculate total hours for the day
-
-            limit = 6.0 if ts.date.weekday() == 4 else 8.5 # Friday has a different limit
-            
-            # Determine status color based on total hours for the day
-            if total_day_hours >= limit:
-                ts.status_color = "success"  # Green
-            elif total_day_hours > 0:
-                ts.status_color = "warning"  # Yellow
-            else:
-                ts.status_color = "danger"   # Red
         return context
 
 class TimesheetImageDetailView(LoginRequiredMixin, DetailView):

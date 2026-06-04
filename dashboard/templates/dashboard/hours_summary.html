@@ -7,6 +7,23 @@
 
 {% block content %}
 
+<style>
+    /* Styling overrides for public holidays columns in the matrix */
+    .holiday-col {
+        background-color: #f8d7da !important;
+        color: #dc3545 !important;
+        font-weight: bold;
+    }
+    .holiday-cell-bg {
+        background-color: #fdf2f2 !important;
+    }
+    .text-holiday-indicator {
+        color: #dc3545 !important;
+        font-weight: bold;
+        font-size: 11px;
+    }
+</style>
+
 <div class="container-fluid my-4">
     
     <!-- 1. Interactive Control Panel (No-Print Category) -->
@@ -21,7 +38,7 @@
                        id="target_month" 
                        name="selected_period" 
                        class="form-control month-picker-input"
-                       value="{{ current_period|default:'2026-01' }}"
+                       value="{{ current_period|default:'2026-06' }}"
                        onchange="document.getElementById('month-filter-form').submit();">
             </div>
             <div class="col-md-8 text-end d-flex align-items-end justify-content-end gap-2 h-100 mt-md-4">
@@ -57,14 +74,17 @@
 
         <!-- Scrollable/Print Matrix -->
         <div class="table-responsive">
-            <table class="table-pontaj">
+            <table class="table-pontaj border">
                 <thead>
                     <tr>
                         <th rowspan="2" style="width: 40px;">{% trans "Nr. crt." %}</th>
                         <th rowspan="2" style="width: 180px;">{% trans "Nume Prenume" %}</th>
                         <th rowspan="2" style="width: 55px;">{% trans "Normă" %}</th>
                         {% for day in month_days %}
-                            <th class="{% if day.is_weekend %}weekend-col{% endif %}">{{ day.day_num }}</th>
+                            <th class="{% if day.is_weekend %}weekend-col{% endif %} {% if day.is_holiday %}holiday-col{% endif %}" 
+                                {% if day.is_holiday %}title="{{ day.holiday_name }}"{% endif %}>
+                                {{ day.day_num }}
+                            </th>
                         {% endfor %}
                         <th rowspan="2" class="summary-header" style="width: 60px;">{% trans "Total ore" %}</th>
                         <th rowspan="2" class="summary-header" style="width: 45px;">{% trans "Zile CO" %}</th>
@@ -73,7 +93,11 @@
                     </tr>
                     <tr>
                         {% for day in month_days %}
-                            <th class="{% if day.is_weekend %}weekend-col{% endif %} text-uppercase" style="font-size: 9px;">{{ day.day_letter }}</th>
+                            <th class="{% if day.is_weekend %}weekend-col{% endif %} {% if day.is_holiday %}holiday-col{% endif %} text-uppercase" 
+                                style="font-size: 9px;"
+                                {% if day.is_holiday %}title="{{ day.holiday_name }}"{% endif %}>
+                                {{ day.day_letter }}
+                            </th>
                         {% endfor %}
                     </tr>
                 </thead>
@@ -85,13 +109,16 @@
                         <td class="text-muted">{{ row.norma_hours|default:"168" }}</td>
                         {% for day in month_days %}
                             {% with cell=row.days_matrix|dictget:day.day_num %}
-                                <td class="{% if day.is_weekend %}weekend-col{% endif %}">
+                                <td class="{% if day.is_weekend %}weekend-col{% endif %} {% if day.is_holiday %}holiday-cell-bg{% endif %}">
                                     {% if cell.type == 'work' %}
                                         {{ cell.hours }}
                                     {% elif cell.type == 'CO' %}
                                         <span class="badge-co" title="{% trans 'Concediu Anual (Odihnă)' %}">CO</span>
                                     {% elif cell.type == 'CM' %}
                                         <span class="badge-cm" title="{% trans 'Concediu Medical' %}">CM</span>
+                                    {% elif day.is_holiday %}
+                                        <!-- If it's a legal public holiday (like June 1st) and no custom logging exists, flag it explicitly -->
+                                        <span class="text-holiday-indicator" title="{{ day.holiday_name }}">L</span>
                                     {% else %}
                                         &nbsp;
                                     {% endif %}

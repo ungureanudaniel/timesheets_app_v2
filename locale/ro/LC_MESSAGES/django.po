@@ -197,6 +197,14 @@ msgstr "Listă înregistrări"
 msgid "Hours Summary"
 msgstr "Pontaj"
 
+#: general/base.html
+msgid "Public Holiday"
+msgstr "Sărbătoare legală"
+
+#: general/base.html
+msgid "Filter by Entire Month"
+msgstr "Filtrează după lună"
+
 # Reports
 msgid "Generate Work Report"
 msgstr "Generează Raport de Activitate"

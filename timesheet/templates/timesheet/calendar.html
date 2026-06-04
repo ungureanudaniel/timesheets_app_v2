@@ -13,26 +13,6 @@
     </div>
 </div>
 
-<style>
-    .calendar-table { table-layout: fixed; border-collapse: collapse; }
-    .calendar-day { 
-        height: 120px; 
-        transition: background 0.3s; 
-        vertical-align: top;
-        border: 1px solid #dee2e6;
-    }
-    .calendar-day:hover { background-color: #f8f9fa !important; }
-    .day-number { font-size: 1.1rem; color: #6c757d; }
-    .status-indicator {
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-top: 5px;
-    }
-    .muted-day { background-color: #e9ecef; opacity: 0.5; }
-</style>
-
 <div class="container mt-4">
     <div class="card shadow">
         <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
@@ -58,24 +38,42 @@
                     {% for week in calendar_matrix %}
                     <tr>
                         {% for item in week %}
-                        <td class="calendar-day {% if item.status == 'muted' %}muted-day{% endif %}">
-                            <div class="d-flex justify-content-between">
-                                <span class="day-number">{{ item.day.day }}</span>
+                        <td class="calendar-day {% if item.status == 'muted' %}muted-day{% elif item.is_holiday %}bg-info-subtle bg-opacity-50{% endif %}">
+                            <div class="d-flex justify-content-between p-1">
+                                <span class="day-number {% if item.is_holiday %}text-danger fw-bold{% endif %}">{{ item.day.day }}</span>
                                 {% if item.status != "muted" %}
-                                    <span class="status-indicator bg-{{ item.status }}"></span>
+                                    {% if item.is_holiday %}
+                                        <span class="badge bg-info text-dark small" style="font-size: 0.7rem;" title="{{ item.holiday_name }}">
+                                            {% trans "Liber" %}
+                                        </span>
+                                    {% else %}
+                                        <span class="status-indicator bg-{{ item.status }}"></span>
+                                    {% endif %}
                                 {% endif %}
                             </div>
 
                             {% if item.status != "muted" %}
-                            <div class="text-center mt-2">
-                                <div class="small fw-bold">{{ item.total_hm }}</div>
-                                <div class="badge bg-info text-decoration-none" >{{ item.images }}
-                                                <i class="fas fa-images"></i> {{ image_count }}</div>
+                            <div class="text-center mt-1">
+                                {% if item.is_holiday and not item.total_hm %}
+                                    <div class="text-info-emphasis extra-small fw-bold px-1 text-truncate" style="font-size: 0.72rem;" title="{{ item.holiday_name }}">
+                                        {{ item.holiday_name }}
+                                    </div>
+                                {% else %}
+                                    <div class="small fw-bold">{{ item.total_hm|default:"" }}</div>
+                                {% endif %}
+                                
+                                {% if item.activities > 0 %}
+                                <div class="badge bg-light text-dark border extra-small my-1">
+                                    <i class="fas fa-images text-muted"></i> {{ item.activities }}
+                                </div>
+                                {% endif %}
 
-                                <a href="{% url 'create_timesheet' %}?date={{ item.day|date:'Y-m-d' }}" 
-                                   class="btn btn-sm btn-link p-0 text-decoration-none" style="font-size: 0.75rem;">
-                                   + {% trans "Add" %}
-                                </a>
+                                <div class="mt-1">
+                                    <a href="{% url 'create_timesheet' %}?date={{ item.day|date:'Y-m-d' }}" 
+                                       class="btn btn-sm btn-link p-0 text-decoration-none" style="font-size: 0.75rem;">
+                                        + {% trans "Add" %}
+                                    </a>
+                                </div>
                             </div>
                             {% endif %}
                         </td>
@@ -87,16 +85,20 @@
         </div>
         
         <div class="card-footer bg-white">
-            <div class="d-flex gap-3 small">
+            <div class="d-flex gap-3 small flex-wrap">
                 <span><i class="status-indicator bg-success"></i> {% trans "Completed" %}</span>
                 <span><i class="status-indicator bg-warning"></i> {% trans "Partial" %}</span>
                 <span><i class="status-indicator bg-danger"></i> {% trans "Missing" %}</span>
+                <span><i class="status-indicator bg-info"></i> {% trans "Public Holiday" %}</span>
             </div>
         </div>
+
         <div class="card-header d-flex justify-content-between align-items-center bg-white py-3">
             <h4 class="mb-0 text-primary">{% trans 'Timesheet Entries' %}</h4>
         </div>
-        <div class="card-body p-0"> {% if timesheets %}
+        
+        <div class="card-body p-0"> 
+            {% if timesheets %}
                 <div class="p-3 border-bottom">
                     <span class="text-muted small">{% trans "Found" %} <strong>{{ page_obj.paginator.count }}</strong> {% trans "results" %}</span>
                 </div>
@@ -126,11 +128,8 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ timesheet.status_color }}" 
-                                        title="Day Total: {{ day_total }} hours">
-                                        ● <!-- This is a small circle icon -->
-                                    </span>
-                                   {{ timesheet.date|date:"d M Y" }}
+                                    <span class="badge bg-{{ timesheet.status_color }}" title="Day Total">●</span>
+                                    {{ timesheet.date|date:"d M Y" }}
                                 </td>
                                 <td>
                                     <span class="d-block fw-bold small">{{ timesheet.activity.code }}</span>

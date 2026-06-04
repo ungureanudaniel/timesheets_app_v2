@@ -24,10 +24,11 @@ import openpyxl
 from django.views.generic import TemplateView
 from django.http import HttpResponse, HttpResponseForbidden
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from django.core.mail import send_mail
 from django.db.models import Count
 from timesheet.models import Timesheet
+import holidays
 
 def automated_task_runner(request):
     # Security check: Only let the pinger in
@@ -139,7 +140,7 @@ class PALActivitiesListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
 User = get_user_model()
 
-class HoursSummaryTableView(TemplateView):
+class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
     template_name = "dashboard/hours_summary.html"
 
     def get_context_data(self, **kwargs):
@@ -155,6 +156,9 @@ class HoursSummaryTableView(TemplateView):
         # Split into numerical items
         year, month = map(int, period_query.split('-'))
 
+        # Instantiate Romanian Public Holidays rules engine for this target year
+        ro_holidays = holidays.Romania(years=year)
+
         # Month names for display
         ro_months = {
             1: "Ianuarie", 2: "Februarie", 3: "Martie", 4: "Aprilie",
@@ -167,25 +171,37 @@ class HoursSummaryTableView(TemplateView):
         num_days = calendar.monthrange(year, month)[1]
         month_days_list = []
         
+        # Track valid baseline legal working days for the contract type norm math
+        actual_working_days_count = 0
+        
         for d in range(1, num_days + 1):
+            current_date = date(year, month, d)
             weekday_index = calendar.weekday(year, month, d)
+            
+            is_weekend = weekday_index in [5, 6]
+            is_holiday = current_date in ro_holidays
+            holiday_name = ro_holidays.get(current_date, "") if is_holiday else ""
+
+            if not is_weekend and not is_holiday:
+                actual_working_days_count += 1
+
             month_days_list.append({
                 'day_num': d,
                 'day_letter': ro_days_short[weekday_index],
-                'is_weekend': weekday_index in [5, 6]  # Sat, Sun flags
+                'is_weekend': is_weekend,
+                'is_holiday': is_holiday,
+                'holiday_name': holiday_name
             })
 
         context['current_period'] = period_query
         context['current_month_year'] = f"{ro_months[month]} {year}"
         context['month_days'] = month_days_list
 
-        # 1. Base Permissions Filter: Staff/Managers see all; others see only themselves
         if request.user.is_staff or request.user.groups.filter(name='Managers').exists():
             employees = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
         else:
             employees = User.objects.filter(id=request.user.id)
 
-        # 2. Optimize database retrieval using Django's Prefetch object
         monthly_timesheets = Timesheet.objects.filter(
             date__year=year, 
             date__month=month
@@ -198,8 +214,7 @@ class HoursSummaryTableView(TemplateView):
         employee_data = []
         
         for emp in employees:
-            # 🔥 CRITICAL FIX: Initialize every single day with a default structure
-            # This guarantees that your dictionary has all 28-31 keys, preventing short rows!
+            # Initialize every single day with a default structure
             days_matrix = {d: {'type': 'none', 'hours': ''} for d in range(1, num_days + 1)}
             
             total_hours_worked = 0.0
@@ -211,11 +226,10 @@ class HoursSummaryTableView(TemplateView):
             cached_sheets = getattr(emp, 'cached_month_timesheets', [])
             for ts in cached_sheets:
                 day_number = ts.date.day
-                # Fetch both code and name, transforming them to safe uppercase strings
+                
                 activity_code = ts.activity.code.upper() if (ts.activity and ts.activity.code) else ""
                 activity_name = ts.activity.name.upper() if (ts.activity and ts.activity.name) else ""
                 
-                # 🔥 BROAD PROTECTION MATCHING: Catches 'CO', 'CM', 'Concediu odihna', 'Medical', etc.
                 is_co = (
                     "CO" == activity_code or 
                     "CO" in activity_name or 
@@ -237,7 +251,6 @@ class HoursSummaryTableView(TemplateView):
                     days_matrix[day_number] = {'type': 'CM', 'hours': 'CM'}
                     total_cm_days += 1
                 else:
-                    # Calculate standard work durations
                     if hasattr(ts, 'duration_decimal') and ts.duration_decimal is not None:
                         hours = float(ts.duration_decimal)
                     elif ts.start_time and ts.end_time:
@@ -252,14 +265,13 @@ class HoursSummaryTableView(TemplateView):
                     total_hours_worked += hours
                     worked_days_set.add(day_number)
 
-            # Standard Romanian Norm setup
-            weekdays_count = sum(1 for d in month_days_list if not d['is_weekend'])
-            norma_hours = weekdays_count * 8
+            # Standard Romanian Norm setup subtracting statutory bank holidays 
+            norma_hours = actual_working_days_count * 8
 
             employee_data.append({
                 'employee': emp,
                 'norma_hours': norma_hours,
-                'days_matrix': days_matrix,  # Kept as dictionary for template tags lookup compatibility
+                'days_matrix': days_matrix,  
                 'total_hours_worked': round(total_hours_worked, 1),
                 'total_co_days': total_co_days,
                 'total_cm_days': total_cm_days,
