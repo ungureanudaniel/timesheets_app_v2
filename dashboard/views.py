@@ -155,7 +155,7 @@ class HoursSummaryTableView(TemplateView):
         # Split into numerical items
         year, month = map(int, period_query.split('-'))
 
-        # month and day names for display
+        # Month names for display
         ro_months = {
             1: "Ianuarie", 2: "Februarie", 3: "Martie", 4: "Aprilie",
             5: "Mai", 6: "Iunie", 7: "Iulie", 8: "August",
@@ -179,10 +179,6 @@ class HoursSummaryTableView(TemplateView):
         context['current_month_year'] = f"{ro_months[month]} {year}"
         context['month_days'] = month_days_list
 
-        # ====================================================================
-        # DATABASE AGGREGATION MATRIX
-        # ====================================================================
-        
         # 1. Base Permissions Filter: Staff/Managers see all; others see only themselves
         if request.user.is_staff or request.user.groups.filter(name='Managers').exists():
             employees = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
@@ -202,7 +198,8 @@ class HoursSummaryTableView(TemplateView):
         employee_data = []
         
         for emp in employees:
-            # Build an empty day-by-day matrix container for the employee
+            # 🔥 CRITICAL FIX: Initialize every single day with a default structure
+            # This guarantees that your dictionary has all 28-31 keys, preventing short rows!
             days_matrix = {d: {'type': 'none', 'hours': ''} for d in range(1, num_days + 1)}
             
             total_hours_worked = 0.0
@@ -211,31 +208,46 @@ class HoursSummaryTableView(TemplateView):
             worked_days_set = set() 
 
             # Loop through pre-fetched records smoothly
-            for ts in emp.cached_month_timesheets:
+            cached_sheets = getattr(emp, 'cached_month_timesheets', [])
+            for ts in cached_sheets:
                 day_number = ts.date.day
-                activity_code = ts.activity.code.upper() if ts.activity and ts.activity.code else ""
+                # Fetch both code and name, transforming them to safe uppercase strings
+                activity_code = ts.activity.code.upper() if (ts.activity and ts.activity.code) else ""
+                activity_name = ts.activity.name.upper() if (ts.activity and ts.activity.name) else ""
                 
-                # Identify entry state patterns
-                if "CO" in activity_code or "CONCEDIU ODIHNA" in activity_code:
-                    days_matrix[day_number] = {'type': 'CO', 'hours': 0}
+                # 🔥 BROAD PROTECTION MATCHING: Catches 'CO', 'CM', 'Concediu odihna', 'Medical', etc.
+                is_co = (
+                    "CO" == activity_code or 
+                    "CO" in activity_name or 
+                    "ODIHNA" in activity_name or 
+                    "CONCEDIU ANUAL" in activity_name
+                )
+                
+                is_cm = (
+                    "CM" == activity_code or 
+                    "CM" in activity_name or 
+                    "MEDICAL" in activity_name or 
+                    "BOALA" in activity_name
+                )
+
+                if is_co:
+                    days_matrix[day_number] = {'type': 'CO', 'hours': 'CO'}
                     total_co_days += 1
-                elif "CM" in activity_code or "MEDICAL" in activity_code:
-                    days_matrix[day_number] = {'type': 'CM', 'hours': 0}
+                elif is_cm:
+                    days_matrix[day_number] = {'type': 'CM', 'hours': 'CM'}
                     total_cm_days += 1
                 else:
-                    # Safe check: if you have duration_decimal use it, otherwise fall back to timedeltas
+                    # Calculate standard work durations
                     if hasattr(ts, 'duration_decimal') and ts.duration_decimal is not None:
                         hours = float(ts.duration_decimal)
                     elif ts.start_time and ts.end_time:
-                        # Fallback calculation using timedelta if decimal field doesn't exist
                         today_dummy = datetime.today()
                         dt1 = datetime.combine(today_dummy, ts.start_time)
                         dt2 = datetime.combine(today_dummy, ts.end_time)
                         hours = max(0.0, (dt2 - dt1).total_seconds() / 3600.0)
                     else:
-                        hours = 8.0 # Default standard shift backup fallback
+                        hours = 8.0
                     
-                    # Accumulate daily split sets
                     days_matrix[day_number] = {'type': 'work', 'hours': round(hours, 1)}
                     total_hours_worked += hours
                     worked_days_set.add(day_number)
@@ -247,7 +259,7 @@ class HoursSummaryTableView(TemplateView):
             employee_data.append({
                 'employee': emp,
                 'norma_hours': norma_hours,
-                'days_matrix': days_matrix,
+                'days_matrix': days_matrix,  # Kept as dictionary for template tags lookup compatibility
                 'total_hours_worked': round(total_hours_worked, 1),
                 'total_co_days': total_co_days,
                 'total_cm_days': total_cm_days,
