@@ -1017,8 +1017,8 @@ msgstr "Partial"
 msgid "Missing"
 msgstr "Lipsă"
 
-msgid "Work Days (8h 30m)"
-msgstr "Zile lucrate (8h 30m)"
+msgid "Work Days"
+msgstr "Zile lucrate"
 
 msgid "Total Time"
 msgstr "Total ore"

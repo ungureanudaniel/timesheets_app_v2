@@ -333,7 +333,7 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
         total_days = total_hours_decimal / standard_day
         
         summary_table_data = [
-            [_('Total Time'), _('Work Days (8h 30m)'), _('Entries')],
+            [_('Total Time'), _('Work Days'), _('Entries')],
             [
                 self._format_hours_to_hm(total_hours_decimal), 
                 f"{total_days:.2f}", 
@@ -505,7 +505,9 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
         doc.build(elements)
         buffer.seek(0)
         response = HttpResponse(buffer, content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="activity_report.pdf"'
+        user_fullname = timesheets.first().user.get_full_name() if timesheets.exists() else 'user'
+        user_fullname = user_fullname.replace(" ", "_")
+        response['Content-Disposition'] = 'attachment; filename="activity_report_{}_{}.pdf"'.format(timezone.now().strftime("%Y-%m-%d"), user_fullname)
         return response
 
     def post(self, request, *args, **kwargs):
