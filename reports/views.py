@@ -480,7 +480,8 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
                 sig_table = Table([
                     [sig_img],
                     [Paragraph("Semnătură angajat", styles['Normal'])],
-                    [Paragraph(timesheets.first().user.get_full_name() if timesheets.first().user.job_title else 'N/A', styles['Normal'])]
+                    [Paragraph(timesheets.first().user.get_full_name() if timesheets.first().user.job_title else 'N/A', styles['Normal'])],
+                    [Paragraph("Data generare raport: " + timezone.now().strftime("%d-%m-%Y"), styles['Normal'])]
                 ], colWidths=[2.5 * inch])
                 
                 sig_table.setStyle(TableStyle([
