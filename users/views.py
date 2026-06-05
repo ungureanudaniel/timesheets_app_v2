@@ -189,32 +189,36 @@ class ProfileView(LoginRequiredMixin, generic.DetailView):
 
 class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, generic.UpdateView):
     model = CustomUser
-    form_class = UserManagementForm  # We'll create this form
     template_name = "accounts/user_update.html"
-    success_url = reverse_lazy('users:user_management')  # Redirect back to user list
+    success_url = reverse_lazy('users:user_management')
 
     def test_func(self):
         """Only admins and managers can access this view"""
         current_user = self.request.user
         user_to_edit = self.get_object()
         
+        # Admin can edit absolutely anyone
         if current_user.is_admin:
             return True
-        elif current_user.is_manager and user_to_edit.role != 'ADMIN':
+        
+        # Managers can edit reporters or other managers, but NEVER an ADMIN
+        if current_user.is_manager and not user_to_edit.is_admin:
             return True
+            
         return False
 
     def get_form_class(self):
-        """Different forms based on user role"""
+        """Serve different forms based on user role"""
         if self.request.user.is_admin:
             return AdminUserForm
-        else:  # Manager
-            return ManagerUserForm
+        return ManagerUserForm
 
     def form_valid(self, form):
+        # Save the form instance first
+        response = super().form_valid(form)
+        # Add the success notification banner message
         messages.success(self.request, _('User updated successfully!'))
-        return super().form_valid(form)
-
+        return response
 
 class UserDeleteView(LoginRequiredMixin, UserPassesTestMixin, generic.DeleteView):
     model = CustomUser
