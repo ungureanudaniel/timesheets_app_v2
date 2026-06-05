@@ -6,7 +6,7 @@ from django.contrib.auth.admin import UserAdmin
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     # Specify what fields to show in the list display
-    list_display = ['username', 'email', 'is_approved', 'is_staff', 'is_superuser', 'bio', 'resume', 'avatar']
+    list_display = ['username', 'email', 'is_approved', 'is_staff', 'is_superuser', 'bio', 'job_title', 'resume', 'avatar']
 
     # Add the custom `is_approved` field in the form view
     fieldsets = tuple(UserAdmin.fieldsets) + (
