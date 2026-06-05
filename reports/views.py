@@ -284,6 +284,7 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         report_data = request.session.get('report_data', {})
+        print(report_data)
         if not report_data:
             return HttpResponse("Nu s-au găsit date pentru raport.")
 
@@ -322,6 +323,9 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
 
         # --- 3. HEADER & SUMMARY TABLE ---
         elements.append(Paragraph(f"Raport de activitate", styles['Title']))
+        elements.append(Paragraph(f"Angajat: {timesheets.first().user.get_full_name() if timesheets.exists() else 'N/A'}", styles['Heading4']))
+        elements.append(Paragraph(f"Functie: {timesheets.first().user.job_title if timesheets.exists() else 'N/A'}", styles['Heading4']))
+
         elements.append(Paragraph(f"Perioadă: {start_date.strftime('%d.%m.%Y')} - {end_date.strftime('%d.%m.%Y')}", styles['Normal']))
         elements.append(Spacer(1, 0.2 * inch))
 
@@ -475,7 +479,8 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
                 # 5. Build Signature Table
                 sig_table = Table([
                     [sig_img],
-                    [Paragraph("Semnătură angajat", styles['Normal'])]
+                    [Paragraph("Semnătură angajat", styles['Normal'])],
+                    [Paragraph(timesheets.first().user.get_full_name() if timesheets.first().user.job_title else 'N/A', styles['Normal'])]
                 ], colWidths=[2.5 * inch])
                 
                 sig_table.setStyle(TableStyle([

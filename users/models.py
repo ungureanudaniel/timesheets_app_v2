@@ -48,6 +48,7 @@ class CustomUser(AbstractUser):
     first_name = models.CharField(_('first name'), max_length=30, blank=True)
     last_name = models.CharField(_('last name'), max_length=150, blank=True)
     email = models.EmailField(_('email address'), unique=True, blank=False)
+    job_title = models.CharField(max_length=100, blank=True)
     is_approved = models.BooleanField(default=False)
     is_person = models.BooleanField(default=True)
     bio = models.TextField(default="Write a short description of yourself", blank=True)

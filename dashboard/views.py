@@ -221,7 +221,8 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
             total_co_days = 0
             total_cm_days = 0
             worked_days_set = set() 
-
+            co_days_set = set()
+            cm_days_set = set()
             # Loop through pre-fetched records smoothly
             cached_sheets = getattr(emp, 'cached_month_timesheets', [])
             for ts in cached_sheets:
@@ -232,24 +233,25 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                 
                 is_co = (
                     "CO" == activity_code or 
-                    "CO" in activity_name or 
                     "ODIHNA" in activity_name or 
+                    "ODIHNĂ" in activity_name or
+                    "CONCEDIU DE ODIHNĂ" in activity_name or
                     "CONCEDIU ANUAL" in activity_name
                 )
                 
                 is_cm = (
                     "CM" == activity_code or 
-                    "CM" in activity_name or 
-                    "MEDICAL" in activity_name or 
+                    "MEDICAL" in activity_name or
+                    "CONCEDIU MEDICAL" in activity_name or
                     "BOALA" in activity_name
                 )
 
                 if is_co:
                     days_matrix[day_number] = {'type': 'CO', 'hours': 'CO'}
-                    total_co_days += 1
+                    co_days_set.add(day_number)
                 elif is_cm:
                     days_matrix[day_number] = {'type': 'CM', 'hours': 'CM'}
-                    total_cm_days += 1
+                    cm_days_set.add(day_number)
                 else:
                     if hasattr(ts, 'duration_decimal') and ts.duration_decimal is not None:
                         hours = float(ts.duration_decimal)
@@ -264,7 +266,8 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                     days_matrix[day_number] = {'type': 'work', 'hours': round(hours, 1)}
                     total_hours_worked += hours
                     worked_days_set.add(day_number)
-
+            
+            eligible_meal_ticket_days = worked_days_set - co_days_set - cm_days_set
             # Standard Romanian Norm setup subtracting statutory bank holidays 
             norma_hours = actual_working_days_count * 8
 
@@ -273,9 +276,9 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                 'norma_hours': norma_hours,
                 'days_matrix': days_matrix,  
                 'total_hours_worked': round(total_hours_worked, 1),
-                'total_co_days': total_co_days,
-                'total_cm_days': total_cm_days,
-                'meal_tickets_count': len(worked_days_set)
+                'total_co_days': len(co_days_set),
+                'total_cm_days': len(cm_days_set),
+                'meal_tickets_count': len(eligible_meal_ticket_days)
             })
 
         context['employee_data'] = employee_data

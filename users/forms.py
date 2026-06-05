@@ -125,7 +125,7 @@ class UsernameEmailChangeForm(UserChangeForm):
 class ProfileChangeForm(forms.ModelForm):
     class Meta:
         model = CustomUser
-        fields = ['first_name', 'last_name', 'bio', 'avatar', 'resume']
+        fields = ['first_name', 'last_name', 'job_title', 'bio', 'avatar', 'resume']
 
     bio = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4}), required=False)  # Define bio with Textarea widget
 
@@ -138,6 +138,7 @@ class ProfileChangeForm(forms.ModelForm):
             self.fields['last_name'].initial = user.last_name
             self.fields['avatar'].initial = user.avatar
             self.fields['bio'].initial = user.bio
+            self.fields['job_title'].initial = user.job_title
             self.fields['resume'].initial = user.resume
 
         # Apply Bootstrap classes and custom styles to form fields
@@ -148,6 +149,10 @@ class ProfileChangeForm(forms.ModelForm):
         self.fields['last_name'].widget.attrs.update({
             'class': 'form-control d-flex p-2 bd-highlight',
             'placeholder': _('Enter last name'),
+        })
+        self.fields['job_title'].widget.attrs.update({
+            'class': 'form-control d-flex p-2 bd-highlight',
+            'placeholder': _('Enter job title'),
         })
         self.fields['bio'].widget.attrs.update({
             'class': 'form-control d-flex p-2 bd-highlight',
