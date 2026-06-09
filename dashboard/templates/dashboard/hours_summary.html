@@ -107,7 +107,7 @@
                     {% for row in employee_data %}
                     <tr>
                         <td>{{ forloop.counter }}</td>
-                        <td class="text-start px-2 fw-bold text-dark">{{ row.employee.get_full_name|default:row.employee.username }}</td>
+                        <td class="text-start px-2 fw-bold text-dark">{{ row.employee.last_name }} {{ row.employee.first_name|default:row.employee.username }}</td>
                         <td class="text-muted">{{ row.norma_hours|default:"168" }}</td>
                         {% for day in month_days %}
                             {% with cell=row.days_matrix|dictget:day.day_num %}
