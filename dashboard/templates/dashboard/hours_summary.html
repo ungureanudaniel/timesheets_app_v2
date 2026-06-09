@@ -89,6 +89,8 @@
                         <th rowspan="2" class="summary-header" style="width: 60px;">{% trans "Total ore" %}</th>
                         <th rowspan="2" class="summary-header" style="width: 45px;">{% trans "Zile CO" %}</th>
                         <th rowspan="2" class="summary-header" style="width: 45px;">{% trans "Zile CM" %}</th>
+                        <th rowspan="2" class="summary-header" style="width: 45px;">{% trans "Zile EF" %}</th>
+
                         <th rowspan="2" class="summary-header" style="width: 55px;">{% trans "Tichete Masă" %}</th>
                     </tr>
                     <tr>
@@ -116,6 +118,8 @@
                                         <span class="badge-co" title="{% trans 'Concediu Anual (Odihnă)' %}">CO</span>
                                     {% elif cell.type == 'CM' %}
                                         <span class="badge-cm" title="{% trans 'Concediu Medical' %}">CM</span>
+                                    {% elif cell.type == 'EF' %}
+                                        <span class="badge-ef" title="{% trans 'Eveniment Familial' %}">EF</span>
                                     {% elif day.is_holiday %}
                                         <!-- If it's a legal public holiday (like June 1st) and no custom logging exists, flag it explicitly -->
                                         <span class="text-holiday-indicator" title="{{ day.holiday_name }}">L</span>
@@ -129,6 +133,7 @@
                         <td class="fw-bold bg-light text-dark">{{ row.total_hours_worked }}</td>
                         <td class="fw-bold text-success">{{ row.total_co_days|default:"0" }}</td>
                         <td class="fw-bold text-danger">{{ row.total_cm_days|default:"0" }}</td>
+                        <td class="fw-bold text-danger">{{ row.total_ef_days|default:"0" }}</td>
                         <td class="fw-bold text-primary bg-light">{{ row.meal_tickets_count|default:"0" }}</td>
                     </tr>
                     {% empty %}

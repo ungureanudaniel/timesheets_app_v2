@@ -28,7 +28,13 @@
                         <div class="mb-3">
                             <label class="form-label">{% trans "Funds Source" %}</label>
                             {{ form.fundssource }}
-                            {% if form.fundssource.errors %}<div class="text-danger small">{{ form.fundssource.errors }}</div>{% endif %}
+                            {% if form.fundssource.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.fundssource.errors %}
+                                        <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
                         <div class="mb-3">
                             <label class="form-label">{% trans "Date" %}</label>
@@ -48,7 +54,7 @@
                             </div>
                         </div>
                         <div class="row mb-4 bg-light p-3 rounded border mx-0">
-                            <div class="col-md-6 mb-2 mb-md-0">
+                            <div class="col-md-4 mb-2 mb-md-0">
                                 <div class="form-check form-switch">
                                     {{ form.is_annual_holiday }}
                                     <label class="form-check-label fw-bold ms-2" for="{{ form.is_annual_holiday.id_for_label }}">
@@ -58,7 +64,7 @@
                                 {% if form.is_annual_holiday.errors %}<div class="text-danger small">{{ form.is_annual_holiday.errors }}</div>{% endif %}
                             </div>
                             
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-check form-switch">
                                     {{ form.is_sick_leave }}
                                     <label class="form-check-label fw-bold ms-2" for="{{ form.is_sick_leave.id_for_label }}">
@@ -66,6 +72,15 @@
                                     </label>
                                 </div>
                                 {% if form.is_sick_leave.errors %}<div class="text-danger small">{{ form.is_sick_leave.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    {{ form.is_family_event }}
+                                    <label class="form-check-label fw-bold ms-2" for="{{ form.is_family_event.id_for_label }}">
+                                        <i class="fas fa-users text-danger"></i> {% trans "Eveniment familial" %}
+                                    </label>
+                                </div>
+                                {% if form.is_family_event.errors %}<div class="text-danger small">{{ form.is_family_event.errors }}</div>{% endif %}
                             </div>
                         </div>
                         <div class="mb-3" id="activity-container">
@@ -84,7 +99,7 @@
                                 <div class="form-check form-switch">
                                     {{ form.submitted_to_smart }}
                                     <label class="form-check-label fw-bold ms-2" for="{{ form.submitted_to_smart.id_for_label }}">
-                                        <i class="fas fa-umbrella-beach text-primary"></i> {% trans "Activitate încărcată în Smart" %}
+                                        <i class="fas fa-cloud-upload-alt text-primary"></i> {% trans "Activitate încărcată în Smart" %}
                                     </label>
                                 </div>
                                 {% if form.submitted_to_smart.errors %}<div class="text-danger small">{{ form.submitted_to_smart.errors }}</div>{% endif %}
@@ -117,6 +132,7 @@
     document.addEventListener("DOMContentLoaded", function() {
         const holidayCheck = document.getElementById('{{ form.is_annual_holiday.id_for_label }}');
         const sickCheck = document.getElementById('{{ form.is_sick_leave.id_for_label }}');
+        const familyEventCheck = document.getElementById('{{ form.is_family_event.id_for_label }}');
         const dateInput = document.getElementById('timesheet-date');
         
         const fundsSourceInput = document.getElementById('{{ form.fundssource.id_for_label }}');
@@ -187,12 +203,24 @@
         function toggleFields() {
             const isHoliday = holidayCheck && holidayCheck.checked;
             const isSick = sickCheck && sickCheck.checked;
-            const isLeave = isHoliday || isSick;
+            const isFamilyEvent = familyEventCheck && familyEventCheck.checked;
+            const isLeave = isHoliday || isSick || isFamilyEvent;
 
             if (isLeave) {
                 // Apply database text matchups
                 selectOptionByText(fundsSourceInput, 'RNP ROMSILVA');
-                selectOptionByText(activityInput, isHoliday ? 'CONCEDIU ANUAL' : 'CONCEDIU MEDICAL');
+                
+                // 💡 FIX: Safely sequenced ternary conditions without syntax errors
+                let targetActivity = '';
+                if (isHoliday) {
+                    targetActivity = 'CONCEDIU ANUAL';
+                } else if (isSick) {
+                    targetActivity = 'CONCEDIU MEDICAL';
+                } else if (isFamilyEvent) {
+                    targetActivity = 'EVENIMENT FAMILIAL';
+                }
+                
+                selectOptionByText(activityInput, targetActivity);
 
                 const targetHours = getLeaveHours();
                 if (startTimeInput) startTimeInput.value = targetHours.start;
@@ -209,21 +237,43 @@
         // Event binding safely
         if (holidayCheck) {
             holidayCheck.addEventListener('change', function() {
-                if (this.checked && sickCheck) sickCheck.checked = false;
+                if (this.checked) {
+                    if (sickCheck) sickCheck.checked = false;
+                    if (familyEventCheck) familyEventCheck.checked = false;
+                }
                 toggleFields();
             });
         }
 
         if (sickCheck) {
             sickCheck.addEventListener('change', function() {
-                if (this.checked && holidayCheck) holidayCheck.checked = false;
+                if (this.checked) {
+                    if (holidayCheck) holidayCheck.checked = false;
+                    if (familyEventCheck) familyEventCheck.checked = false;
+                }
+                toggleFields();
+            });
+        }
+
+        // 💡 NEW: Event listener to control Family Event exclusivity mutations
+        if (familyEventCheck) {
+            familyEventCheck.addEventListener('change', function() {
+                if (this.checked) {
+                    if (holidayCheck) holidayCheck.checked = false;
+                    if (sickCheck) sickCheck.checked = false;
+                }
                 toggleFields();
             });
         }
 
         if (dateInput) {
             dateInput.addEventListener('change', function() {
-                if ((holidayCheck && holidayCheck.checked) || (sickCheck && sickCheck.checked)) {
+                const isHoliday = holidayCheck && holidayCheck.checked;
+                const isSick = sickCheck && sickCheck.checked;
+                const isFamilyEvent = familyEventCheck && familyEventCheck.checked;
+                
+                // 💡 UPDATED: Dynamic recalculation now tracks family event triggers too
+                if (isHoliday || isSick || isFamilyEvent) {
                     toggleFields();
                 }
             });

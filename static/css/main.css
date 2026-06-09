@@ -303,7 +303,10 @@ body {
         font-weight: 800;
         color: #dc3545;
     }
-    
+    .badge-ef {
+        font-weight: 800;
+        color: #dc3545;
+    }
     .filter-panel {
         background-color: #ffffff;
         border-radius: 8px;

@@ -24,6 +24,11 @@ class TimesheetForm(forms.ModelForm):
         label=_("Concediu Medical"),
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
+    is_family_event = forms.BooleanField(
+        required=False, 
+        label=_("Eveniment Familial"),
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
 
     date = forms.DateField(
         widget=forms.DateInput(attrs={
@@ -59,8 +64,16 @@ class TimesheetForm(forms.ModelForm):
         self.requesting_user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        self.fields['activity'].required = False
-        self.fields['fundssource'].required = False
+        if self.instance and self.instance.pk and self.instance.activity:
+            activity_name = self.instance.activity.name.upper() if hasattr(self.instance.activity, 'name') else str(self.instance.activity).upper()
+            is_special = any(x in activity_name for x in ['CONCEDIU', 'ANNUAL', 'SICK', 'EVENIMENT', 'FAMILY'])
+            self.fields['activity'].required = not is_special
+            self.fields['fundssource'].required = not is_special
+        else:
+            # For new entries, let the JavaScript handle the visual unlocking/locking. 
+            # We keep them required=True here so Django's engine catches empty values natively!
+            self.fields['activity'].required = True
+            self.fields['fundssource'].required = True
         
         if self.instance and self.instance.date:
             self.fields['date'].initial = self.instance.date
@@ -77,13 +90,15 @@ class TimesheetForm(forms.ModelForm):
             else:                 # Monday - Thursday
                 self.fields['end_time'].initial = "16:30"
 
-        # Active Switch Memory Checklist on Edit (Matches readable name patterns)
+        # Active Switch Memory Checklist on Edit
         if self.instance and self.instance.pk and self.instance.activity:
             activity_name = self.instance.activity.name.upper() if hasattr(self.instance.activity, 'name') else str(self.instance.activity).upper()
             if 'CONCEDIU ANUAL' in activity_name or 'ANNUAL' in activity_name:
                 self.fields['is_annual_holiday'].initial = True
             elif 'CONCEDIU MEDICAL' in activity_name or 'SICK' in activity_name:
                 self.fields['is_sick_leave'].initial = True
+            elif 'EVENIMENT FAMILIAL' in activity_name or 'FAMILY' in activity_name:
+                self.fields['is_family_event'].initial = True
 
         if self.requesting_user and not self.requesting_user.is_superuser:
             self.fields['user'].widget = forms.HiddenInput()
@@ -100,18 +115,44 @@ class TimesheetForm(forms.ModelForm):
         date = cleaned_data.get('date')
         is_holiday = cleaned_data.get('is_annual_holiday')
         is_sick = cleaned_data.get('is_sick_leave')
-
-        if is_holiday and is_sick:
-            raise forms.ValidationError(_("Nu puteți selecta ambele tipuri de concediu în aceeași zi."))
+        is_family_event = cleaned_data.get('is_family_event')
         
-        if (is_holiday or is_sick) and date:
-            # 1. Pull exact DB instance for Activity based on your template's display strings
-            target_activity_name = 'CONCEDIU ANUAL' if is_holiday else 'CONCEDIU MEDICAL'
+        is_special_leave = bool(is_holiday or is_sick or is_family_event)
+        
+        if is_special_leave:
+            # 💡 FIX: Using the public self.errors dictionary clears the VS Code linter warnings completely
+            if 'fundssource' in self.errors:
+                del self.errors['fundssource']
+            if 'activity' in self.errors:
+                del self.errors['activity']
+        else:
+            # Standard work entry checks
+            if not cleaned_data.get('fundssource'):
+                self.add_error('fundssource', _("Vă rugăm să selectați o sursă de finanțare."))
+            if not cleaned_data.get('activity'):
+                self.add_error('activity', _("Vă rugăm să selectați tipul de activitate."))
+                
+            if self.errors:
+                return cleaned_data
+
+        checked_leaves_count = sum([bool(is_holiday), bool(is_sick), bool(is_family_event)])
+        if checked_leaves_count > 1:
+            raise forms.ValidationError(_("Nu puteți bifa mai multe tipuri de evenimente/concedii speciale în aceeași zi."))
+        
+        if (is_holiday or is_sick or is_family_event) and date:
+            # 💡 FIX: Map exactly to EVENIMENT FAMILIAL if checked
+            if is_holiday:
+                target_activity_name = 'CONCEDIU ANUAL'
+            elif is_sick:
+                target_activity_name = 'CONCEDIU MEDICAL'
+            else:
+                target_activity_name = 'EVENIMENT FAMILIAL'
+
             activity_obj = Activity.objects.filter(name__icontains=target_activity_name).first()
             
             if not activity_obj:
-                # Fallback to absolute match if fuzzy query returned nothing
-                activity_obj = Activity.objects.filter(name__icontains='CONCEDIU').first()
+                # Fallback search rule if precise text strings are missing inside DB model data
+                activity_obj = Activity.objects.filter(name__icontains='EVENIMENT' if is_family_event else 'CONCEDIU').first()
                 
             cleaned_data['activity'] = activity_obj
             

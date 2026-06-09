@@ -223,6 +223,7 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
             worked_days_set = set() 
             co_days_set = set()
             cm_days_set = set()
+            ef_days_set = set()
             # Loop through pre-fetched records smoothly
             cached_sheets = getattr(emp, 'cached_month_timesheets', [])
             for ts in cached_sheets:
@@ -245,13 +246,21 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                     "CONCEDIU MEDICAL" in activity_name or
                     "BOALA" in activity_name
                 )
-
+                
+                is_ef = (
+                    "EF" == activity_code or 
+                    "EVENIMENT FAMILIAL" in activity_name or
+                    "FAMILIAL" in activity_name
+                )
                 if is_co:
                     days_matrix[day_number] = {'type': 'CO', 'hours': 'CO'}
                     co_days_set.add(day_number)
                 elif is_cm:
                     days_matrix[day_number] = {'type': 'CM', 'hours': 'CM'}
                     cm_days_set.add(day_number)
+                elif is_ef:
+                    days_matrix[day_number] = {'type': 'EF', 'hours': 'EF'}
+                    ef_days_set.add(day_number)
                 else:
                     if hasattr(ts, 'duration_decimal') and ts.duration_decimal is not None:
                         hours = float(ts.duration_decimal)
@@ -286,6 +295,7 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                 'total_hours_worked': round(total_hours_worked, 1),
                 'total_co_days': len(co_days_set),
                 'total_cm_days': len(cm_days_set),
+                'total_ef_days': len(ef_days_set),
                 'meal_tickets_count': len(eligible_meal_ticket_days)
             })
 
