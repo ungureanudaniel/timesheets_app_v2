@@ -299,7 +299,7 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                 'meal_tickets_count': len(eligible_meal_ticket_days)
             })
 
-        context['employee_data'] = employee_data
+        context['employee_data'] = sorted(employee_data, key=lambda x: x['employee'].last_name)
         return context
 
 class PALActivitiesUploadView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
