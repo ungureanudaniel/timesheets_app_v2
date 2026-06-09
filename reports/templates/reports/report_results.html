@@ -31,6 +31,8 @@
                 <form id="pdf-export-form" action="{% url 'export_pdf' %}" method="POST" style="display: inline;">
                     {% csrf_token %}
                     <input type="hidden" name="signature_data" id="signature-data">
+                    <input type="hidden" name="reg_number" id="hidden-reg-number">
+                    <input type="hidden" name="reg_date" id="hidden-reg-date">
                     <button type="button" id="btn-open-sig" class="btn btn-danger">
                         <i class="fas fa-file-pdf"></i> {% trans "Export PDF" %}
                     </button>
@@ -208,22 +210,33 @@
 }
 </style>
 <!-- SIGNATURE MODAL -->
-            <div id="sig-modal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85);">
-                <div style="background:white; margin:10% auto; padding:20px; width:95%; max-width:500px; border-radius:15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); text-align:center;">
-                    <h4 class="mb-3">{% trans "Semnătură necesară" %}</h4>
-                    <p class="text-muted small">{% trans "Vă rugăm să semnați în caseta de mai jos pentru a finaliza exportul." %}</p>
-                    
-                    <div style="background:#f9f9f9; border:1px solid #ddd; border-radius:8px;">
-                        <canvas id="signature-pad" style="width:100%; height:200px; cursor: crosshair; touch-action: none;"></canvas>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between mt-4">
-                        <button type="button" class="btn btn-secondary" id="btn-close-sig">{% trans "Anulează" %}</button>
-                        <button type="button" class="btn btn-outline-danger" id="btn-clear-sig">{% trans "Șterge" %}</button>
-                        <button type="button" class="btn btn-success" id="btn-submit-sig">{% trans "Semnează & Descarcă" %}</button>
-                    </div>
-                </div>
-            </div>
+<div id="sig-modal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85);">
+    <div style="background:white; margin:5% auto; padding:20px; width:95%; max-width:500px; border-radius:15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); text-align:left;">
+        <h4 class="mb-1 text-center">{% trans "Înregistrare și Semnătură" %}</h4>
+        <p class="text-muted small text-center mb-4">{% trans "Vă rugăm să introduceți datele de înregistrare și să semnați pentru a finaliza exportul." %}</p>
+        
+        <div class="mb-3">
+            <label for="reg-number-input" class="form-label small fw-bold text-secondary">{% trans "Număr Înregistrare" %} *</label>
+            <input type="text" id="reg-number-input" class="form-control" required placeholder="Ex: 124">
+        </div>
+        
+        <div class="mb-4">
+            <label for="reg-date-input" class="form-label small fw-bold text-secondary">{% trans "Data Înregistrare" %} *</label>
+            <input type="date" id="reg-date-input" class="form-control" required value="{% now 'Y-m-d' %}">
+        </div>
+
+        <label class="form-label small fw-bold text-secondary">{% trans "Semnătură digitală" %} *</label>
+        <div style="background:#f9f9f9; border:1px solid #ddd; border-radius:8px;">
+            <canvas id="signature-pad" style="width:100%; height:180px; cursor: crosshair; touch-action: none;"></canvas>
+        </div>
+        
+        <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-secondary" id="btn-close-sig">{% trans "Anulează" %}</button>
+            <button type="button" class="btn btn-outline-danger" id="btn-clear-sig">{% trans "Șterge" %}</button>
+            <button type="button" class="btn btn-success" id="btn-submit-sig">{% trans "Înregistrează & Descarcă" %}</button>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -236,7 +249,8 @@
         // 1. Open Modal
         document.getElementById("btn-open-sig").addEventListener("click", () => {
             modal.style.display = "block";
-            resizeCanvas();
+            // 💡 Delay slightly to give Bootstrap time to initialize the container box layout dimensions
+            setTimeout(resizeCanvas, 50);
         });
 
         // 2. Close Modal
@@ -251,26 +265,47 @@
 
         // 4. Submit Form
         document.getElementById("btn-submit-sig").addEventListener("click", () => {
+            const regNum = document.getElementById("reg-number-input").value.trim();
+            const regDate = document.getElementById("reg-date-input").value;
+
+            if (!regNum) {
+                alert("{% trans 'Vă rugăm să introduceți numărul de înregistrare.' %}");
+                return;
+            }
+            if (!regDate) {
+                alert("{% trans 'Vă rugăm să selectați data înregistrării.' %}");
+                return;
+            }
             if (signaturePad.isEmpty()) {
                 alert("{% trans 'Vă rugăm să introduceți semnătura.' %}");
                 return;
             }
             
-            // Set the hidden input value and submit
+            document.getElementById("hidden-reg-number").value = regNum;
+            document.getElementById("hidden-reg-date").value = regDate;
             document.getElementById("signature-data").value = signaturePad.toDataURL();
+            
             document.getElementById("pdf-export-form").submit();
             
-            // Close modal after a short delay so user doesn't get confused
             setTimeout(() => { modal.style.display = "none"; }, 500);
         });
 
         function resizeCanvas() {
             const ratio = Math.max(window.devicePixelRatio || 1, 1);
-            canvas.width = canvas.offsetWidth * ratio;
-            canvas.height = canvas.offsetHeight * ratio;
+            
+            // 💡 FIX: Fallback to fixed dimensions if offsetWidth renders as 0 inside hidden nodes
+            const width = canvas.offsetWidth || 460; 
+            const height = canvas.offsetHeight || 180;
+
+            canvas.width = width * ratio;
+            canvas.height = height * ratio;
             canvas.getContext("2d").scale(ratio, ratio);
+            
+            // Clear layout memory loops safely
             signaturePad.clear();
         }
+
+        window.addEventListener("resize", resizeCanvas);
     });
 </script>
 {% endblock %}

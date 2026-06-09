@@ -263,8 +263,16 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                     else:
                         hours = 8.0
                     
-                    days_matrix[day_number] = {'type': 'work', 'hours': round(hours, 1)}
+                    current_entry = days_matrix[day_number]
+                    if current_entry['type'] == 'work':
+                        existing_hours = float(current_entry['hours']) # add the new hours to the existing ones for that day
+                        new_total = existing_hours + hours
+                        days_matrix[day_number]['hours'] = round(new_total, 1)
+                    else:
+                        days_matrix[day_number] = {'type': 'work', 'hours': round(hours, 1)}
+
                     total_hours_worked += hours
+                    # Track this day as a worked day for meal ticket eligibility
                     worked_days_set.add(day_number)
             
             eligible_meal_ticket_days = worked_days_set - co_days_set - cm_days_set

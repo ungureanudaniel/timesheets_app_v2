@@ -3,6 +3,7 @@ from django.db.models import Sum, Count, Avg
 from django.utils import timezone
 from django.urls import reverse_lazy
 from matplotlib.ticker import FuncFormatter
+from urllib3 import request
 from timesheet.models import Timesheet
 from .forms import ReportPeriodForm
 from datetime import timedelta, datetime
@@ -284,7 +285,6 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         report_data = request.session.get('report_data', {})
-        print(report_data)
         if not report_data:
             return HttpResponse("Nu s-au găsit date pentru raport.")
 
@@ -321,13 +321,33 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
             code = ts.activity.code
             activity_totals[code] = activity_totals.get(code, 0) + h
 
-        # --- 3. HEADER & SUMMARY TABLE ---
-        elements.append(Paragraph(f"Raport de activitate", styles['Title']))
-        elements.append(Paragraph(f"Angajat: {timesheets.first().user.get_full_name() if timesheets.exists() else 'N/A'}", styles['Heading4']))
-        elements.append(Paragraph(f"Functie: {timesheets.first().user.job_title if timesheets.exists() else 'N/A'}", styles['Heading4']))
+        # Pull registration variables cleanly from session/request parsing upstream
+        reg_num = report_data.get('reg_number', '_______')
+        reg_date_str = report_data.get('reg_date', '')
+        if reg_date_str:
+            try:
+                reg_date_formatted = datetime.strptime(reg_date_str, '%Y-%m-%d').strftime('%d.%m.%Y')
+            except ValueError:
+                reg_date_formatted = reg_date_str
+        else:
+            reg_date_formatted = '__.__.____'
 
-        elements.append(Paragraph(f"Perioadă: {start_date.strftime('%d.%m.%Y')} - {end_date.strftime('%d.%m.%Y')}", styles['Normal']))
-        elements.append(Spacer(1, 0.2 * inch))
+        # Safely determine employee context variables
+        first_ts = timesheets.first()
+        employee_name = first_ts.user.get_full_name() if (timesheets.exists() and first_ts.user) else 'N/A'
+        job_title = getattr(first_ts.user, 'job_title', 'N/A') if (timesheets.exists() and first_ts.user) else 'N/A'
+
+        # --- 4. HEADER WITH REGISTRATION INFO ---
+        elements.append(Paragraph(f"<b>Nr. Înregistrare:</b> {reg_num} / {reg_date_formatted}", styles['Normal']))
+        elements.append(Spacer(1, 0.1 * inch))
+        
+        elements.append(Paragraph(f"Raport de activitate", styles['Title']))
+        elements.append(Spacer(1, 0.1 * inch))
+        
+        elements.append(Paragraph(f"<b>Angajat:</b> {employee_name}", styles['Normal']))
+        elements.append(Paragraph(f"<b>Funcție:</b> {job_title}", styles['Normal']))
+        elements.append(Paragraph(f"<b>Perioada raportării:</b> {start_date.strftime('%d.%m.%Y')} - {end_date.strftime('%d.%m.%Y')}", styles['Normal']))
+        elements.append(Spacer(1, 0.25 * inch))
 
         standard_day = 8.5
         total_days = total_hours_decimal / standard_day
@@ -345,8 +365,11 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
         st.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, -1), FONT_NAME),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ]))
         elements.append(st)
         elements.append(Spacer(1, 0.3 * inch))
@@ -513,15 +536,35 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
     def post(self, request, *args, **kwargs):
         # This receives the signature data
         signature_data = request.POST.get('signature_data')
+        reg_number = request.POST.get('reg_number')
+        reg_date = request.POST.get('reg_date')
         
         # Store it in the session so the GET part of the PDF logic can find it
         report_data = request.session.get('report_data', {})
         report_data['signature_base64'] = signature_data
+        report_data['reg_number'] = reg_number
+        report_data['reg_date'] = reg_date
         request.session['report_data'] = report_data
-        
-        # Now call the same logic as the GET method to return the PDF
-        return self.get(request, *args, **kwargs)
+        request.session.modified = True
 
+        user_id = report_data.get('user_id')
+        start_str = report_data.get('start_date', '')
+        end_str = report_data.get('end_date', '')
+
+        if reg_number and reg_date and user_id:
+            try:
+                from registries.models import RangerDocumentRegistry
+                RangerDocumentRegistry.objects.create(
+                    user_id=user_id,
+                    doc_number=reg_number,
+                    doc_date=reg_date,
+                    explanation=f"Raport activitate interval {start_str} - {end_str}"
+                )
+            except Exception as e:
+                print(f"Failed to record registry log row: {e}")
+        
+        # Hand off control explicitly into updated GET execution pipeline above
+        return self.get(request, *args, **kwargs)
     def _generate_pie_chart(self, data_dict):
         plt.figure(figsize=(6, 6)) # Keep it square to prevent vertical distortion
         
