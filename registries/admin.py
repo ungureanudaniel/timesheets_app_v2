@@ -4,20 +4,20 @@ from .models import RangerDocumentRegistry
 
 @admin.register(RangerDocumentRegistry)
 class RangerDocumentRegistryAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'description', 'created_at', 'updated_at')
-    search_fields = ('name', 'description')
-    list_filter = ('created_at', 'updated_at')
+    list_display = ('id', 'doc_number', 'doc_date', 'explanation', 'created_at',)
+    search_fields = ('doc_number', 'explanation')
+    list_filter = ('created_at')
     ordering = ('-created_at',)
     fieldsets = (
         (None, {
-            'fields': ('name', 'description')
+            'fields': ('doc_number', 'doc_date', 'explanation')
         }),
         ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
+            'fields': ('created_at'),
             'classes': ('collapse',),
         }),
     )
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('created_at')
     def save_model(self, request, obj, form, change):
         if not change:
             obj.created_at = timezone.now()
