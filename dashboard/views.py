@@ -218,6 +218,7 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
             days_matrix = {d: {'type': 'none', 'hours': ''} for d in range(1, num_days + 1)}
             
             total_hours_worked = 0.0
+            total_minutes_worked = 0
             total_co_days = 0
             total_cm_days = 0
             worked_days_set = set() 
@@ -262,6 +263,7 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                     days_matrix[day_number] = {'type': 'EF', 'hours': 'EF'}
                     ef_days_set.add(day_number)
                 else:
+                    # Calculate worked hours for this timesheet entry
                     if hasattr(ts, 'duration_decimal') and ts.duration_decimal is not None:
                         hours = float(ts.duration_decimal)
                     elif ts.start_time and ts.end_time:
@@ -271,15 +273,16 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                         hours = max(0.0, (dt2 - dt1).total_seconds() / 3600.0)
                     else:
                         hours = 8.0
-                    
+                    minutes = round(hours * 60)  
                     current_entry = days_matrix[day_number]
                     if current_entry['type'] == 'work':
-                        existing_hours = float(current_entry['hours']) # add the new hours to the existing ones for that day
-                        new_total = existing_hours + hours
-                        days_matrix[day_number]['hours'] = round(new_total, 1)
+                        existing_minutes = int(current_entry['hours']) if current_entry['hours'] else 0
+                        new_total_minutes = existing_minutes + minutes
+                        days_matrix[day_number]['hours'] = new_total_minutes  # Store as minutes
                     else:
-                        days_matrix[day_number] = {'type': 'work', 'hours': round(hours, 1)}
+                        days_matrix[day_number] = {'type': 'work', 'hours': minutes}
 
+                    total_minutes_worked += minutes
                     total_hours_worked += hours
                     # Track this day as a worked day for meal ticket eligibility
                     worked_days_set.add(day_number)
@@ -287,12 +290,14 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
             eligible_meal_ticket_days = worked_days_set - co_days_set - cm_days_set
             # Standard Romanian Norm setup subtracting statutory bank holidays 
             norma_hours = actual_working_days_count * 8
-
+            norma_minutes = norma_hours * 60
             employee_data.append({
                 'employee': emp,
                 'norma_hours': norma_hours,
+                'norma_minutes': norma_minutes,
                 'days_matrix': days_matrix,  
                 'total_hours_worked': round(total_hours_worked, 1),
+                'total_minutes_worked': total_minutes_worked,
                 'total_co_days': len(co_days_set),
                 'total_cm_days': len(cm_days_set),
                 'total_ef_days': len(ef_days_set),

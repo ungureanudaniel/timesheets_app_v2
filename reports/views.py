@@ -20,6 +20,19 @@ import openpyxl
 from openpyxl.styles import Font, Alignment
 import calendar
 from django.utils.translation import gettext as _
+import os
+from django.conf import settings
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import base64
+from reportlab.lib.utils import ImageReader
+from io import BytesIO
+from reportlab.platypus import Image, Spacer
+from reportlab.lib.units import inch
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.fonts import addMapping
 
 User = CustomUser
 
@@ -250,19 +263,7 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
     
 #     return output_buffer
 
-import os
-from django.conf import settings
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import base64
-from reportlab.lib.utils import ImageReader
-from io import BytesIO
-from reportlab.platypus import Image, Spacer
-from reportlab.lib.units import inch
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.fonts import addMapping
+
 FONT_DIR = os.path.join(settings.BASE_DIR, 'static', 'fonts/dejavu')
 
 try:

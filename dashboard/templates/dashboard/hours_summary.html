@@ -113,7 +113,7 @@
                             {% with cell=row.days_matrix|dictget:day.day_num %}
                                 <td class="{% if day.is_weekend %}weekend-col{% endif %} {% if day.is_holiday %}holiday-cell-bg{% endif %}">
                                     {% if cell.type == 'work' %}
-                                        {{ cell.hours }}
+                                        {{ cell.hours|format_minutes_short }}
                                     {% elif cell.type == 'CO' %}
                                         <span class="badge-co" title="{% trans 'Concediu Anual (Odihnă)' %}">CO</span>
                                     {% elif cell.type == 'CM' %}
@@ -130,7 +130,7 @@
                             {% endwith %}
                         {% endfor %}
 
-                        <td class="fw-bold bg-light text-dark">{{ row.total_hours_worked }}</td>
+                        <td class="fw-bold bg-light text-dark">{{ row.total_minutes_worked|format_minutes_short }}</td>
                         <td class="fw-bold text-success">{{ row.total_co_days|default:"0" }}</td>
                         <td class="fw-bold text-danger">{{ row.total_cm_days|default:"0" }}</td>
                         <td class="fw-bold text-danger">{{ row.total_ef_days|default:"0" }}</td>
