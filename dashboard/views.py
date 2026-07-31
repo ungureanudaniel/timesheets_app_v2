@@ -200,7 +200,7 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
         if request.user.is_staff or request.user.groups.filter(name='Managers').exists():
             employees = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
         else:
-            employees = User.objects.filter(id=request.user.id)
+            pass
 
         monthly_timesheets = Timesheet.objects.filter(
             date__year=year, 
