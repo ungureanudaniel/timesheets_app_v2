@@ -236,6 +236,9 @@ msgstr "Raport de Activitate Detaliat"
 msgid "Print Report"
 msgstr "Tipărește Raport"
 
+msgid "No Photos Export"
+msgstr "Export fără foto"
+
 msgid "New Report"
 msgstr "Raport Nou"
 
