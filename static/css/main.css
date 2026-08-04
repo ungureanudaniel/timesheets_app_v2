@@ -373,72 +373,94 @@ body {
         margin-top: 5px;
     }
     .muted-day { background-color: #e9ecef; opacity: 0.5; }
-/* Highlight hours table with a distinct color scheme */
-    .holiday-col {
-        background-color: #f8d7da !important;
-        color: #dc3545 !important;
-        font-weight: bold;
+/* 1. Highlight hours table with a distinct color scheme */
+.holiday-col {
+    background-color: #f8d7da !important;
+    color: #dc3545 !important;
+    font-weight: bold;
+}
+.holiday-cell-bg {
+    background-color: #fdf2f2 !important;
+}
+.text-holiday-indicator {
+    color: #dc3545 !important;
+    font-weight: bold;
+    font-size: 11px;
+}
+
+/* Base text-wrapping for Employee Name column (Screen Mode) */
+.table-pontaj td:nth-child(2) {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    min-width: 120px !important;
+    max-width: 150px !important;
+    line-height: 1.2 !important;
+}
+
+/* Keep numeric and code cells single-line to prevent layout distortion */
+.table-pontaj th,
+.table-pontaj td:not(:nth-child(2)) {
+    white-space: nowrap !important;
+}
+
+/* 2. PRINT OVERRIDES FOR Django TIMESHEETS */
+@media print {
+    /* Force page to print horizontally in Landscape */
+    @page {
+        size: A4 landscape;
+        margin: 5mm;
     }
-    .holiday-cell-bg {
-        background-color: #fdf2f2 !important;
+
+    /* Remove margins, headers, and container limits */
+    body, html, .container-fluid {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
     }
-    .text-holiday-indicator {
-        color: #dc3545 !important;
-        font-weight: bold;
-        font-size: 11px;
+
+    /* Strip Bootstrap wrapper table constraints */
+    .table-responsive {
+        overflow: visible !important;
+        display: block !important;
     }
 
-    /* 2. PRINT OVERRIDES FOR Django TIMESHEETS */
-    @media print {
-        /* Force page to print horizontally in Landscape */
-        @page {
-            size: A4 landscape;
-            margin: 5mm;
-        }
-
-        /* Remove margins, headers, and container limits */
-        body, html, .container-fluid {
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #fff !important;
-        }
-
-        /* Strip Bootstrap wrapper table constraints */
-        .table-responsive {
-            overflow: visible !important;
-            display: block !important;
-        }
-
-        /* Adjust Table font sizing and border thickness for print legibility */
-        .table-pontaj {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            font-size: 10pt !important; /* Forces legible base text size */
-        }
-
-        .table-pontaj th, 
-        .table-pontaj td {
-            padding: 3px 2px !important; /* Reduces unnecessary inner padding */
-            font-size: 9pt !important;
-            text-align: center !important;
-            border: 1px solid #000 !important; /* Crisp lines for paper printing */
-        }
-
-        /* Allow larger font for Employee Name column */
-        .table-pontaj td:nth-child(2) {
-            font-size: 10pt !important;
-            white-space: nowrap !important;
-        }
-
-        /* Keep background colors visible on PDF/Paper print */
-        * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
-
-        /* Hide interactive non-printable elements explicitly */
-        .no-print, .filter-panel, nav, footer {
-            display: none !important;
-        }
+    /* Adjust Table font sizing and border thickness for print legibility */
+    .table-pontaj {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 10pt !important; /* Forces legible base text size */
     }
+
+    .table-pontaj th, 
+    .table-pontaj td {
+        padding: 3px 2px !important; /* Reduces unnecessary inner padding */
+        font-size: 9pt !important;
+        text-align: center !important;
+        border: 1px solid #000 !important; /* Crisp lines for paper printing */
+    }
+
+    /* Employee Name column text-wrapping configuration (Print Mode) */
+    .table-pontaj td:nth-child(2) {
+        font-size: 8.5pt !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+        max-width: 110px !important;
+        text-align: left !important;
+        line-height: 1.1 !important;
+    }
+
+    /* Keep background colors visible on PDF/Paper print */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Hide interactive non-printable elements explicitly */
+    .no-print, .filter-panel, nav, footer {
+        display: none !important;
+    }
+}
+    
