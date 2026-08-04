@@ -398,28 +398,32 @@ body {
     line-height: 1.2 !important;
 }
 
-/* Total Ore Column (Kept single-line for values like 160:00) */
-.table-pontaj .total-ore-col {
-    min-width: 65px !important;
-    white-space: nowrap !important;
-}
-
-/* Allow summary headers (Zile CO, Zile CM, Zile EF, Tichete Masă) to wrap cleanly */
-.table-pontaj .summary-wrap-col {
-    white-space: normal !important;
-    word-break: break-word !important;
-    hyphens: auto !important;
-    min-width: 42px !important;
-    max-width: 55px !important;
-    line-height: 1.1 !important;
-    padding-left: 2px !important;
-    padding-right: 2px !important;
-    vertical-align: middle !important;
-}
-
 /* Keep numeric and code cells single-line to prevent layout distortion */
 .table-pontaj td:not(:nth-child(2)) {
     white-space: nowrap !important;
+}
+
+/* Total Ore Column (Kept single-line for values like 160:00) */
+.table-pontaj th.total-ore-col,
+.table-pontaj td.total-ore-col {
+    width: 55px !important;
+    min-width: 55px !important;
+    max-width: 55px !important;
+    white-space: nowrap !important;
+}
+
+/* FORCE strict narrow wrapping on summary headers (CO, CM, EF, Tichete) */
+.table-pontaj th.summary-wrap-col {
+    white-space: normal !important;
+    word-break: break-word !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    font-size: 10px !important;
+    line-height: 1.0 !important;
+    padding: 2px 1px !important;
+    vertical-align: middle !important;
+    text-align: center !important;
 }
 
 /* 2. PRINT OVERRIDES FOR Django TIMESHEETS */
@@ -448,15 +452,15 @@ body {
     .table-pontaj {
         width: 100% !important;
         border-collapse: collapse !important;
-        font-size: 10pt !important; /* Forces legible base text size */
+        font-size: 10pt !important;
     }
 
     .table-pontaj th, 
     .table-pontaj td {
-        padding: 3px 2px !important; /* Reduces unnecessary inner padding */
+        padding: 2px 1px !important;
         font-size: 9pt !important;
         text-align: center !important;
-        border: 1px solid #000 !important; /* Crisp lines for paper printing */
+        border: 1px solid #000 !important;
     }
 
     /* Employee Name column text-wrapping configuration (Print Mode) */
@@ -471,17 +475,22 @@ body {
     }
 
     /* Total Ore column print scaling */
-    .table-pontaj .total-ore-col {
-        min-width: 55px !important;
-        font-size: 8.5pt !important;
+    .table-pontaj th.total-ore-col,
+    .table-pontaj td.total-ore-col {
+        width: 45px !important;
+        min-width: 45px !important;
+        max-width: 45px !important;
+        font-size: 8pt !important;
     }
 
-    /* Summary wrapped headers print scaling */
-    .table-pontaj .summary-wrap-col {
-        min-width: 36px !important;
-        max-width: 44px !important;
-        font-size: 8pt !important;
-        line-height: 1.0 !important;
+    /* Strict summary headers print scaling */
+    .table-pontaj th.summary-wrap-col {
+        width: 32px !important;
+        min-width: 32px !important;
+        max-width: 32px !important;
+        font-size: 7.5pt !important;
+        line-height: 0.95 !important;
+        padding: 1px 0 !important;
     }
 
     /* Keep background colors visible on PDF/Paper print */
