@@ -6,7 +6,7 @@ from .views import automated_task_runner, ActivityProgramCreateView, ActivityPro
 from .utils import upload_activities
 from django.conf.urls.static import static
 from django.utils.translation import gettext_lazy as _
-
+from .views import TimesheetPDFView
 
 
 urlpatterns = [
@@ -28,6 +28,7 @@ urlpatterns = [
     path('funds_source/', FundsSourceListView.as_view(), name='funds_source'),
     path('new_funds_source/', NewFundsSourceView.as_view(), name='new_funds_source'),
     path('tasks/run-reminders/', automated_task_runner, name='task_runner'),
+    path('timesheet/pdf/', TimesheetPDFView.as_view(), name='timesheet_pdf'),
     path('hours_summary/', HoursSummaryTableView.as_view(), name='hours_summary'),
 
 ]

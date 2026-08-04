@@ -286,6 +286,7 @@ body {
     .weekend-col {
         background-color: #e2f0d9 !important; /* Pastel green tone */
         color: #385723;
+        font-weight: bold !important;
     }
     
     .summary-header {
