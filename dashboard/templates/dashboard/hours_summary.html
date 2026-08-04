@@ -81,7 +81,7 @@
                         <th rowspan="2" style="width: 100px;">{% trans "Nume Prenume" %}</th>
                         <th rowspan="2" style="width: 50px;">{% trans "Normă" %}</th>
                         {% for day in month_days %}
-                            <th style="width: 20px;" class="{% if day.is_weekend %}weekend-col{% endif %} {% if day.is_holiday %}holiday-col{% endif %}" 
+                            <th style="width: 30px;" class="{% if day.is_weekend %}weekend-col{% endif %} {% if day.is_holiday %}holiday-col{% endif %}" 
                                 {% if day.is_holiday %}title="{{ day.holiday_name }}"{% endif %}>
                                 {{ day.day_num }}
                             </th>

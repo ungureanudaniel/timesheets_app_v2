@@ -373,3 +373,72 @@ body {
         margin-top: 5px;
     }
     .muted-day { background-color: #e9ecef; opacity: 0.5; }
+/* Highlight hours table with a distinct color scheme */
+    .holiday-col {
+        background-color: #f8d7da !important;
+        color: #dc3545 !important;
+        font-weight: bold;
+    }
+    .holiday-cell-bg {
+        background-color: #fdf2f2 !important;
+    }
+    .text-holiday-indicator {
+        color: #dc3545 !important;
+        font-weight: bold;
+        font-size: 11px;
+    }
+
+    /* 2. PRINT OVERRIDES FOR Django TIMESHEETS */
+    @media print {
+        /* Force page to print horizontally in Landscape */
+        @page {
+            size: A4 landscape;
+            margin: 5mm;
+        }
+
+        /* Remove margins, headers, and container limits */
+        body, html, .container-fluid {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+        }
+
+        /* Strip Bootstrap wrapper table constraints */
+        .table-responsive {
+            overflow: visible !important;
+            display: block !important;
+        }
+
+        /* Adjust Table font sizing and border thickness for print legibility */
+        .table-pontaj {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 10pt !important; /* Forces legible base text size */
+        }
+
+        .table-pontaj th, 
+        .table-pontaj td {
+            padding: 3px 2px !important; /* Reduces unnecessary inner padding */
+            font-size: 9pt !important;
+            text-align: center !important;
+            border: 1px solid #000 !important; /* Crisp lines for paper printing */
+        }
+
+        /* Allow larger font for Employee Name column */
+        .table-pontaj td:nth-child(2) {
+            font-size: 10pt !important;
+            white-space: nowrap !important;
+        }
+
+        /* Keep background colors visible on PDF/Paper print */
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        /* Hide interactive non-printable elements explicitly */
+        .no-print, .filter-panel, nav, footer {
+            display: none !important;
+        }
+    }
