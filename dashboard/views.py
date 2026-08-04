@@ -314,7 +314,7 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
 
 class TimesheetPDFView(View):
     def get(self, request, *args, **kwargs):
-        # 1. Parse target period (YYYY-MM) from request or default to current month
+        # 1. Parse target period (YYYY-MM)
         selected_period = request.GET.get('selected_period', datetime.now().strftime('%Y-%m'))
         try:
             year, month = map(int, selected_period.split('-'))
@@ -322,14 +322,14 @@ class TimesheetPDFView(View):
             now = datetime.now()
             year, month = now.year, now.month
 
-        # Get total number of days in selected month
+        # Get total number of days in selected month as STRICT INTEGERS [1, 2, ... 31]
         _, num_days = calendar.monthrange(year, month)
         month_days = list(range(1, num_days + 1))
 
-        # 2. Fetch employee rows & matrix data from class helper/queryset
-        employee_data = getattr(self, 'get_mock_or_real_data', lambda y, m: [])(year, month)
+        # 2. Fetch employee rows & matrix data from view context/method
+        raw_employee_data = getattr(self, 'get_mock_or_real_data', lambda y, m: [])(year, month)
 
-        # 3. Setup PDF Document (A4 Landscape with tight margins)
+        # 3. Setup PDF Document (A4 Landscape)
         buffer = BytesIO()
         doc = SimpleDocTemplate(
             buffer,
@@ -350,7 +350,7 @@ class TimesheetPDFView(View):
             parent=styles['Heading1'],
             fontSize=12,
             leading=14,
-            alignment=1,  # Center
+            alignment=1,
             textColor=colors.HexColor('#1a252f')
         )
         
@@ -359,7 +359,7 @@ class TimesheetPDFView(View):
             parent=styles['Normal'],
             fontSize=8,
             leading=10,
-            alignment=1,  # Center
+            alignment=1,
             textColor=colors.HexColor('#555555')
         )
 
@@ -368,7 +368,7 @@ class TimesheetPDFView(View):
             parent=styles['Normal'],
             fontSize=6,
             leading=7,
-            alignment=1,  # Center
+            alignment=1,
             fontName='Helvetica-Bold'
         )
 
@@ -385,7 +385,7 @@ class TimesheetPDFView(View):
             parent=styles['Normal'],
             fontSize=6,
             leading=7,
-            alignment=1  # Center
+            alignment=1
         )
 
         sig_title_style = ParagraphStyle(
@@ -394,7 +394,7 @@ class TimesheetPDFView(View):
             fontSize=9,
             leading=11,
             fontName='Helvetica-Bold',
-            alignment=1  # Center
+            alignment=1
         )
 
         sig_name_style = ParagraphStyle(
@@ -402,81 +402,90 @@ class TimesheetPDFView(View):
             parent=styles['Normal'],
             fontSize=9,
             leading=11,
-            alignment=1  # Center
+            alignment=1
         )
 
         # 5. Build Top Header Info
         month_name = calendar.month_name[month]
-        elements.append(Paragraph(_("FOAIE COLECTIVĂ DE PREZENȚĂ"), title_style))
-        elements.append(Paragraph(f"{_('Pontaj lunar')} — {month_name} {year}", subtitle_style))
+        elements.append(Paragraph(("FOAIE COLECTIVA DE PREZENTA"), title_style))
+        elements.append(Paragraph(f"{('Pontaj lunar')} — {month_name} {year}", subtitle_style))
         elements.append(Spacer(1, 8))
 
-        # 6. Construct Dynamic Table Headers
+        # 6. Construct Dynamic Table Headers (Using pure integer day numbers)
         row1 = [
             Paragraph("<b>Nr.<br/>crt.</b>", header_cell_style),
             Paragraph("<b>Nume Prenume</b>", header_cell_style),
-            Paragraph("<b>Normă</b>", header_cell_style),
+            Paragraph("<b>Norma</b>", header_cell_style),
         ]
         
-        for d in month_days:
-            # Extract day integer safely if 'd' is a Day object or dict
-            day_num = getattr(d, 'day_num', getattr(d, 'day', d))
-            if isinstance(day_num, dict):
-                day_num = day_num.get('day_num', day_num.get('day', ''))
-            row1.append(Paragraph(f"<b>{day_num}</b>", header_cell_style))
+        for day_int in month_days:
+            row1.append(Paragraph(f"<b>{day_int}</b>", header_cell_style))
             
         row1.extend([
             Paragraph("<b>Total<br/>ore</b>", header_cell_style),
             Paragraph("<b>Zile<br/>CO</b>", header_cell_style),
             Paragraph("<b>Zile<br/>CM</b>", header_cell_style),
             Paragraph("<b>Zile<br/>EF</b>", header_cell_style),
-            Paragraph("<b>Tichete<br/>Masă</b>", header_cell_style),
+            Paragraph("<b>Tichete<br/>Masa</b>", header_cell_style),
         ])
 
         table_data = [row1]
 
-        # 7. Populate Employee Rows
-        for idx, row in enumerate(employee_data, start=1):
-            # Safe extraction for employee name
-            emp_obj = row.get('employee', row)
-            if isinstance(emp_obj, dict):
-                last_name = emp_obj.get('last_name', '')
-                first_name = emp_obj.get('first_name', '')
+        # 7. Populate Employee Rows (Strict Type Coercion to prevent 'Day' callables)
+        for idx, row in enumerate(raw_employee_data, start=1):
+            # Safe name extraction
+            if isinstance(row, dict):
+                emp_obj = row.get('employee', row)
+                last_name = getattr(emp_obj, 'last_name', row.get('last_name', ''))
+                first_name = getattr(emp_obj, 'first_name', row.get('first_name', ''))
+                norma = row.get('norma', row.get('norma_hours', 168))
+                days_matrix = row.get('days_matrix', {})
+                total_hours = row.get('total_hours', row.get('total_minutes_worked', '0:00'))
+                co_days = row.get('co_days', row.get('total_co_days', 0))
+                cm_days = row.get('cm_days', row.get('total_cm_days', 0))
+                ef_days = row.get('ef_days', row.get('total_ef_days', 0))
+                meal_tickets = row.get('meal_tickets', row.get('meal_tickets_count', 0))
             else:
-                last_name = getattr(emp_obj, 'last_name', '')
-                first_name = getattr(emp_obj, 'first_name', '')
-                
-            emp_name = f"{last_name} {first_name}".strip() or row.get('name', f"Angajat {idx}")
+                last_name = getattr(row, 'last_name', '')
+                first_name = getattr(row, 'first_name', '')
+                norma = getattr(row, 'norma', 168)
+                days_matrix = getattr(row, 'days_matrix', {})
+                total_hours = getattr(row, 'total_hours', '0:00')
+                co_days = getattr(row, 'co_days', 0)
+                cm_days = getattr(row, 'cm_days', 0)
+                ef_days = getattr(row, 'ef_days', 0)
+                meal_tickets = getattr(row, 'meal_tickets', 0)
+
+            emp_name = f"{last_name} {first_name}".strip() or f"Angajat {idx}"
 
             data_row = [
                 Paragraph(str(idx), body_cell_style),
                 Paragraph(emp_name, name_cell_style),
-                Paragraph(str(row.get('norma', row.get('norma_hours', 168))), body_cell_style),
+                Paragraph(str(norma), body_cell_style),
             ]
 
-            days_matrix = row.get('days_matrix', {})
-            
-            for d in month_days:
-                day_key = getattr(d, 'day_num', getattr(d, 'day', d))
-                if isinstance(day_key, dict):
-                    day_key = day_key.get('day_num', day_key.get('day', ''))
-
-                cell_val = days_matrix.get(day_key, '')
-
-                # Unroll complex dict or object values if present in the matrix
-                if isinstance(cell_val, dict):
-                    cell_val = cell_val.get('hours', cell_val.get('type', ''))
-                elif hasattr(cell_val, 'hours'):
-                    cell_val = cell_val.hours
-
+            # Populate matrix days
+            for day_int in month_days:
+                cell_val = ""
+                if isinstance(days_matrix, dict):
+                    # Try looking up by integer day, string key, or object attribute
+                    raw_val = days_matrix.get(day_int, days_matrix.get(str(day_int), ''))
+                    if isinstance(raw_val, dict):
+                        cell_val = raw_val.get('hours', raw_val.get('type', ''))
+                    elif hasattr(raw_val, 'hours'):
+                        cell_val = getattr(raw_val, 'hours', '')
+                    else:
+                        cell_val = raw_val
+                
+                # Coerce to string safely
                 data_row.append(Paragraph(str(cell_val if cell_val is not None else ''), body_cell_style))
 
             data_row.extend([
-                Paragraph(str(row.get('total_hours', row.get('total_minutes_worked', '0:00'))), body_cell_style),
-                Paragraph(str(row.get('co_days', row.get('total_co_days', 0))), body_cell_style),
-                Paragraph(str(row.get('cm_days', row.get('total_cm_days', 0))), body_cell_style),
-                Paragraph(str(row.get('ef_days', row.get('total_ef_days', 0))), body_cell_style),
-                Paragraph(str(row.get('meal_tickets', row.get('meal_tickets_count', 0))), body_cell_style),
+                Paragraph(str(total_hours), body_cell_style),
+                Paragraph(str(co_days), body_cell_style),
+                Paragraph(str(cm_days), body_cell_style),
+                Paragraph(str(ef_days), body_cell_style),
+                Paragraph(str(meal_tickets), body_cell_style),
             ])
 
             table_data.append(data_row)
@@ -499,39 +508,35 @@ class TimesheetPDFView(View):
             ('RIGHTPADDING', (0, 0), (-1, -1), 1),
         ]
 
-        # Light gray background for Saturday and Sunday columns
-        for idx_d, d in enumerate(month_days):
-            day_num = getattr(d, 'day_num', getattr(d, 'day', d))
-            if isinstance(day_num, int):
-                weekday = calendar.weekday(year, month, day_num)
-                if weekday in (5, 6):  # Saturday (5) or Sunday (6)
-                    col_index = 3 + idx_d
-                    t_style.append(('BACKGROUND', (col_index, 0), (col_index, -1), colors.HexColor('#eaeaea')))
+        # Light gray background for weekends
+        for idx_d, day_int in enumerate(month_days):
+            weekday = calendar.weekday(year, month, day_int)
+            if weekday in (5, 6):  # Saturday / Sunday
+                col_index = 3 + idx_d
+                t_style.append(('BACKGROUND', (col_index, 0), (col_index, -1), colors.HexColor('#eaeaea')))
 
         t = Table(table_data, colWidths=col_widths, repeatRows=1)
         t.setStyle(TableStyle(t_style))
         elements.append(t)
 
-        # ---------------------------------------------------------
-        # 10. SIGNATURE BLOCKS SECTION
-        # ---------------------------------------------------------
+        # 10. SIGNATURE BLOCKS
         elements.append(Spacer(1, 20))
 
         sig_data = [
             [
-                Paragraph("<b>Șef Pază,</b>", sig_title_style),
+                Paragraph("<b>Sef Paza,</b>", sig_title_style),
                 "",
                 Paragraph("<b>Director,</b>", sig_title_style)
             ],
             [
                 Paragraph("Damian Mihai", sig_name_style),
                 "",
-                Paragraph("Neguțescu Ion Clementin", sig_name_style)
+                Paragraph("Negutescu Ion Clementin", sig_name_style)
             ],
             [
-                Paragraph("Semnătura: _______________________", sig_name_style),
+                Paragraph("Semnatura: _______________________", sig_name_style),
                 "",
-                Paragraph("Semnătura: _______________________", sig_name_style)
+                Paragraph("Semnatura: _______________________", sig_name_style)
             ]
         ]
 
