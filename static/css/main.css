@@ -398,8 +398,26 @@ body {
     line-height: 1.2 !important;
 }
 
+/* Total Ore Column (Kept single-line for values like 160:00) */
+.table-pontaj .total-ore-col {
+    min-width: 65px !important;
+    white-space: nowrap !important;
+}
+
+/* Allow summary headers (Zile CO, Zile CM, Zile EF, Tichete Masă) to wrap cleanly */
+.table-pontaj .summary-wrap-col {
+    white-space: normal !important;
+    word-break: break-word !important;
+    hyphens: auto !important;
+    min-width: 42px !important;
+    max-width: 55px !important;
+    line-height: 1.1 !important;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+    vertical-align: middle !important;
+}
+
 /* Keep numeric and code cells single-line to prevent layout distortion */
-.table-pontaj th,
 .table-pontaj td:not(:nth-child(2)) {
     white-space: nowrap !important;
 }
@@ -452,6 +470,20 @@ body {
         line-height: 1.1 !important;
     }
 
+    /* Total Ore column print scaling */
+    .table-pontaj .total-ore-col {
+        min-width: 55px !important;
+        font-size: 8.5pt !important;
+    }
+
+    /* Summary wrapped headers print scaling */
+    .table-pontaj .summary-wrap-col {
+        min-width: 36px !important;
+        max-width: 44px !important;
+        font-size: 8pt !important;
+        line-height: 1.0 !important;
+    }
+
     /* Keep background colors visible on PDF/Paper print */
     * {
         -webkit-print-color-adjust: exact !important;
@@ -463,4 +495,3 @@ body {
         display: none !important;
     }
 }
-    
