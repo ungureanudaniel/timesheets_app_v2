@@ -1,41 +1,56 @@
 import calendar
+from datetime import date, datetime, timedelta
+from io import BytesIO
+import holidays
+import openpyxl
+from natsort import natsorted
 
-from django.conf.locale import da
 from django.shortcuts import render, redirect
-from django.http import JsonResponse, request
+from django.http import JsonResponse, HttpResponse, HttpResponseForbidden
 from django.core.paginator import Paginator
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.contrib.auth import get_user_model
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib import messages
+from django.core.mail import send_mail
+from django.db.models import Count, Prefetch, Sum, F, ExpressionWrapper, fields, FloatField, Q
+from django.views import View
+from django.views.generic import CreateView, ListView, TemplateView, UpdateView, DeleteView
 
 from timesheets_main import settings
 from .forms import PALActivitiesUploadForm, FundsSourceForm, PALActivityForm
-from django.db.models import Count, Prefetch, Sum, F, ExpressionWrapper, fields, FloatField, Q
-from django.contrib.auth import get_user_model
 from dashboard.forms import ActivityProgramForm
 from dashboard.models import ActivityProgram
 from .utils import format_minutes
-from timesheet.models import Activity, FundsSource
+from timesheet.models import Activity, FundsSource, Timesheet
 from users.models import CustomUser
-from timesheet.models import Timesheet
-from io import BytesIO
-from django.views import View
-from django.views.generic import CreateView, ListView, TemplateView, UpdateView, DeleteView
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib import messages
-from natsort import natsorted
-import openpyxl
-from django.views.generic import TemplateView
-from django.http import HttpResponse, HttpResponseForbidden
-from django.utils import timezone
-from datetime import date, datetime, timedelta
-from django.core.mail import send_mail
-from django.db.models import Count
-from timesheet.models import Timesheet
-import holidays
+
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+# Romanian month names
+ROMANIAN_MONTHS = {
+    1: "Ianuarie",
+    2: "Februarie",
+    3: "Martie",
+    4: "Aprilie",
+    5: "Mai",
+    6: "Iunie",
+    7: "Iulie",
+    8: "August",
+    9: "Septembrie",
+    10: "Octombrie",
+    11: "Noiembrie",
+    12: "Decembrie"
+}
+
+def get_romanian_month(month):
+    """Get month name in Romanian"""
+    return ROMANIAN_MONTHS.get(month, calendar.month_name[month])
+
 
 def automated_task_runner(request):
     # Security check: Only let the pinger in
@@ -443,7 +458,7 @@ class TimesheetPDFView(View):
         )
 
         # 5. Build Top Header Info
-        month_name = calendar.month_name[month]
+        month_name = get_romanian_month(month)
         elements.append(Paragraph(("FOAIE COLECTIVA DE PREZENTA"), title_style))
         elements.append(Paragraph(f"{('Pontaj lunar')} — {month_name} {year}", subtitle_style))
         elements.append(Spacer(1, 8))
