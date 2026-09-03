@@ -106,7 +106,7 @@ def format_minutes(minutes):
     
     if hours > 0 and mins > 0:
         return f"{hours}:{mins:02d}"
-    elif hours > 0:
-        return f"{hours}h"
+    elif hours == 0 and mins > 0:
+        return f"00:{mins:02d}"
     else:
-        return f"{mins}m"
+        return f""
