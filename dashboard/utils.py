@@ -104,9 +104,4 @@ def format_minutes(minutes):
     hours = minutes // 60
     mins = minutes % 60
     
-    if hours > 0 and mins > 0:
-        return f"{hours}:{mins:02d}"
-    elif hours == 0 and mins > 0:
-        return f"00:{mins:02d}"
-    else:
-        return f""
+    return f"{hours}:{mins:02d}"
