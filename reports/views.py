@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.views.generic import FormView, TemplateView
 from django.db.models import Sum, Count, Avg
 from django.utils import timezone
@@ -266,7 +267,10 @@ def get_next_registration_number(request):
     """Get the next registration number for the user"""
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Not authenticated'}, status=401)
-    
+
+    user = request.user
+    first_name_initial = user.first_name[0] if user.first_name else ''
+    last_name_initial = user.last_name[0] if user.last_name else ''
     # Get the latest registration number for this user
     latest = RangerDocumentRegistry.objects.filter(
         user=request.user
@@ -278,9 +282,10 @@ def get_next_registration_number(request):
             next_number = int(latest.doc_number) + 1
         except ValueError:
             next_number = 1
-    
+
+    formatted_nr = f"{str(next_number).zfill(3)} / {first_name_initial}{last_name_initial}"
     return JsonResponse({
-        'next_number': str(next_number).zfill(3),  # Pad with zeros: 001, 002, etc.
+        'next_number': formatted_nr,  # Pad with zeros: 001, 002, etc.
         'today': timezone.now().date().strftime('%Y-%m-%d')
     })
 
@@ -293,7 +298,6 @@ try:
     BOLD_FONT = 'DejaVu-Bold'
 except Exception as e:
     # Fallback if you forgot to download the files
-    print(f"!!! FONT ERROR: {e}")
     FONT_NAME = 'Helvetica'
     BOLD_FONT = 'Helvetica-Bold'
 
@@ -582,8 +586,8 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
                     explanation=f"Raport activitate interval {start_str} - {end_str}"
                 )
             except Exception as e:
-                print(f"Failed to record registry log row: {e}")
-        
+                # Log the error or handle it as needed
+                messages.error(request, f"Error saving to RangerDocumentRegistry: {e}")
         # Hand off control explicitly into updated GET execution pipeline above
         return self.get(request, *args, **kwargs)
     def _generate_pie_chart(self, data_dict):
@@ -902,7 +906,7 @@ class ExportSimpleView(LoginRequiredMixin, TemplateView):
                         explanation=f"Raport activitate interval {start_str} - {end_str}"
                     )
                 except Exception as e:
-                    print(f"Failed to record registry log row: {e}")
+                    messages.error(request, f"Failed to record registry log row: {e}")
             
             # Hand off control explicitly into updated GET execution pipeline above
             return self.get(request, *args, **kwargs)

@@ -109,7 +109,6 @@ class AnalyticsView(ListView):
         # get each individual userprofile safely
         user_profile = getattr(self.request.user, 'customuser', None)
         # If no customuser attribute (AnonymousUser or profile not created), user_profile will be None
-        print(user_profile)
         return super().get(request, **kwargs)
     
     def test_func(self):
@@ -329,20 +328,14 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
             }
             serializable_employee_data.append(serializable_emp_data)
 
-        print(f"Storing {len(serializable_employee_data)} employees in session")
         if serializable_employee_data:
-            print(f"First employee: {serializable_employee_data[0]}")
-
-
-        request.session['pdf_employee_data'] = serializable_employee_data
-        request.session['pdf_period'] = {
-            'year': year,
-            'month': month,
-            'period_query': period_query,
-        }
+            request.session['pdf_employee_data'] = serializable_employee_data
+            request.session['pdf_period'] = {
+                'year': year,
+                'month': month,
+                'period_query': period_query,
+            }
         request.session.modified = True
-        print(f"Session keys after saving: {list(request.session.keys())}")
-        print(f"Session data count: {len(request.session.get('pdf_employee_data', []))}")
 
         # context['employee_data'] = sorted(employee_data, key=lambda x: x['employee'].last_name)
         context['employee_data'] = employee_data
@@ -507,17 +500,10 @@ class TimesheetPDFView(View):
                 Paragraph(emp_name, name_cell_style),
                 Paragraph(str(norma), body_cell_style),
             ]
-            if employee_data:
-                        print(f"First employee days_matrix: {employee_data[0].get('days_matrix', {})}")
-                        print(f"Printing day 11 data: {format_minutes(employee_data[0].get('days_matrix', {}).get('11', {}).get('hours', 'N/A'))}")
             # Populate matrix days
             for day_int in month_days:
                 # Get the day's data
-                day_data = days_matrix.get(str(day_int), {})
-                
-                # Debug: print what we got
-                print(f"Row {idx}, Day {day_int}: day_data = {day_data.get('hours', 'N/A')}")
-                
+                day_data = days_matrix.get(str(day_int), {})                
                 # Extract and format the value
                 if isinstance(day_data, dict):
                     raw_value = day_data.get('hours', '')
