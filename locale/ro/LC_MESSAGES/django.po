@@ -423,8 +423,8 @@ msgstr "S-au găsit"
 msgid "Total daily activities logged"
 msgstr "Total activități înregistrate"
 
-msgid "Sector registry"
-msgstr "Registru de sector"
+msgid "Personal registry"
+msgstr "Registru personal"
 
 #: reports/views.py
 msgid "timesheet(s)"
