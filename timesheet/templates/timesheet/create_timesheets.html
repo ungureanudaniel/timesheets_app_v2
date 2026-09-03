@@ -58,7 +58,7 @@
                                 <div class="form-check form-switch">
                                     {{ form.is_annual_holiday }}
                                     <label class="form-check-label fw-bold ms-2" for="{{ form.is_annual_holiday.id_for_label }}">
-                                        <i class="fas fa-umbrella-beach text-primary"></i> {% trans "Concediu de odihnă" %}
+                                        <i class="fas fa-umbrella-beach text-primary"></i> {% trans "Concediu anual" %}
                                     </label>
                                 </div>
                                 {% if form.is_annual_holiday.errors %}<div class="text-danger small">{{ form.is_annual_holiday.errors }}</div>{% endif %}
@@ -213,7 +213,7 @@
                 // 💡 FIX: Safely sequenced ternary conditions without syntax errors
                 let targetActivity = '';
                 if (isHoliday) {
-                    targetActivity = 'CONCEDIU ANUAL';
+                    targetActivity = 'CONCEDIU DE ODIHNA';
                 } else if (isSick) {
                     targetActivity = 'CONCEDIU MEDICAL';
                 } else if (isFamilyEvent) {
