@@ -91,3 +91,22 @@ class Command(BaseCommand):
     def send_monthly_reminders(self, today):
         # Logic to email reporters that the month is ending
         pass
+
+def format_minutes(minutes):
+    """
+    Convert minutes to readable format.
+    ex. 510 -> 8:30
+    """
+    if not minutes:
+        return "0"
+    
+    minutes = int(minutes)
+    hours = minutes // 60
+    mins = minutes % 60
+    
+    if hours > 0 and mins > 0:
+        return f"{hours}:{mins:02d}"
+    elif hours > 0:
+        return f"{hours}h"
+    else:
+        return f"{mins}m"

@@ -2,13 +2,11 @@ from django.views.generic import FormView, TemplateView
 from django.db.models import Sum, Count, Avg
 from django.utils import timezone
 from django.urls import reverse_lazy
-from matplotlib.ticker import FuncFormatter
-from urllib3 import request
 from timesheet.models import Timesheet
 from .forms import ReportPeriodForm
 from datetime import timedelta, datetime
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
@@ -16,6 +14,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 from io import BytesIO
 from users.models import CustomUser
+from registries.models import RangerDocumentRegistry
 import openpyxl
 from openpyxl.styles import Font, Alignment
 import calendar
@@ -263,6 +262,27 @@ class ReportResultsView(LoginRequiredMixin, TemplateView):
     
 #     return output_buffer
 
+def get_next_registration_number(request):
+    """Get the next registration number for the user"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+    
+    # Get the latest registration number for this user
+    latest = RangerDocumentRegistry.objects.filter(
+        user=request.user
+    ).order_by('-id').first()
+    
+    next_number = 1
+    if latest and latest.doc_number:
+        try:
+            next_number = int(latest.doc_number) + 1
+        except ValueError:
+            next_number = 1
+    
+    return JsonResponse({
+        'next_number': str(next_number).zfill(3),  # Pad with zeros: 001, 002, etc.
+        'today': timezone.now().date().strftime('%Y-%m-%d')
+    })
 
 FONT_DIR = os.path.join(settings.BASE_DIR, 'static', 'fonts/dejavu')
 

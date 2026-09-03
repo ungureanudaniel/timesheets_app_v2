@@ -1,7 +1,8 @@
 import calendar
 
+from django.conf.locale import da
 from django.shortcuts import render, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, request
 from django.core.paginator import Paginator
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -12,6 +13,7 @@ from django.db.models import Count, Prefetch, Sum, F, ExpressionWrapper, fields,
 from django.contrib.auth import get_user_model
 from dashboard.forms import ActivityProgramForm
 from dashboard.models import ActivityProgram
+from .utils import format_minutes
 from timesheet.models import Activity, FundsSource
 from users.models import CustomUser
 from timesheet.models import Timesheet
@@ -217,7 +219,7 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
         )
 
         employee_data = []
-        
+
         for emp in employees:
             # Initialize every single day with a default structure
             days_matrix = {d: {'type': 'none', 'hours': ''} for d in range(1, num_days + 1)}
@@ -308,26 +310,68 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                 'total_ef_days': len(ef_days_set),
                 'meal_tickets_count': len(eligible_meal_ticket_days)
             })
+        serializable_employee_data = []
 
-        context['employee_data'] = sorted(employee_data, key=lambda x: x['employee'].last_name)
+        for emp_data in employee_data:
+            emp = emp_data.get('employee')
+            serializable_emp_data = {
+                'employee_id': emp.id,
+                'employee_name': f"{emp.first_name} {emp.last_name}".strip() if emp else "Unknown",
+                'norma_hours': emp_data.get('norma_hours'),
+                'norma_minutes': emp_data.get('norma_minutes'),
+                'days_matrix': emp_data.get('days_matrix'),
+                'total_hours_worked': emp_data.get('total_hours_worked'),
+                'total_minutes_worked': emp_data.get('total_minutes_worked'),
+                'total_co_days': emp_data.get('total_co_days'),
+                'total_cm_days': emp_data.get('total_cm_days'),
+                'total_ef_days': emp_data.get('total_ef_days'),
+                'meal_tickets_count': emp_data.get('meal_tickets_count')
+            }
+            serializable_employee_data.append(serializable_emp_data)
+
+        print(f"Storing {len(serializable_employee_data)} employees in session")
+        if serializable_employee_data:
+            print(f"First employee: {serializable_employee_data[0]}")
+
+
+        request.session['pdf_employee_data'] = serializable_employee_data
+        request.session['pdf_period'] = {
+            'year': year,
+            'month': month,
+            'period_query': period_query,
+        }
+        request.session.modified = True
+        print(f"Session keys after saving: {list(request.session.keys())}")
+        print(f"Session data count: {len(request.session.get('pdf_employee_data', []))}")
+
+        # context['employee_data'] = sorted(employee_data, key=lambda x: x['employee'].last_name)
+        context['employee_data'] = employee_data
+        context['current_period'] = period_query
         return context
 
 class TimesheetPDFView(View):
     def get(self, request, *args, **kwargs):
         # 1. Parse target period (YYYY-MM)
+        # Get data from session
+        employee_data = request.session.get('pdf_employee_data', [])
+        period_data = request.session.get('pdf_period', {})
+        
         selected_period = request.GET.get('selected_period', datetime.now().strftime('%Y-%m'))
-        try:
-            year, month = map(int, selected_period.split('-'))
-        except ValueError:
-            now = datetime.now()
-            year, month = now.year, now.month
+        if selected_period and not employee_data:
+            try:
+                year, month = map(int, selected_period.split('-'))
+                return HttpResponse("Please load the summary page first.", status=400)
+            except ValueError:
+                pass
+        if not employee_data:
+            return HttpResponse("No data available. Please go back and load the summary first.", status=400)
+        year = period_data.get('year', datetime.now().year)
+        month = period_data.get('month', datetime.now().month)
+        selected_period = period_data.get('period_query', f"{year}-{month:02d}")
 
-        # Get total number of days in selected month as STRICT INTEGERS [1, 2, ... 31]
+        # Get total number of days in selected month as strict integers
         _, num_days = calendar.monthrange(year, month)
         month_days = list(range(1, num_days + 1))
-
-        # 2. Fetch employee rows & matrix data from view context/method
-        raw_employee_data = getattr(self, 'get_mock_or_real_data', lambda y, m: [])(year, month)
 
         # 3. Setup PDF Document (A4 Landscape)
         buffer = BytesIO()
@@ -432,56 +476,69 @@ class TimesheetPDFView(View):
         table_data = [row1]
 
         # 7. Populate Employee Rows (Strict Type Coercion to prevent 'Day' callables)
-        for idx, row in enumerate(raw_employee_data, start=1):
+        for idx, row in enumerate(employee_data, start=1):
             # Safe name extraction
             if isinstance(row, dict):
-                emp_obj = row.get('employee', row)
-                last_name = getattr(emp_obj, 'last_name', row.get('last_name', ''))
-                first_name = getattr(emp_obj, 'first_name', row.get('first_name', ''))
+                emp_name = row.get('employee_name', f"Angajat {idx}")
                 norma = row.get('norma', row.get('norma_hours', 168))
                 days_matrix = row.get('days_matrix', {})
-                total_hours = row.get('total_hours', row.get('total_minutes_worked', '0:00'))
+                total_minutes = row.get('total_minutes_worked')
+                total_formatted = format_minutes(total_minutes)
                 co_days = row.get('co_days', row.get('total_co_days', 0))
                 cm_days = row.get('cm_days', row.get('total_cm_days', 0))
                 ef_days = row.get('ef_days', row.get('total_ef_days', 0))
                 meal_tickets = row.get('meal_tickets', row.get('meal_tickets_count', 0))
             else:
-                last_name = getattr(row, 'last_name', '')
-                first_name = getattr(row, 'first_name', '')
+                emp_name = getattr(row, 'employee_name')
                 norma = getattr(row, 'norma', 168)
                 days_matrix = getattr(row, 'days_matrix', {})
-                total_hours = getattr(row, 'total_hours', '0:00')
+                total_minutes = getattr(row, 'total_minutes_worked', 0)
+                total_formatted = format_minutes(total_minutes)
                 co_days = getattr(row, 'co_days', 0)
                 cm_days = getattr(row, 'cm_days', 0)
                 ef_days = getattr(row, 'ef_days', 0)
                 meal_tickets = getattr(row, 'meal_tickets', 0)
 
-            emp_name = f"{last_name} {first_name}".strip() or f"Angajat {idx}"
+            # fetch and format employee name
+            emp_name = f"{emp_name}".strip() if emp_name else f"Angajat {idx}"
 
             data_row = [
                 Paragraph(str(idx), body_cell_style),
                 Paragraph(emp_name, name_cell_style),
                 Paragraph(str(norma), body_cell_style),
             ]
-
+            if employee_data:
+                        print(f"First employee days_matrix: {employee_data[0].get('days_matrix', {})}")
+                        print(f"Printing day 11 data: {format_minutes(employee_data[0].get('days_matrix', {}).get('11', {}).get('hours', 'N/A'))}")
             # Populate matrix days
             for day_int in month_days:
-                cell_val = ""
-                if isinstance(days_matrix, dict):
-                    # Try looking up by integer day, string key, or object attribute
-                    raw_val = days_matrix.get(day_int, days_matrix.get(str(day_int), ''))
-                    if isinstance(raw_val, dict):
-                        cell_val = raw_val.get('hours', raw_val.get('type', ''))
-                    elif hasattr(raw_val, 'hours'):
-                        cell_val = getattr(raw_val, 'hours', '')
-                    else:
-                        cell_val = raw_val
+                # Get the day's data
+                day_data = days_matrix.get(str(day_int), {})
                 
-                # Coerce to string safely
+                # Debug: print what we got
+                print(f"Row {idx}, Day {day_int}: day_data = {day_data.get('hours', 'N/A')}")
+                
+                # Extract and format the value
+                if isinstance(day_data, dict):
+                    raw_value = day_data.get('hours', '')
+                    
+                    # Format if it's a number (minutes)
+                    if isinstance(raw_value, (int, float)) and raw_value > 0:
+                        cell_val = format_minutes(raw_value)  # 510 -> 8:30
+                    elif isinstance(raw_value, str):
+                        cell_val = raw_value  # "CO", "CM", "EF", or ""
+                    else:
+                        cell_val = ''
+                else:
+                    cell_val = ''
+                
+                # Add to PDF cell
                 data_row.append(Paragraph(str(cell_val if cell_val is not None else ''), body_cell_style))
 
+
+            # Append totals and counts    
             data_row.extend([
-                Paragraph(str(total_hours), body_cell_style),
+                Paragraph(total_formatted, body_cell_style),
                 Paragraph(str(co_days), body_cell_style),
                 Paragraph(str(cm_days), body_cell_style),
                 Paragraph(str(ef_days), body_cell_style),

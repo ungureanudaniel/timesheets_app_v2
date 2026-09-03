@@ -1,5 +1,5 @@
 from django import template
-
+from ..utils import format_minutes
 register = template.Library()
 
 @register.filter(name='dictget')
@@ -20,46 +20,5 @@ def dictget(dictionary, key):
     return None
 
 @register.filter
-def format_minutes(minutes):
-    """
-    Convert minutes to readable format.
-    510 -> 8h 30min
-    60 -> 1h
-    45 -> 45min
-    0 -> 0min
-    """
-    if not minutes:
-        return "0min"
-    
-    minutes = int(minutes)
-    hours = minutes // 60
-    mins = minutes % 60
-    
-    if hours > 0 and mins > 0:
-        return f"{hours}h {mins}min"
-    elif hours > 0:
-        return f"{hours}h"
-    else:
-        return f"{mins}min"
-
-@register.filter
-def format_minutes_short(minutes):
-    """
-    Short format: 8:30
-    """
-    if not minutes:
-        return "0"
-    
-    minutes = int(minutes)
-    hours = minutes // 60
-    mins = minutes % 60
-    return f"{hours}:{mins:02d}"
-
-@register.filter
-def format_minutes_to_hours(minutes):
-    """
-    510 -> 8.5
-    """
-    if not minutes:
-        return 0
-    return round(minutes / 60, 1)
+def fmt_minutes(minutes):
+    return format_minutes(minutes)
