@@ -20,6 +20,7 @@ class DocumentRegistryForm(forms.ModelForm):
         model = RangerDocumentRegistry
         fields = ['doc_number', 'doc_date', 'explanation']
         widgets = {
+            'doc_number': forms.NumberInput(attrs={'class': 'form-control'}),
             'doc_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'explanation': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }

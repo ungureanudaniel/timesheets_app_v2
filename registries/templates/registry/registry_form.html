@@ -21,13 +21,13 @@
                         {% endif %}
 
                         <div class="mb-3">
-                            <label class="form-label font-weight-bold">{{ form.doc_number.label }}</label>
+                            <label class="form-label font-weight-bold">Număr document</label>
                             {{ form.doc_number }}
                             {% if form.doc_number.errors %}<div class="text-danger small">{{ form.doc_number.errors }}</div>{% endif %}
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">"Dată document</label>
+                            <label class="form-label">Dată document</label>
                             {{ form.doc_date }}
                             {% if form.doc_date.errors %}<div class="text-danger small">{{ form.doc_date.errors }}</div>{% endif %}
                         </div>
