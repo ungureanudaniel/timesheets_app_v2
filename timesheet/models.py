@@ -137,13 +137,3 @@ class TimesheetImage(models.Model):
     def __str__(self):
         return f"Image for {self.timesheet.user.username} on {self.timesheet.date}"
 
-
-# class TimesheetDocument(models.Model):
-#     """
-#     This class creates db tables for documents associated with timesheets
-#     """
-#     timesheet = models.ForeignKey(Timesheet, related_name='documents', on_delete=models.CASCADE)
-#     document = models.FileField(upload_to=Timesheet.get_document_upload_path)
-
-#     def __str__(self):
-#         return f"Document for {self.timesheet.user.username} on {self.timesheet.date}"

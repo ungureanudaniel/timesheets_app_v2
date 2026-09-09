@@ -108,7 +108,7 @@
                     <tr>
                         <td>{{ forloop.counter }}</td>
                         <td class="employee-name-cell text-start px-2 fw-bold text-dark">{{ row.employee.last_name }} {{ row.employee.first_name|default:row.employee.username }}</td>
-                        <td class="text-muted">{{ row.norma_hours|default:"168" }}</td>
+                        <td class="text-muted">{{ row.norma_minutes|fmt_minutes }}</td>
                         {% for day in month_days %}
                             {% with cell=row.days_matrix|dictget:day.day_num %}
                                 <td class="{% if day.is_weekend %}weekend-col{% endif %} {% if day.is_holiday %}holiday-cell-bg{% endif %}">

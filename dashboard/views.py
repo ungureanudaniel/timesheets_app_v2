@@ -193,7 +193,8 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
         month_days_list = []
         
         # Track valid baseline legal working days for the contract type norm math
-        actual_working_days_count = 0
+        workable_mon_thu = 0
+        workable_fri = 0
         
         for d in range(1, num_days + 1):
             current_date = date(year, month, d)
@@ -204,7 +205,10 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
             holiday_name = ro_holidays.get(current_date, "") if is_holiday else ""
 
             if not is_weekend and not is_holiday:
-                actual_working_days_count += 1
+                if weekday_index in [0, 1, 2, 3]:
+                    workable_mon_thu += 1
+                elif weekday_index == 4:
+                    workable_fri += 1
 
             month_days_list.append({
                 'day_num': d,
@@ -250,7 +254,17 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
             cached_sheets = getattr(emp, 'cached_month_timesheets', [])
             for ts in cached_sheets:
                 day_number = ts.date.day
-                
+                is_bank_holiday = ts.date in ro_holidays
+                is_weekend = ts.date.weekday() in [5, 6]
+                weekday_idx = ts.date.weekday()
+
+                if weekday_idx in [0, 1, 2, 3]:
+                    leave_minutes = 8.5 * 60
+                elif weekday_idx == 4:
+                    leave_minutes = 6 * 60
+                else:
+                    leave_minutes = 0
+
                 activity_code = ts.activity.code.upper() if (ts.activity and ts.activity.code) else ""
                 activity_name = ts.activity.name.upper() if (ts.activity and ts.activity.name) else ""
                 
@@ -277,13 +291,18 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                 if is_co:
                     days_matrix[day_number] = {'type': 'CO', 'hours': 'CO'}
                     co_days_set.add(day_number)
+                    total_minutes_worked += leave_minutes
                 elif is_cm:
                     days_matrix[day_number] = {'type': 'CM', 'hours': 'CM'}
                     cm_days_set.add(day_number)
+                    total_minutes_worked += leave_minutes
                 elif is_ef:
                     days_matrix[day_number] = {'type': 'EF', 'hours': 'EF'}
                     ef_days_set.add(day_number)
+                    total_minutes_worked += leave_minutes
                 else:
+                    if (is_bank_holiday or is_weekend) and not (ts.start_time and ts.end_time) and not getattr(ts, 'duration_decimal', None):
+                        continue
                     # Calculate worked hours for this timesheet entry
                     if hasattr(ts, 'duration_decimal') and ts.duration_decimal is not None:
                         hours = float(ts.duration_decimal)
@@ -293,7 +312,7 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                         dt2 = datetime.combine(today_dummy, ts.end_time)
                         hours = max(0.0, (dt2 - dt1).total_seconds() / 3600.0)
                     else:
-                        hours = 8.0
+                        hours = 8.5
                     minutes = round(hours * 60)  
                     current_entry = days_matrix[day_number]
                     if current_entry['type'] == 'work':
@@ -308,9 +327,9 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                     # Track this day as a worked day for meal ticket eligibility
                     worked_days_set.add(day_number)
             
-            eligible_meal_ticket_days = worked_days_set - co_days_set - cm_days_set
+            eligible_meal_ticket_days = worked_days_set - co_days_set - cm_days_set-ef_days_set
             # Standard Romanian Norm setup subtracting statutory bank holidays 
-            norma_hours = actual_working_days_count * 8
+            norma_hours = workable_mon_thu * 8.5 + workable_fri * 6
             norma_minutes = norma_hours * 60
             employee_data.append({
                 'employee': emp,

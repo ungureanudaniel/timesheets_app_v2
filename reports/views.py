@@ -1,3 +1,5 @@
+from re import match
+
 from django.contrib import messages
 from django.views.generic import FormView, TemplateView
 from django.db.models import Sum, Count, Avg
@@ -269,13 +271,11 @@ def get_next_registration_number(request):
         return JsonResponse({'error': 'Not authenticated'}, status=401)
 
     user = request.user
-    first_name_initial = user.first_name[0] if user.first_name else ''
-    last_name_initial = user.last_name[0] if user.last_name else ''
     # Get the latest registration number for this user
     latest = RangerDocumentRegistry.objects.filter(
         user=request.user
     ).order_by('-id').first()
-    
+    print(latest.doc_number if latest else "No previous doc_number found")
     next_number = 1
     if latest and latest.doc_number:
         try:
@@ -283,7 +283,7 @@ def get_next_registration_number(request):
         except ValueError:
             next_number = 1
 
-    formatted_nr = f"{str(next_number).zfill(3)} / {first_name_initial}{last_name_initial}"
+    formatted_nr = f"{str(next_number).zfill(3)}"
     return JsonResponse({
         'next_number': formatted_nr,  # Pad with zeros: 001, 002, etc.
         'today': timezone.now().date().strftime('%Y-%m-%d')
@@ -310,6 +310,7 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         report_data = request.session.get('report_data', {})
+        user = request.user
         if not report_data:
             return HttpResponse("Nu s-au găsit date pentru raport.")
 
@@ -363,7 +364,7 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
         job_title = getattr(first_ts.user, 'job_title', 'N/A') if (timesheets.exists() and first_ts.user) else 'N/A'
 
         # --- 4. HEADER WITH REGISTRATION INFO ---
-        elements.append(Paragraph(f"<b>Nr. Înregistrare:</b> {reg_num} / {reg_date_formatted}", styles['Normal']))
+        elements.append(Paragraph(f"<b>Nr. Înregistrare personal:</b> {reg_num} / {user.first_name[0]}{user.last_name[0]} / {reg_date_formatted}", styles['Normal']))
         elements.append(Spacer(1, 0.1 * inch))
         
         elements.append(Paragraph(f"Raport de activitate", styles['Title']))

@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 urlpatterns = [
-    path('', TimesheetListView.as_view(), name="timesheet_list"),
+    path('', TimesheetListView.as_view(), name="timesheet_list"), # this is for admins and managers to see all timesheets
     path('calendar/', TimesheetCalendarView.as_view(), name='timesheet_calendar'),
     path('timesheets/create/', CreateTimesheetView.as_view(), name='create_timesheet'),
     path('timesheets/<int:pk>/edit', UpdateTimesheetView.as_view(), name='update_timesheet'),
