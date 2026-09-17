@@ -752,9 +752,21 @@ class TimesheetStandardizedHoursPDFView(View):
             Paragraph("<b>Zile<br/>EF</b>", header_cell_style),
             Paragraph("<b>Tichete<br/>Masa</b>", header_cell_style),
         ])
-
+        total_ore_col_idx = 3 + num_days
+        alert_cell_style = ParagraphStyle(
+            'AlertCell',
+            parent=styles['Normal'],
+            fontSize=6,
+            leading=7,
+            alignment=1,
+            fontName='Helvetica-Bold',
+            textColor=colors.HexColor('#CC0000'),
+            borderColor=colors.HexColor('#CC0000'),
+        )
+        table_styles = []
         table_data = [row1]
         statutory_norm, employee_rows = generate_statutory_pdf_context(year, month, employee_data, ro_holidays=ro_holidays) # Contains standardized hours data
+        
         # 7. Populate employee rows
         for idx, row in enumerate(employee_rows, start=1):
             # Safe name extraction
@@ -763,7 +775,6 @@ class TimesheetStandardizedHoursPDFView(View):
                 norma = row.get('statutory_norm', statutory_norm)
                 days_matrix = row.get('days_matrix', {})
                 total_hours = row.get('statutory_total_hours', 0)
-                total_formatted = f"{total_hours}" if total_hours else "0"
                 co_days = row.get('co_days', row.get('total_co_days', 0))
                 cm_days = row.get('cm_days', row.get('total_cm_days', 0))
                 ef_days = row.get('ef_days', row.get('total_ef_days', 0))
@@ -773,7 +784,6 @@ class TimesheetStandardizedHoursPDFView(View):
                 norma = getattr(row, 'statutory_norm', statutory_norm)
                 days_matrix = getattr(row, 'days_matrix', {})
                 total_hours = getattr(row, 'statutory_total_hours', 0)
-                total_formatted = f"{total_hours}" if total_hours else "0"
                 co_days = getattr(row, 'co_days', 0)
                 cm_days = getattr(row, 'cm_days', 0)
                 ef_days = getattr(row, 'ef_days', 0)
@@ -781,7 +791,14 @@ class TimesheetStandardizedHoursPDFView(View):
 
             # fetch and format employee name
             emp_name = f"{emp_name}".strip() if emp_name else f"Angajat {idx}"
-
+            # Check for mismatch and apply alert style
+            total_mismatch = (total_hours != norma)
+            
+            total_formatted = f"{total_hours}" if total_hours else "0"
+            if total_mismatch:
+                table_styles.append(
+                    ('BACKGROUND', (total_ore_col_idx, idx), (total_ore_col_idx, idx), colors.HexColor('#FFE6E6'))
+                )
             data_row = [
                 Paragraph(str(idx), body_cell_style),
                 Paragraph(emp_name, name_cell_style),
@@ -806,11 +823,12 @@ class TimesheetStandardizedHoursPDFView(View):
                 
                 # Add to PDF cell
                 data_row.append(Paragraph(str(cell_val if cell_val is not None else ''), body_cell_style))
-
+            # Choose paragraph style based on alert status
+            total_paragraph_style = alert_cell_style if total_mismatch else body_cell_style
 
             # Append totals and counts    
             data_row.extend([
-                Paragraph(total_formatted, body_cell_style),
+                Paragraph(total_formatted, total_paragraph_style),
                 Paragraph(str(co_days), body_cell_style),
                 Paragraph(str(cm_days), body_cell_style),
                 Paragraph(str(ef_days), body_cell_style),
@@ -843,7 +861,7 @@ class TimesheetStandardizedHoursPDFView(View):
             if weekday in (5, 6):  # Saturday / Sunday
                 col_index = 3 + idx_d
                 t_style.append(('BACKGROUND', (col_index, 0), (col_index, -1), colors.HexColor('#eaeaea')))
-
+        t_style.extend(table_styles)
         t = Table(table_data, colWidths=col_widths, repeatRows=1)
         t.setStyle(TableStyle(t_style))
         elements.append(t)

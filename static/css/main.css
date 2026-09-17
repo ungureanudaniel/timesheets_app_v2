@@ -426,7 +426,15 @@ body {
     vertical-align: middle !important;
     text-align: center !important;
 }
-
+.alert-cell {
+    background-color: #ffe6e6 !important;
+    color: #cc0000 !important;
+    font-weight: bold;
+    border: 2px solid #cc0000 !important;
+}
+.normal-cell {
+    background-color: transparent;
+}
 /* 2. PRINT OVERRIDES FOR Django TIMESHEETS */
 @media print {
     /* Force page to print horizontally in Landscape */
