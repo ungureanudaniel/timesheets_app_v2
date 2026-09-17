@@ -1,6 +1,6 @@
 from django.urls import path, include
 from django.conf import settings
-from .views import automated_task_runner, ActivityProgramCreateView, ActivityProgramListView, ActivityProgramUpdateView, ActivityProgramDeleteView, PALActivityCreateView, dashboard, AnalyticsView, \
+from .views import TimesheetStandardizedHoursPDFView, automated_task_runner, ActivityProgramCreateView, ActivityProgramListView, ActivityProgramUpdateView, ActivityProgramDeleteView, PALActivityCreateView, dashboard, AnalyticsView, \
     worked_hours_per_member, yearly_statistics, activity_program, PALActivitiesListView, PALActivityUpdateView, PALActivityDeleteView, PALActivitiesUploadView, \
     FundsSourceListView, NewFundsSourceView, HoursSummaryTableView
 from .utils import upload_activities
@@ -29,6 +29,7 @@ urlpatterns = [
     path('new_funds_source/', NewFundsSourceView.as_view(), name='new_funds_source'),
     path('tasks/run-reminders/', automated_task_runner, name='task_runner'),
     path('timesheet/pdf/', TimesheetPDFView.as_view(), name='timesheet_pdf'),
+    path('timesheet/standardized-hours/pdf/', TimesheetStandardizedHoursPDFView.as_view(), name='timesheet_standardized_hours_pdf'),
     path('hours_summary/', HoursSummaryTableView.as_view(), name='hours_summary'),
 
 ]

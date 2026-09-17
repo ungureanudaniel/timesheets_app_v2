@@ -22,7 +22,7 @@ from timesheets_main import settings
 from .forms import PALActivitiesUploadForm, FundsSourceForm, PALActivityForm
 from dashboard.forms import ActivityProgramForm
 from dashboard.models import ActivityProgram
-from .utils import format_minutes
+from .utils import format_minutes, generate_statutory_pdf_context
 from timesheet.models import Activity, FundsSource, Timesheet
 from users.models import CustomUser
 
@@ -179,7 +179,7 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
 
         # Instantiate Romanian Public Holidays rules engine for this target year
         ro_holidays = holidays.Romania(years=year)
-
+        
         # Month names for display
         ro_months = {
             1: "Ianuarie", 2: "Februarie", 3: "Martie", 4: "Aprilie",
@@ -187,7 +187,6 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
             9: "Septembrie", 10: "Octombrie", 11: "Noiembrie", 12: "Decembrie"
         }
         ro_days_short = ["L", "M", "M", "J", "V", "S", "D"]
-
         # Compute structural day lists for selected calendar space
         num_days = calendar.monthrange(year, month)[1]
         month_days_list = []
@@ -217,7 +216,6 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                 'is_holiday': is_holiday,
                 'holiday_name': holiday_name
             })
-
         context['current_period'] = period_query
         context['current_month_year'] = f"{ro_months[month]} {year}"
         context['month_days'] = month_days_list
@@ -240,8 +238,7 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
 
         for emp in employees:
             # Initialize every single day with a default structure
-            days_matrix = {d: {'type': 'none', 'hours': ''} for d in range(1, num_days + 1)}
-            
+            days_matrix = {d: {'type': 'none', 'hours': 0} for d in range(1, num_days + 1)}
             total_hours_worked = 0.0
             total_minutes_worked = 0
             total_co_days = 0
@@ -380,9 +377,8 @@ class TimesheetPDFView(View):
     def get(self, request, *args, **kwargs):
         # 1. Parse target period (YYYY-MM)
         # Get data from session
-        employee_data = request.session.get('pdf_employee_data', [])
-        period_data = request.session.get('pdf_period', {})
-        
+        employee_data = request.session.get('pdf_employee_data', []) # Contains employee data with days_matrix, total_hours, etc.
+        period_data = request.session.get('pdf_period', {}) # Contains year, month, period_query
         selected_period = request.GET.get('selected_period', datetime.now().strftime('%Y-%m'))
         if selected_period and not employee_data:
             try:
@@ -399,8 +395,7 @@ class TimesheetPDFView(View):
         # Get total number of days in selected month as strict integers
         _, num_days = calendar.monthrange(year, month)
         month_days = list(range(1, num_days + 1))
-
-        # 3. Setup PDF Document (A4 Landscape)
+        # 3. Setup PDF document (A4 landscape)
         buffer = BytesIO()
         doc = SimpleDocTemplate(
             buffer,
@@ -482,7 +477,7 @@ class TimesheetPDFView(View):
         elements.append(Paragraph(f"{('Pontaj lunar')} — {month_name} {year}", subtitle_style))
         elements.append(Spacer(1, 8))
 
-        # 6. Construct Dynamic Table Headers (Using pure integer day numbers)
+        # 6. Construct dynamic table headers
         row1 = [
             Paragraph("<b>Nr.<br/>crt.</b>", header_cell_style),
             Paragraph("<b>Nume Prenume</b>", header_cell_style),
@@ -501,8 +496,7 @@ class TimesheetPDFView(View):
         ])
 
         table_data = [row1]
-
-        # 7. Populate Employee Rows (Strict Type Coercion to prevent 'Day' callables)
+        # 7. Populate employee rows
         for idx, row in enumerate(employee_data, start=1):
             # Safe name extraction
             if isinstance(row, dict):
@@ -541,7 +535,6 @@ class TimesheetPDFView(View):
                 # Extract and format the value
                 if isinstance(day_data, dict):
                     raw_value = day_data.get('hours', '')
-                    
                     # Format if it's a number (minutes)
                     if isinstance(raw_value, (int, float)) and raw_value > 0:
                         cell_val = format_minutes(raw_value)  # 510 -> 8:30
@@ -634,6 +627,266 @@ class TimesheetPDFView(View):
         response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="Pontaj_{year}_{month:02d}.pdf"'
         return response
+
+
+class TimesheetStandardizedHoursPDFView(View):
+    def get(self, request, *args, **kwargs):
+        # 1. Parse target period (YYYY-MM)
+        # Get data from session
+        employee_data = request.session.get('pdf_employee_data', []) # Contains employee data with days_matrix, total_hours, etc.
+        
+        period_data = request.session.get('pdf_period', {}) # Contains year, month, period_query
+        selected_period = request.GET.get('selected_period', datetime.now().strftime('%Y-%m'))
+        if selected_period and not employee_data:
+            try:
+                year, month = map(int, selected_period.split('-'))
+                return HttpResponse("Please load the summary page first.", status=400)
+            except ValueError:
+                pass
+        if not employee_data:
+            return HttpResponse("No data available. Please go back and load the summary first.", status=400)
+        year = period_data.get('year', datetime.now().year)
+        month = period_data.get('month', datetime.now().month)
+        selected_period = period_data.get('period_query', f"{year}-{month:02d}")
+
+        # Get total number of days in selected month as strict integers
+        _, num_days = calendar.monthrange(year, month)
+        month_days = list(range(1, num_days + 1))
+        ro_holidays = holidays.Romania(years=year)
+        # 3. Setup PDF document (A4 landscape)
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=landscape(A4),
+            leftMargin=15,
+            rightMargin=15,
+            topMargin=15,
+            bottomMargin=15
+        )
+        
+        elements = []
+
+        # 4. Setup Styles
+        styles = getSampleStyleSheet()
+        
+        title_style = ParagraphStyle(
+            'ReportTitle',
+            parent=styles['Heading1'],
+            fontSize=12,
+            leading=14,
+            alignment=1,
+            textColor=colors.HexColor('#1a252f')
+        )
+        
+        subtitle_style = ParagraphStyle(
+            'ReportSubtitle',
+            parent=styles['Normal'],
+            fontSize=8,
+            leading=10,
+            alignment=1,
+            textColor=colors.HexColor('#555555')
+        )
+
+        header_cell_style = ParagraphStyle(
+            'HeaderCell',
+            parent=styles['Normal'],
+            fontSize=6,
+            leading=7,
+            alignment=1,
+            fontName='Helvetica-Bold'
+        )
+
+        name_cell_style = ParagraphStyle(
+            'NameCell',
+            parent=styles['Normal'],
+            fontSize=6.5,
+            leading=8,
+            fontName='Helvetica-Bold'
+        )
+
+        body_cell_style = ParagraphStyle(
+            'BodyCell',
+            parent=styles['Normal'],
+            fontSize=6,
+            leading=7,
+            alignment=1
+        )
+
+        sig_title_style = ParagraphStyle(
+            'SigTitle',
+            parent=styles['Normal'],
+            fontSize=9,
+            leading=11,
+            fontName='Helvetica-Bold',
+            alignment=1
+        )
+
+        sig_name_style = ParagraphStyle(
+            'SigName',
+            parent=styles['Normal'],
+            fontSize=9,
+            leading=11,
+            alignment=1
+        )
+
+        # 5. Build Top Header Info
+        month_name = get_romanian_month(month)
+        elements.append(Paragraph(("FOAIE COLECTIVA DE PREZENTA"), title_style))
+        elements.append(Paragraph(f"{('Pontaj lunar')} — {month_name} {year}", subtitle_style))
+        elements.append(Spacer(1, 8))
+
+        # 6. Construct dynamic table headers
+        row1 = [
+            Paragraph("<b>Nr.<br/>crt.</b>", header_cell_style),
+            Paragraph("<b>Nume Prenume</b>", header_cell_style),
+            Paragraph("<b>Norma</b>", header_cell_style),
+        ]
+        
+        for day_int in month_days:
+            row1.append(Paragraph(f"<b>{day_int}</b>", header_cell_style))
+        # Add the additional columns for totals and counts
+        row1.extend([
+            Paragraph("<b>Total<br/>ore</b>", header_cell_style),
+            Paragraph("<b>Zile<br/>CO</b>", header_cell_style),
+            Paragraph("<b>Zile<br/>CM</b>", header_cell_style),
+            Paragraph("<b>Zile<br/>EF</b>", header_cell_style),
+            Paragraph("<b>Tichete<br/>Masa</b>", header_cell_style),
+        ])
+
+        table_data = [row1]
+        statutory_norm, employee_rows = generate_statutory_pdf_context(year, month, employee_data, ro_holidays=ro_holidays) # Contains standardized hours data
+        # 7. Populate employee rows
+        for idx, row in enumerate(employee_rows, start=1):
+            # Safe name extraction
+            if isinstance(row, dict):
+                emp_name = row.get('employee_name', f"Angajat {idx}")
+                norma = row.get('statutory_norm', statutory_norm)
+                days_matrix = row.get('days_matrix', {})
+                total_hours = row.get('statutory_total_hours', 0)
+                total_formatted = f"{total_hours}" if total_hours else "0"
+                co_days = row.get('co_days', row.get('total_co_days', 0))
+                cm_days = row.get('cm_days', row.get('total_cm_days', 0))
+                ef_days = row.get('ef_days', row.get('total_ef_days', 0))
+                meal_tickets = row.get('meal_tickets', row.get('meal_tickets_count', 0))
+            else:
+                emp_name = getattr(row, 'employee_name')
+                norma = getattr(row, 'statutory_norm', statutory_norm)
+                days_matrix = getattr(row, 'days_matrix', {})
+                total_hours = getattr(row, 'statutory_total_hours', 0)
+                total_formatted = f"{total_hours}" if total_hours else "0"
+                co_days = getattr(row, 'co_days', 0)
+                cm_days = getattr(row, 'cm_days', 0)
+                ef_days = getattr(row, 'ef_days', 0)
+                meal_tickets = getattr(row, 'meal_tickets', 0)
+
+            # fetch and format employee name
+            emp_name = f"{emp_name}".strip() if emp_name else f"Angajat {idx}"
+
+            data_row = [
+                Paragraph(str(idx), body_cell_style),
+                Paragraph(emp_name, name_cell_style),
+                Paragraph(str(norma), body_cell_style),
+            ]
+            # Populate matrix days
+            for day_int in month_days:
+                # Get the day's data
+                day_data = days_matrix.get(str(day_int), {})                
+                # Extract and format the value
+                if isinstance(day_data, dict):
+                    raw_value = day_data.get('hours', '')
+                    # Format if it's a number (minutes)
+                    if isinstance(raw_value, (int, float)) and raw_value > 0:
+                        cell_val = raw_value  # Keep as is for standardized hours
+                    elif isinstance(raw_value, str):
+                        cell_val = raw_value  # "CO", "CM", "EF", or ""
+                    else:
+                        cell_val = ''
+                else:
+                    cell_val = ''
+                
+                # Add to PDF cell
+                data_row.append(Paragraph(str(cell_val if cell_val is not None else ''), body_cell_style))
+
+
+            # Append totals and counts    
+            data_row.extend([
+                Paragraph(total_formatted, body_cell_style),
+                Paragraph(str(co_days), body_cell_style),
+                Paragraph(str(cm_days), body_cell_style),
+                Paragraph(str(ef_days), body_cell_style),
+                Paragraph(str(meal_tickets), body_cell_style),
+            ])
+
+            table_data.append(data_row)
+
+        # 8. Define Column Widths
+        col_widths = [18, 95, 25]
+        day_col_width = max(15.5, (520 / num_days))
+        col_widths.extend([day_col_width] * num_days)
+        col_widths.extend([32, 22, 22, 22, 26])
+
+        # 9. Style Table Grid & Weekend Highlights
+        t_style = [
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#666666')),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f3f5')),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('TOPPADDING', (0, 0), (-1, -1), 2),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+            ('LEFTPADDING', (0, 0), (-1, -1), 1),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 1),
+        ]
+
+        # Light gray background for weekends
+        for idx_d, day_int in enumerate(month_days):
+            weekday = calendar.weekday(year, month, day_int)
+            if weekday in (5, 6):  # Saturday / Sunday
+                col_index = 3 + idx_d
+                t_style.append(('BACKGROUND', (col_index, 0), (col_index, -1), colors.HexColor('#eaeaea')))
+
+        t = Table(table_data, colWidths=col_widths, repeatRows=1)
+        t.setStyle(TableStyle(t_style))
+        elements.append(t)
+
+        # 10. SIGNATURE BLOCKS
+        elements.append(Spacer(1, 20))
+
+        sig_data = [
+            [
+                Paragraph("<b>Sef Paza,</b>", sig_title_style),
+                "",
+                Paragraph("<b>Director,</b>", sig_title_style)
+            ],
+            [
+                Paragraph("Damian Mihai", sig_name_style),
+                "",
+                Paragraph("Negutescu Ion Clementin", sig_name_style)
+            ],
+            [
+                Paragraph("Semnatura: _______________________", sig_name_style),
+                "",
+                Paragraph("Semnatura: _______________________", sig_name_style)
+            ]
+        ]
+
+        sig_table = Table(sig_data, colWidths=[250, 311, 250])
+        sig_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 4),
+            ('BOTTOMPADDING', (0, 1), (-1, 1), 12),
+        ]))
+
+        elements.append(sig_table)
+
+        # 11. Render PDF
+        doc.build(elements)
+        buffer.seek(0)
+
+        response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="Pontaj_{year}_{month:02d}.pdf"'
+        return response
+
 
 class PALActivitiesUploadView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """

@@ -11,6 +11,9 @@ from datetime import timedelta
 from django.db.models import Count
 from timesheet.models import Timesheet
 
+import calendar
+from datetime import date
+
 
 def upload_activities(request):
     if request.method == 'POST' and request.FILES.get('excel_file'):
@@ -105,3 +108,58 @@ def format_minutes(minutes):
     mins = minutes % 60
     
     return f"{hours}:{mins:02d}"
+
+def generate_statutory_pdf_context(year, month, employee_data_list, ro_holidays):
+    """
+    Transforms operational timesheet data (employee_data_list) into standard statutory 8h/day pontaj format.
+    """
+    num_days = calendar.monthrange(year, month)[1]
+    
+    # 1. Calculate standard legal norm (8 hours per working day)
+    working_days_count = 0
+    for d in range(1, num_days + 1):
+        curr_date = date(year, month, d)
+        is_weekend = curr_date.weekday() in (5, 6)
+        is_holiday = curr_date in ro_holidays
+        if not is_weekend and not is_holiday:
+            working_days_count += 1
+
+    statutory_month_norm = working_days_count * 8  # e.g., 21 days * 8 = 168h
+
+    # 2. Transform employee matrix for legal PDF display
+    statutory_employee_data = []
+    for item in employee_data_list:
+        legal_days_matrix = {}
+        legal_total_hours = 0
+        
+        # Parse existing matrix
+        for day_num, day_info in item['days_matrix'].items():
+            entry_type = day_info.get('type')
+            raw_minutes = day_info.get('hours', 0)
+            weekday = date(year, month, int(day_num)).weekday()  # 0=Monday, 6=Sunday
+            if entry_type in ['CO', 'CM', 'EF']:
+                # Statutory leave preserves code
+                legal_days_matrix[day_num] = day_info
+            elif entry_type == 'work' and ((weekday in range(4) and raw_minutes == 510) or (weekday == 4 and raw_minutes == 360)):
+                # Force standard 8h rendering for legal pontaj
+                legal_days_matrix[day_num] = {'type': 'work', 'hours': 8}
+                legal_total_hours += int(8)
+            elif raw_minutes > 0:
+                # For any other work hours, round to nearest 8h if > 0
+                legal_days_matrix[day_num] = {'type': 'work', 'hours': raw_minutes/60}
+                legal_total_hours += int(raw_minutes/60)
+            else:
+                legal_days_matrix[day_num] = day_info
+
+        statutory_employee_data.append({
+            'employee_name': item['employee_name'],
+            'statutory_norm': statutory_month_norm,
+            'statutory_total_hours': legal_total_hours,
+            'days_matrix': legal_days_matrix,
+            'total_co_days': item['total_co_days'],
+            'total_cm_days': item['total_cm_days'],
+            'total_ef_days': item['total_ef_days'],
+            'meal_tickets_count': item['meal_tickets_count'],
+        })
+
+    return statutory_month_norm, statutory_employee_data

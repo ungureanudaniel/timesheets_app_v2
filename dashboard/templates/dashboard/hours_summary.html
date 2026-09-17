@@ -46,8 +46,12 @@
                     <i class="fas fa-arrow-left me-1"></i> {% trans "Înapoi la Calendar" %}
                 </a>
                 <a href="{% url 'timesheet_pdf' %}?selected_period={{ current_period|default:'2026-06' }}" target="_blank" 
-                class="btn btn-primary d-flex align-items-center gap-2">
-                    <i class="fas fa-file-pdf"></i> {% trans "Descarcă PDF" %}
+                class="btn btn-secondary d-flex align-items-center gap-2">
+                    <i class="fas fa-file-pdf"></i> {% trans "Descarcă Pontaj Real" %}
+                </a>
+                <a href="{% url 'timesheet_standardized_hours_pdf' %}?selected_period={{ current_period|default:'2026-06' }}" target="_blank" 
+                class="btn btn-warning d-flex align-items-center gap-2">
+                    <i class="fas fa-file-pdf"></i> {% trans "Descarcă Pontaj Standardizat" %}
                 </a>
             </div>
         </form>
