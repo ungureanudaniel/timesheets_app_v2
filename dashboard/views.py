@@ -512,7 +512,7 @@ class TimesheetPDFView(View):
             # Safe name extraction
             if isinstance(row, dict):
                 emp_name = row.get('employee_name', f"Angajat {idx}")
-                norma = row.get('norma', row.get('norma_hours', 168))
+                norma_minutes = row.get('norma_minutes', 168)
                 days_matrix = row.get('days_matrix', {})
                 total_minutes = row.get('total_minutes_worked')
                 co_days = row.get('co_days', row.get('total_co_days', 0))
@@ -521,18 +521,18 @@ class TimesheetPDFView(View):
                 meal_tickets = row.get('meal_tickets', row.get('meal_tickets_count', 0))
             else:
                 emp_name = getattr(row, 'employee_name')
-                norma = getattr(row, 'norma', 168)
+                norma_minutes = getattr(row, 'norma_minutes', 168)
                 days_matrix = getattr(row, 'days_matrix', {})
                 total_minutes = getattr(row, 'total_minutes_worked', 0)
                 co_days = getattr(row, 'co_days', 0)
                 cm_days = getattr(row, 'cm_days', 0)
                 ef_days = getattr(row, 'ef_days', 0)
                 meal_tickets = getattr(row, 'meal_tickets', 0)
-
             # fetch and format employee name
             emp_name = f"{emp_name}".strip() if emp_name else f"Angajat {idx}"
             total_formatted = format_minutes(total_minutes) if total_minutes is not None else "0:00"
-            total_mismatch = (total_minutes != norma)
+            norma_formated = format_minutes(norma_minutes) if norma_minutes is not None else "0:00"
+            total_mismatch = (total_minutes != norma_minutes)
                         
             if total_mismatch:
                 table_styles.append(
@@ -541,7 +541,7 @@ class TimesheetPDFView(View):
             data_row = [
                 Paragraph(str(idx), body_cell_style),
                 Paragraph(emp_name, name_cell_style),
-                Paragraph(str(norma), body_cell_style),
+                Paragraph(norma_formated, body_cell_style),
             ]
             # Populate matrix days
             for day_int in month_days:
