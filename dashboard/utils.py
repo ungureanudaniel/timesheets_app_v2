@@ -141,14 +141,14 @@ def generate_statutory_pdf_context(year, month, employee_data_list, ro_holidays)
                 # Statutory leave preserves code
                 legal_days_matrix[day_num] = day_info
                 legal_total_hours += int(8)
-            elif entry_type == 'work' and ((weekday in range(4) and raw_minutes == 510) or (weekday == 4 and raw_minutes == 360)):
+            elif entry_type == 'work' and ((weekday in range(4) and raw_minutes == 510) or (weekday == 4 and raw_minutes == 360) or ((weekday in (5,6) and raw_minutes == 510)) or (weekday in (5,6) and raw_minutes == 360)):
                 # Force standard 8h rendering for legal pontaj
                 legal_days_matrix[day_num] = {'type': 'work', 'hours': 8}
                 legal_total_hours += int(8)
             elif raw_minutes > 0:
                 # For any other work hours, round to nearest 8h if > 0
                 legal_days_matrix[day_num] = {'type': 'work', 'hours': raw_minutes/60}
-                legal_total_hours += int(raw_minutes/60)
+                legal_total_hours += raw_minutes/60
             else:
                 legal_days_matrix[day_num] = day_info
 
