@@ -494,7 +494,18 @@ class TimesheetPDFView(View):
             Paragraph("<b>Zile<br/>EF</b>", header_cell_style),
             Paragraph("<b>Tichete<br/>Masa</b>", header_cell_style),
         ])
-
+        total_ore_col_idx = 3 + num_days
+        alert_cell_style = ParagraphStyle(
+                            'AlertCell',
+                            parent=styles['Normal'],
+                            fontSize=6,
+                            leading=7,
+                            alignment=1,
+                            fontName='Helvetica-Bold',
+                            textColor=colors.HexColor('#CC0000'),
+                            borderColor=colors.HexColor('#CC0000'),
+                        )
+        table_styles = []
         table_data = [row1]
         # 7. Populate employee rows
         for idx, row in enumerate(employee_data, start=1):
@@ -504,7 +515,6 @@ class TimesheetPDFView(View):
                 norma = row.get('norma', row.get('norma_hours', 168))
                 days_matrix = row.get('days_matrix', {})
                 total_minutes = row.get('total_minutes_worked')
-                total_formatted = format_minutes(total_minutes)
                 co_days = row.get('co_days', row.get('total_co_days', 0))
                 cm_days = row.get('cm_days', row.get('total_cm_days', 0))
                 ef_days = row.get('ef_days', row.get('total_ef_days', 0))
@@ -514,7 +524,6 @@ class TimesheetPDFView(View):
                 norma = getattr(row, 'norma', 168)
                 days_matrix = getattr(row, 'days_matrix', {})
                 total_minutes = getattr(row, 'total_minutes_worked', 0)
-                total_formatted = format_minutes(total_minutes)
                 co_days = getattr(row, 'co_days', 0)
                 cm_days = getattr(row, 'cm_days', 0)
                 ef_days = getattr(row, 'ef_days', 0)
@@ -522,7 +531,13 @@ class TimesheetPDFView(View):
 
             # fetch and format employee name
             emp_name = f"{emp_name}".strip() if emp_name else f"Angajat {idx}"
-
+            total_formatted = format_minutes(total_minutes) if total_minutes is not None else "0:00"
+            total_mismatch = (total_minutes != norma)
+                        
+            if total_mismatch:
+                table_styles.append(
+                    ('BACKGROUND', (total_ore_col_idx, idx), (total_ore_col_idx, idx), colors.HexColor('#FFE6E6'))
+                )
             data_row = [
                 Paragraph(str(idx), body_cell_style),
                 Paragraph(emp_name, name_cell_style),
@@ -547,11 +562,11 @@ class TimesheetPDFView(View):
                 
                 # Add to PDF cell
                 data_row.append(Paragraph(str(cell_val if cell_val is not None else ''), body_cell_style))
-
+            total_paragraph_style = alert_cell_style if total_mismatch else body_cell_style
 
             # Append totals and counts    
             data_row.extend([
-                Paragraph(total_formatted, body_cell_style),
+                Paragraph(total_formatted, total_paragraph_style),
                 Paragraph(str(co_days), body_cell_style),
                 Paragraph(str(cm_days), body_cell_style),
                 Paragraph(str(ef_days), body_cell_style),
@@ -584,7 +599,7 @@ class TimesheetPDFView(View):
             if weekday in (5, 6):  # Saturday / Sunday
                 col_index = 3 + idx_d
                 t_style.append(('BACKGROUND', (col_index, 0), (col_index, -1), colors.HexColor('#eaeaea')))
-
+        t_style.extend(table_styles)
         t = Table(table_data, colWidths=col_widths, repeatRows=1)
         t.setStyle(TableStyle(t_style))
         elements.append(t)
