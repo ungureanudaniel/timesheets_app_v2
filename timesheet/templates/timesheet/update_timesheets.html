@@ -129,7 +129,7 @@
                                         <img src="{{ image.image.url }}" class="card-img-top" alt="Timesheet image" style="height: 130px; object-fit: cover;">
                                         <div class="card-body p-2 bg-light">
                                             <small class="text-muted d-block mb-2">{{ image.uploaded_at|date:"M d, Y" }}</small>
-                                            <a href="{% url 'delete_timesheet_image' image.id %}" 
+                                            <a href="{% url 'delete_timesheet' image.id %}" 
                                                class="btn btn-sm btn-outline-danger w-100"
                                                onclick="return confirm('{% trans 'Ești sigur că vrei să ștergi această imagine?' %}');">
                                                 <i class="fas fa-trash-alt"></i> {% trans 'Delete' %}
@@ -177,7 +177,7 @@
         const holidayCheck = document.getElementById('{{ form.is_annual_holiday.id_for_label }}');
         const sickCheck = document.getElementById('{{ form.is_sick_leave.id_for_label }}');
         const familyEventCheck = document.getElementById('{{ form.is_family_event.id_for_label }}');
-        const dateInput = document.getElementById('{{ form.date.id_for_label }}');
+        const dateInput = document.getElementById('timesheet-date');
         
         const fundsSourceInput = document.getElementById('{{ form.fundssource.id_for_label }}');
         const activityInput = document.getElementById('{{ form.activity.id_for_label }}');
@@ -191,6 +191,7 @@
             for (let i = 0; i < selectElement.options.length; i++) {
                 if (selectElement.options[i].text.toUpperCase().includes(targetText)) {
                     selectElement.selectedIndex = i;
+                    // Trigger native change event in case other scripts listen to it
                     selectElement.dispatchEvent(new Event('change'));
                     break;
                 }
@@ -217,8 +218,10 @@
             field.style.backgroundColor = '#e9ecef';
             field.style.opacity = '0.8';
             
+            // For <select> elements, pointer-events locks clicks, but keeps values valid for POST requests
             if (field.tagName === 'SELECT') {
                 field.style.pointerEvents = 'none';
+                // Prevents keyboard changes on focus
                 field.addEventListener('keydown', preventSelectionChange);
             }
         }
@@ -251,9 +254,10 @@
                 // Apply database text matchups
                 selectOptionByText(fundsSourceInput, 'RNP ROMSILVA');
                 
+                // 💡 FIX: Safely sequenced ternary conditions without syntax errors
                 let targetActivity = '';
                 if (isHoliday) {
-                    targetActivity = 'CONCEDIU DE ODIHNĂ';
+                    targetActivity = 'CONCEDIU DE ODIHNA';
                 } else if (isSick) {
                     targetActivity = 'CONCEDIU MEDICAL';
                 } else if (isFamilyEvent) {
@@ -295,6 +299,7 @@
             });
         }
 
+        // 💡 NEW: Event listener to control Family Event exclusivity mutations
         if (familyEventCheck) {
             familyEventCheck.addEventListener('change', function() {
                 if (this.checked) {
@@ -311,6 +316,7 @@
                 const isSick = sickCheck && sickCheck.checked;
                 const isFamilyEvent = familyEventCheck && familyEventCheck.checked;
                 
+                // 💡 UPDATED: Dynamic recalculation now tracks family event triggers too
                 if (isHoliday || isSick || isFamilyEvent) {
                     toggleFields();
                 }

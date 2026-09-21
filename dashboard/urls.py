@@ -1,6 +1,6 @@
 from django.urls import path, include
 from django.conf import settings
-from .views import TimesheetStandardizedHoursPDFView, automated_task_runner, ActivityProgramCreateView, ActivityProgramListView, ActivityProgramUpdateView, ActivityProgramDeleteView, PALActivityCreateView, dashboard, AnalyticsView, \
+from .views import TimesheetStandardizedHoursPDFView, automated_task_runner, BulkActivityProgramCreateView, ActivityProgramListView, ActivityProgramUpdateView, ActivityProgramDeleteView, PALActivityCreateView, dashboard, AnalyticsView, \
     worked_hours_per_member, yearly_statistics, activity_program, PALActivitiesListView, PALActivityUpdateView, PALActivityDeleteView, PALActivitiesUploadView, \
     FundsSourceListView, NewFundsSourceView, HoursSummaryTableView
 from .utils import upload_activities
@@ -21,7 +21,7 @@ urlpatterns = [
     path('upload_pal_activities/', upload_activities, name="upload_activities"),
     path('analytics/worked_hours_per_member', worked_hours_per_member, name="worked_hours_per_member"),
     path('analytics/yearly_statistics', yearly_statistics, name="yearly_statistics"),
-    path('activity-program/create/', ActivityProgramCreateView.as_view(), name='activity_program_create'),
+    path('activity-program/create/', BulkActivityProgramCreateView.as_view(), name='activity_program_create'),
     path('activity-program/list/', ActivityProgramListView.as_view(), name='activity_program_list'),
     path('activity-program/<int:pk>/edit/', ActivityProgramUpdateView.as_view(), name='activity_program_edit'),
     path('activity-program/<int:pk>/delete/', ActivityProgramDeleteView.as_view(), name='activity_program_delete'),

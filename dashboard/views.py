@@ -1,11 +1,12 @@
 import calendar
 from datetime import date, datetime, timedelta
 from io import BytesIO
+
+from django.db import transaction
 import holidays
 import openpyxl
 from natsort import natsorted
-
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse, HttpResponseForbidden
 from django.core.paginator import Paginator
 from django.urls import reverse_lazy
@@ -16,16 +17,16 @@ from django.contrib import messages
 from django.core.mail import send_mail
 from django.db.models import Count, Prefetch, Sum, F, ExpressionWrapper, fields, FloatField, Q
 from django.views import View
-from django.views.generic import CreateView, ListView, TemplateView, UpdateView, DeleteView
+from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView, DeleteView
 
-from timesheets_main import settings
+from django.conf import settings
 from .forms import PALActivitiesUploadForm, FundsSourceForm, PALActivityForm
-from dashboard.forms import ActivityProgramForm
-from dashboard.models import ActivityProgram
+from dashboard.forms import BulkActivityProgramForm
+from dashboard.models import ActivityProgram, ActivityProgramSignature
 from .utils import format_minutes, generate_statutory_pdf_context
 from timesheet.models import Activity, FundsSource, Timesheet
 from users.models import CustomUser
-
+from .forms import BulkActivityProgramFormSet
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -1115,32 +1116,99 @@ def yearly_statistics(request):
     return JsonResponse(months_data, safe=False)
 
 
-class ActivityProgramCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    """
-    Create view for Activity Program
-    """
-    model = ActivityProgram
-    form_class = ActivityProgramForm
-    template_name = 'activities/activity_program_create.html'
-    success_url = reverse_lazy('activity_program_list')  # or PDF generation page
+# class ActivityProgramCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+#     """
+#     Create view for Activity Program
+#     """
+#     model = ActivityProgram
+#     template_name = 'activities/activity_program_create.html'
+#     success_url = reverse_lazy('activity_program_list')  # or PDF generation page
+
+#     def test_func(self):
+#         return self.request.user.is_staff or self.request.user.is_superuser
+
+
+class BulkActivityProgramCreateView(LoginRequiredMixin, UserPassesTestMixin, View):
+    template_name = 'activities/activity_program_bulkupload.html'
 
     def test_func(self):
         return self.request.user.is_staff or self.request.user.is_superuser
 
+    def get(self, request):
+        form = BulkActivityProgramForm()
+        rangers = User.objects.filter(is_active=True).order_by('last_name', 'first_name')
+        current_week = timezone.now().isocalendar()[1]
 
-class ActivityProgramListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    """
-    List view for Activity Programs
-    """
+        initial_data = []
+        for r in rangers:
+            is_office_staff = r.groups.filter(name='Office').exists()
+            initial_data.append({
+                'ranger_id': r.id,
+                'ranger_name': r.get_full_name() or r.username,
+                'registration_nr': '',
+                'registration_date': timezone.now().date(),
+                'week': current_week,
+                'activity_code': 'PAL' if is_office_staff else '',
+                'activity_name': 'Conform PAL' if is_office_staff else 'Patrulare teren conform planificării',
+            })
+        formset = BulkActivityProgramFormSet(initial=initial_data)
+        return render(request, self.template_name, {'formset': formset, 'rangers': rangers})
+    def post(self, request):
+        formset = BulkActivityProgramFormSet(request.POST)
+        if formset.is_valid():
+            with transaction.atomic():
+                for form in formset:
+                    data = form.cleaned_data
+                    ranger_id = data.get('ranger_id')
+                    ranger = User.objects.get(pk=ranger_id)
+
+                    # Create individual activity program
+                    program = ActivityProgram.objects.create(
+                        user=data['ranger_name'],
+                        registration_nr=data['registration_nr'],
+                        registration_date=timezone.now().date(),
+                        week=data['week'],
+                        activity_code=data['activity_code'],
+                        activity_title=data['activity_title'],
+                    )
+                    
+                    # Automatically assign ranger to signature requirement
+                    program.assigned_rangers.add(ranger)
+
+            messages.success(request, "Programele săptămânale au fost create și trimise către rangeri!")
+            return redirect('activity_program_list')
+
+        return render(request, self.template_name, {'formset': formset})
+
+
+class ActivityProgramListView(LoginRequiredMixin, ListView):
     model = ActivityProgram
     template_name = 'activities/activity_program_list.html'
     context_object_name = 'activity_programs'
-
-    def test_func(self):
-        return self.request.user.is_staff or self.request.user.is_superuser
-
+    paginate_by = 10
     def get_queryset(self):
-        return ActivityProgram.objects.filter(user=self.request.user).order_by('-registration_date')
+        user = self.request.user
+        if user.is_staff or user.is_superuser:
+            return ActivityProgram.objects.all().order_by('-registration_date')
+        return ActivityProgram.objects.filter(assigned_rangers=user).order_by('-registration_date')
+
+
+class ActivityProgramDetailView(LoginRequiredMixin, DetailView):
+    model = ActivityProgram
+    template_name = 'activities/activity_program_detail.html'
+    context_object_name = 'program'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        program = self.get_object()
+
+        # Signature status context
+        user_sig = ActivityProgramSignature.objects.filter(program=program, ranger=user).first()
+        context['user_sig'] = user_sig
+        context['can_sign'] = (user in program.assigned_rangers.all()) and (not user_sig or not user_sig.is_signed)
+        context['all_signatures'] = program.signatures.select_related('ranger').all()
+        return context
 
 
 class ActivityProgramUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -1148,7 +1216,7 @@ class ActivityProgramUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateV
     Update view for Activity Program
     """
     model = ActivityProgram
-    form_class = ActivityProgramForm
+    form_class = BulkActivityProgramForm
     template_name = 'activities/activity_program_edit.html'
     success_url = reverse_lazy('activity_program_list')
 
@@ -1171,6 +1239,33 @@ class ActivityProgramDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteV
         context = super().get_context_data(**kwargs)
         context['activity_program'] = self.get_object()
         return context
+
+
+class ActivityProgramSignView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        program = get_object_or_404(ActivityProgram, pk=pk)
+
+        if request.user not in program.assigned_rangers.all():
+            messages.error(request, "Nu aveți permisiunea de a semna acest program.")
+            return redirect('activity_program_detail', pk=pk)
+
+        sig_record, _ = ActivityProgramSignature.objects.get_or_create(
+            program=program,
+            ranger=request.user
+        )
+
+        signature_data = request.POST.get('signature_data', '')
+        client_ip = request.META.get('REMOTE_ADDR')
+
+        sig_record.is_signed = True
+        sig_record.signed_at = timezone.now()
+        sig_record.ip_address = client_ip
+        sig_record.signature_data = signature_data
+        sig_record.save()
+
+        messages.success(request, "Programul a fost semnat cu succes.")
+        return redirect('activity_program_detail', pk=pk)
+
 
 class FundsSourceListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     """
