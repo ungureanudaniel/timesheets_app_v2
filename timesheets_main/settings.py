@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'reports',
     'dashboard',
     'timesheet',
+    'alerts',
     'api',
     'debug_toolbar',
     'axes',

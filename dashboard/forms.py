@@ -42,36 +42,32 @@ class BulkActivityProgramForm(forms.Form):
 BulkActivityProgramFormSet = formset_factory(BulkActivityProgramForm, extra=0)
 
 
-class BulkAssignActivityForm(forms.Form):
-    # Select directly from the existing Activity model
-    preset_activity = forms.ModelChoiceField(
-        queryset=Activity.objects.all(),
-        required=False,
-        empty_label="-- Selectează din listă sau adaugă manual mai jos --",
-        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_preset_activity'})
+class ActivityProgramForm(forms.Form):
+    week = forms.IntegerField(label="Săptămâna", initial=1)
+    registration_nr = forms.CharField(
+        label="Nr. Înregistrare", required=False, max_length=50
     )
-
-    registration_nr = forms.IntegerField(
-        widget=forms.NumberInput(attrs={'class': 'form-control'})
-    )
-    week = forms.IntegerField(
-        initial=timezone.now().isocalendar()[1],
-        widget=forms.NumberInput(attrs={'class': 'form-control'})
-    )
-    activity_code = forms.CharField(
-        max_length=20,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'id_activity_code'})
+    activity = forms.ModelChoiceField(
+        queryset=Activity.objects.all().order_by("code"),
+        label="Selectează Activitatea",
+        widget=forms.Select(attrs={"class": "form-select activity-select"}),
     )
     activity_title = forms.CharField(
-        max_length=300,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'id_activity_title'})
+        label="Titlu / Descriere",
+        widget=forms.TextInput(
+            attrs={"class": "form-control", "placeholder": "Descriere activitate"}
+        ),
+    )
+    assigned_rangers = forms.ModelMultipleChoiceField(
+        queryset=User.objects.filter(is_active=True).order_by(
+            "last_name", "first_name"
+        ),
+        widget=forms.CheckboxSelectMultiple(
+            attrs={"class": "form-check-input"}
+        ),
+        label="Rangeri Alocați",
     )
 
-    assigned_rangers = forms.ModelMultipleChoiceField(
-        queryset=User.objects.filter(is_active=True).order_by('username'),
-        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
-        label="Selectează Rangerii"
-    )
 # class ActivityProgramForm(forms.ModelForm):
 #     """Form for creating and updating activity programs."""
 #     week = forms.ChoiceField(

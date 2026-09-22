@@ -1,7 +1,7 @@
 import calendar
 from datetime import date, datetime, timedelta
 from io import BytesIO
-
+from django.forms import formset_factory
 from django.db import transaction
 import holidays
 import openpyxl
@@ -26,7 +26,7 @@ from dashboard.models import ActivityProgram, ActivityProgramSignature
 from .utils import format_minutes, generate_statutory_pdf_context
 from timesheet.models import Activity, FundsSource, Timesheet
 from users.models import CustomUser
-from .forms import BulkActivityProgramFormSet
+from .forms import ActivityProgramForm
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -1135,47 +1135,68 @@ class BulkActivityProgramCreateView(LoginRequiredMixin, UserPassesTestMixin, Vie
         return self.request.user.is_staff or self.request.user.is_superuser
 
     def get(self, request):
-        form = BulkActivityProgramForm()
-        rangers = User.objects.filter(is_active=True).order_by('last_name', 'first_name')
         current_week = timezone.now().isocalendar()[1]
+        ActivityProgramFormSet = formset_factory(
+            ActivityProgramForm, extra=1, can_delete=True
+        )
 
-        initial_data = []
-        for r in rangers:
-            is_office_staff = r.groups.filter(name='Office').exists()
-            initial_data.append({
-                'ranger_id': r.id,
-                'ranger_name': r.get_full_name() or r.username,
-                'registration_nr': '',
-                'registration_date': timezone.now().date(),
-                'week': current_week,
-                'activity_code': 'PAL' if is_office_staff else '',
-                'activity_name': 'Conform PAL' if is_office_staff else 'Patrulare teren conform planificării',
-            })
-        formset = BulkActivityProgramFormSet(initial=initial_data)
-        return render(request, self.template_name, {'formset': formset, 'rangers': rangers})
+        formset = ActivityProgramFormSet(
+            initial=[
+                {
+                    'week': current_week,
+                    'registration_date': timezone.now().date(),
+                }
+            ]
+        )
+
+        return render(
+            request,
+            self.template_name,
+            {
+                'formset': formset,
+                'current_week': current_week,
+            },
+        )
+
     def post(self, request):
-        formset = BulkActivityProgramFormSet(request.POST)
+        ActivityProgramFormSet = formset_factory(
+            ActivityProgramForm, can_delete=True
+        )
+        formset = ActivityProgramFormSet(request.POST)
+
         if formset.is_valid():
             with transaction.atomic():
+                created_count = 0
                 for form in formset:
+                    if not form.cleaned_data or form.cleaned_data.get(
+                        'DELETE'
+                    ):
+                        continue
+
                     data = form.cleaned_data
-                    ranger_id = data.get('ranger_id')
-                    ranger = User.objects.get(pk=ranger_id)
+                    activity_obj = data['activity']
+                    rangers = data['assigned_rangers']
 
-                    # Create individual activity program
-                    program = ActivityProgram.objects.create(
-                        user=data['ranger_name'],
-                        registration_nr=data['registration_nr'],
-                        registration_date=timezone.now().date(),
-                        week=data['week'],
-                        activity_code=data['activity_code'],
-                        activity_title=data['activity_title'],
-                    )
-                    
-                    # Automatically assign ranger to signature requirement
-                    program.assigned_rangers.add(ranger)
+                    # Create individual ActivityProgram for each selected ranger under this activity
+                    for ranger in rangers:
+                        program = ActivityProgram.objects.create(
+                            user=ranger,
+                            registration_nr=data.get('registration_nr', ''),
+                            registration_date=timezone.now().date(),
+                            week=data['week'],
+                            activity_code=activity_obj.code,
+                            activity_title=data.get(
+                                'activity_title'
+                            )
+                            or activity_obj.name,
+                        )
+                        program.assigned_rangers.add(ranger)
+                        created_count += 1
 
-            messages.success(request, "Programele săptămânale au fost create și trimise către rangeri!")
+            messages.success(
+                request,
+                f"Au fost create și distribuite {created_count} programe săptămânale!",
+            )
             return redirect('activity_program_list')
 
         return render(request, self.template_name, {'formset': formset})
