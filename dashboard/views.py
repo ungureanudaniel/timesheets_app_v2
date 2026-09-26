@@ -1142,11 +1142,14 @@ class BulkActivityProgramCreateView(LoginRequiredMixin, UserPassesTestMixin, Vie
     # Non-reporter personnel (office, management) are always assigned to the PAL activity
     pal_code = 'PAL'
     pal_title = 'Activități conform PAL'
+    # Keyword (case-insensitive) that the Job title field must contain for a user to be assignable to activities
+    ranger_job_title = 'ranger'
     # Job title keywords (lowercase, without diacritics) identifying each approver
     approver_job_titles = {
         'director': ('director', 'Director',),
         'chief_ranger': ('sef paza', 'chief ranger', 'Sef Paza',),
         'accountant': ('Contabil Sef', 'accountant', 'contabil',),
+        'biologist': ('Biolog',  'biolog'),
     }
 
     def test_func(self):
@@ -1187,9 +1190,9 @@ class BulkActivityProgramCreateView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 selected[field] = str(approver_id or '')
         return {
             'active_users': active_users,
-            # Only reporters (field personnel) can be assigned to activities
-            'reporters': active_users.filter(role=User.Role.REPORTER.value),
-            'pal_personnel': active_users.exclude(role=User.Role.REPORTER.value),
+            # Only users whose Job title contains "ranger" can be assigned to activities
+            'reporters': active_users.filter(job_title__icontains=self.ranger_job_title),
+            'pal_personnel': active_users.exclude(job_title__icontains=self.ranger_job_title),
             'pal_code': self.pal_code,
             'pal_title': self.pal_title,
             'activities':natsorted(Activity.objects.all(), key=lambda a: a.code),
@@ -1235,8 +1238,8 @@ class BulkActivityProgramCreateView(LoginRequiredMixin, UserPassesTestMixin, Vie
             )
 
         active_users = {str(u.pk): u for u in User.objects.filter(is_active=True)}
-        reporters = {pk: u for pk, u in active_users.items() if u.role == User.Role.REPORTER}
-        labels ={'director': 'directorul', 'chief_ranger': 'șeful de pază', 'accountant': 'contabilul'}
+        reporters = {pk: u for pk, u in active_users.items() if self.ranger_job_title in (u.job_title or '').lower()}
+        labels ={'director': 'directorul', 'chief_ranger': 'șeful pazei', 'accountant': 'contabilul șef'}
         approvers = {}
         for field in self.approver_fields:
             approvers[field] = active_users.get(selected[field])
