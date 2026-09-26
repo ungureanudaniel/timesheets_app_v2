@@ -1026,3 +1026,24 @@ msgstr "Zile lucrate"
 msgid "Total Time"
 msgstr "Total ore"
 
+
+msgid "Delete Activity Program"
+msgstr "Șterge programul de activitate"
+
+msgid "You are about to delete the following activity program:"
+msgstr "Urmează să ștergi următorul program de activitate:"
+
+msgid "Registration no."
+msgstr "Nr. înregistrare"
+
+msgid "Registration date"
+msgstr "Data înregistrării"
+
+msgid "Assigned rangers"
+msgstr "Rangeri alocați"
+
+msgid "This program has %(counter)s signature record, which will also be deleted."
+msgid_plural "This program has %(counter)s signature records, which will also be deleted."
+msgstr[0] "Acest program are %(counter)s semnătură înregistrată, care va fi ștearsă și ea."
+msgstr[1] "Acest program are %(counter)s semnături înregistrate, care vor fi șterse și ele."
+msgstr[2] "Acest program are %(counter)s de semnături înregistrate, care vor fi șterse și ele."

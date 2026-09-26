@@ -8,34 +8,96 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
+def current_year():
+    return timezone.now().year
+
+
 class ActivityProgram(models.Model):
-    user = models.CharField(max_length=300)
+    """Weekly activity program: one per ISO week, holding several activity items."""
     registration_nr = models.IntegerField()
     registration_date = models.DateField(default=timezone.now)
+    year = models.IntegerField(default=current_year)
     week = models.IntegerField()
-    activity_code = models.CharField(max_length=6)
-    activity_title = models.CharField(max_length=300)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_activity_programs'
+    )
 
-    # Assigned rangers who must sign this program
+    # Approvers who add an extra signature to the program
+    director = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+    )
+    chief_ranger = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+    )
+    accountant = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+    )
+
+    # All personnel who must sign the program (every active user when it is created)
     assigned_rangers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         related_name='assigned_activity_programs',
         blank=True
     )
 
+    class Meta:
+        unique_together = ('year', 'week')
+        ordering = ['-year', '-week']
+
     def __str__(self):
-        return f"{self.activity_code} - {self.activity_title}"
+        return f"Program săptămâna {self.week}/{self.year}"
+
+    def create_approver_signatures(self):
+        """Create the pending extra signatures for director, chief ranger and accountant."""
+        approvers = {
+            ActivityProgramSignature.Role.DIRECTOR: self.director,
+            ActivityProgramSignature.Role.CHIEF_RANGER: self.chief_ranger,
+            ActivityProgramSignature.Role.ACCOUNTANT: self.accountant,
+        }
+        for role, user in approvers.items():
+            if user:
+                # .value: mysql-connector cannot convert TextChoices members
+                ActivityProgramSignature.objects.get_or_create(program=self, ranger=user, role=role.value)
 
     @property
     def is_fully_signed(self):
-        total_assigned = self.assigned_rangers.count()
-        if total_assigned == 0:
-            return False
-        signed_count = self.signatures.filter(is_signed=True).count()
-        return total_assigned == signed_count
+        signatures = ActivityProgramSignature.objects.filter(program=self)
+        return signatures.exists() and not signatures.filter(is_signed=False).exists()
+
+
+class ActivityProgramItem(models.Model):
+    """One activity of a weekly program and the rangers assigned to it."""
+    program = models.ForeignKey(
+        ActivityProgram,
+        on_delete=models.CASCADE,
+        related_name='items'
+    )
+    activity_code = models.CharField(max_length=20)
+    activity_title = models.CharField(max_length=300)
+    rangers = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='activity_program_items',
+        blank=True
+    )
+
+    class Meta:
+        ordering = ['pk']
+
+    def __str__(self):
+        return f"{self.activity_code} - {self.activity_title}"
 
 
 class ActivityProgramSignature(models.Model):
+    class Role(models.TextChoices):
+        PERSONNEL = 'PERSONNEL', 'Personal'
+        DIRECTOR = 'DIRECTOR', 'Director'
+        CHIEF_RANGER = 'CHIEF_RANGER', 'Șef pază'
+        ACCOUNTANT = 'ACCOUNTANT', 'Contabil'
+
     program = models.ForeignKey(
         ActivityProgram, 
         on_delete=models.CASCADE, 
@@ -46,17 +108,19 @@ class ActivityProgramSignature(models.Model):
         on_delete=models.CASCADE, 
         related_name='activity_signatures'
     )
+    # Approvers get an extra signature in their role, besides their personnel one
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.PERSONNEL.value)
     is_signed = models.BooleanField(default=False)
     signed_at = models.DateTimeField(null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     signature_data = models.TextField(null=True, blank=True)  # Base64 Canvas PNG
 
     class Meta:
-        unique_together = ('program', 'ranger')
+        unique_together = ('program', 'ranger', 'role')
 
     def __str__(self):
         status = "Signed" if self.is_signed else "Pending"
-        return f"{self.ranger} - {self.program.activity_code} ({status})"
+        return f"{self.ranger} - {self.program} - {self.get_role_display()} ({status})"
 
 
 # Signal to auto-create pending signature records when rangers are assigned
@@ -66,7 +130,8 @@ def create_ranger_signatures(sender, instance, action, pk_set, **kwargs):
         for ranger_id in pk_set:
             ActivityProgramSignature.objects.get_or_create(
                 program=instance,
-                ranger_id=ranger_id
+                ranger_id=ranger_id,
+                role=ActivityProgramSignature.Role.PERSONNEL.value
             )
 
 # class ActivityGroup(models.Model):

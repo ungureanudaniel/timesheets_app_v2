@@ -1,4 +1,6 @@
 import calendar
+import re
+import unicodedata
 from datetime import date, datetime, timedelta
 from io import BytesIO
 from django.forms import formset_factory
@@ -15,18 +17,17 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from django.core.mail import send_mail
-from django.db.models import Count, Prefetch, Sum, F, ExpressionWrapper, fields, FloatField, Q
+from django.db.models import Count, Prefetch, Sum, F, ExpressionWrapper, fields, FloatField, Q, Max
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView, DeleteView
 
 from django.conf import settings
-from .forms import PALActivitiesUploadForm, FundsSourceForm, PALActivityForm
-from dashboard.forms import BulkActivityProgramForm
-from dashboard.models import ActivityProgram, ActivityProgramSignature
-from .utils import format_minutes, generate_statutory_pdf_context
+from .forms import PALActivitiesUploadForm, FundsSourceForm, PALActivityForm, ActivityProgramUpdateForm
+from .forms import BulkActivityProgramForm
+from .models import ActivityProgram, ActivityProgramSignature
+from .utils import format_minutes, generate_statutory_pdf_context, get_week_choices
 from timesheet.models import Activity, FundsSource, Timesheet
 from users.models import CustomUser
-from .forms import ActivityProgramForm
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -224,7 +225,12 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
         if request.user.is_staff or request.user.groups.filter(name='Managers').exists():
             employees = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
         else:
-            pass
+            # Non-manager users may view only their own timesheet summary.
+            # Keep this as a queryset because it is prefetched below.
+            employees = User.objects.filter(
+                is_active=True,
+                pk=request.user.pk,
+            ).order_by('first_name', 'last_name')
 
         monthly_timesheets = Timesheet.objects.filter(
             date__year=year, 
@@ -1129,77 +1135,161 @@ def yearly_statistics(request):
 
 
 class BulkActivityProgramCreateView(LoginRequiredMixin, UserPassesTestMixin, View):
-    template_name = 'activities/activity_program_bulkupload.html'
+    """Create one weekly activity program with several activities, each with its own rangers."""
+    template_name = 'activities/activity_program_create.html'
+    code_field_re = re.compile(r'^activity_(\d+)_code$')
+    approver_fields = ('director', 'chief_ranger', 'accountant')
+    # Non-reporter personnel (office, management) are always assigned to the PAL activity
+    pal_code = 'PAL'
+    pal_title = 'Activități conform PAL'
+    # Job title keywords (lowercase, without diacritics) identifying each approver
+    approver_job_titles = {
+        'director': ('director', 'Director',),
+        'chief_ranger': ('sef paza', 'chief ranger', 'Sef Paza',),
+        'accountant': ('Contabil Sef', 'accountant', 'contabil',),
+    }
 
     def test_func(self):
         return self.request.user.is_staff or self.request.user.is_superuser
 
+    @staticmethod
+    def normalize_job_title(title):
+        # "Șef Pază" -> "sef paza"
+        decomposed = unicodedata.normalize('NFKD', title or '')
+        return ' '.join(''.join(c for c in decomposed if not unicodedata.combining(c)).lower().split())
+
+    def find_approver_by_job_title(self, users, field):
+        keywords = self.approver_job_titles[field]
+        titles = [(u, self.normalize_job_title(u.job_title)) for u in users]
+        # Prefer an exact job title, then one starting with the keyword (e.g. "Contabil șef")
+        for matches in (
+            lambda t: t in keywords,
+            lambda t: any(t.startswith(k) for k in keywords),
+        ):
+            for user, title in titles:
+                if matches(title):
+                    return user
+        return None
+
+    def get_context(self, selected=None, cards=None):
+        active_users = User.objects.filter(is_active=True).order_by("last_name", "first_name")
+        if selected is None:
+            # Default the approvers from the users' job titles,
+            # falling back to the ones used on the previous program
+            last_program = ActivityProgram.objects.order_by('-registration_date', '-pk').first()
+            selected = {'week': str(timezone.now().isocalendar()[1])}
+            for field in self.approver_fields:
+                approver = self.find_approver_by_job_title(active_users, field)
+                if approver is not None:
+                    approver_id = approver.pk
+                else:
+                    approver_id = getattr(last_program, f'{field}_id', None) if last_program else None
+                selected[field] = str(approver_id or '')
+        return {
+            'active_users': active_users,
+            # Only reporters (field personnel) can be assigned to activities
+            'reporters': active_users.filter(role=User.Role.REPORTER.value),
+            'pal_personnel': active_users.exclude(role=User.Role.REPORTER.value),
+            'pal_code': self.pal_code,
+            'pal_title': self.pal_title,
+            'activities':natsorted(Activity.objects.all(), key=lambda a: a.code),
+            'week_choices': [(str(w), label) for w, label in get_week_choices()],
+            'selected': selected,
+            'cards': cards or [{'code': '', 'title': '', 'ranger_ids': []}],
+        }
+
     def get(self, request):
-        current_week = timezone.now().isocalendar()[1]
-        ActivityProgramFormSet = formset_factory(
-            ActivityProgramForm, extra=1, can_delete=True
-        )
-
-        formset = ActivityProgramFormSet(
-            initial=[
-                {
-                    'week': current_week,
-                    'registration_date': timezone.now().date(),
-                }
-            ]
-        )
-
-        return render(
-            request,
-            self.template_name,
-            {
-                'formset': formset,
-                'current_week': current_week,
-            },
-        )
+        return render(request, self.template_name, self.get_context())
 
     def post(self, request):
-        ActivityProgramFormSet = formset_factory(
-            ActivityProgramForm, can_delete=True
+        year = timezone.now().year
+        week = request.POST.get('week', '')
+        selected = {'week': week}
+        for field in self.approver_fields:
+            selected[field] = request.POST.get(field, '')
+
+        # Each activity card posts activity_<i>_code / _title / _rangers.
+        # Indexes can have gaps when cards are removed in the browser.
+        indexes = sorted(
+            int(m.group(1))
+            for m in map(self.code_field_re.match, request.POST.keys())
+            if m
         )
-        formset = ActivityProgramFormSet(request.POST)
+        cards = [
+            {
+                'code': request.POST.get(f'activity_{i}_code', ''),
+                'title': request.POST.get(f'activity_{i}_title', '').strip(),
+                'ranger_ids': request.POST.getlist(f'activity_{i}_rangers'),
+            }
+            for i in indexes
+        ]
 
-        if formset.is_valid():
-            with transaction.atomic():
-                created_count = 0
-                for form in formset:
-                    if not form.cleaned_data or form.cleaned_data.get(
-                        'DELETE'
-                    ):
-                        continue
-
-                    data = form.cleaned_data
-                    activity_obj = data['activity']
-                    rangers = data['assigned_rangers']
-
-                    # Create individual ActivityProgram for each selected ranger under this activity
-                    for ranger in rangers:
-                        program = ActivityProgram.objects.create(
-                            user=ranger,
-                            registration_nr=data.get('registration_nr', ''),
-                            registration_date=timezone.now().date(),
-                            week=data['week'],
-                            activity_code=activity_obj.code,
-                            activity_title=data.get(
-                                'activity_title'
-                            )
-                            or activity_obj.name,
-                        )
-                        program.assigned_rangers.add(ranger)
-                        created_count += 1
-
-            messages.success(
-                request,
-                f"Au fost create și distribuite {created_count} programe săptămânale!",
+        errors = []
+        valid_weeks = {w for w, _ in get_week_choices()}
+        if not week.isdigit() or int(week) not in valid_weeks:
+            errors.append("Selectează o săptămână validă.")
+        elif ActivityProgram.objects.filter(year=year, week=int(week)).exists():
+            errors.append(
+                f"Există deja un program pentru săptămâna {week}/{year}. "
+                "Modifică programul existent sau alege altă săptămână."
             )
-            return redirect('activity_program_list')
 
-        return render(request, self.template_name, {'formset': formset})
+        active_users = {str(u.pk): u for u in User.objects.filter(is_active=True)}
+        reporters = {pk: u for pk, u in active_users.items() if u.role == User.Role.REPORTER}
+        labels ={'director': 'directorul', 'chief_ranger': 'șeful de pază', 'accountant': 'contabilul'}
+        approvers = {}
+        for field in self.approver_fields:
+            approvers[field] = active_users.get(selected[field])
+            if approvers[field] is None:
+                errors.append(f"Selectează {labels[field]}.")
+
+        activities = {a.code: a for a in Activity.objects.all()}
+        if not cards:
+            errors.append("Adaugă cel puțin o activitate.")
+        for position, card in enumerate(cards, start=1):
+            if card['code'] not in activities:
+                errors.append(f"Activitatea #{position}: selectează codul activității.")
+            if not any(r in reporters for r in card['ranger_ids']):
+                errors.append(f"Activitatea #{position}: selectează cel puțin un ranger.")
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return render(request, self.template_name, self.get_context(selected, cards))
+
+        with transaction.atomic():
+            last_nr = ActivityProgram.objects.aggregate(m=Max('registration_nr'))['m'] or 0
+            program = ActivityProgram.objects.create(
+                registration_nr=last_nr + 1,
+                registration_date=timezone.now().date(),
+                year=year,
+                week=int(week),
+                created_by=request.user,
+                **approvers,
+            )
+            for card in cards:
+                activity_obj = activities[card['code']]
+                item = program.items.create(
+                    activity_code=activity_obj.code,
+                    activity_title=card['title'] or activity_obj.name,
+                )
+                item.rangers.set([reporters[r] for r in card['ranger_ids'] if r in reporters])
+
+            pal_personnel = [u for pk, u in active_users.items() if pk not in reporters]
+            if pal_personnel:
+                pal_item = program.items.create(activity_code=self.pal_code, activity_title=self.pal_title)
+                pal_item.rangers.set(pal_personnel)
+
+            # All personnel sign the program (signal creates their pending signatures),
+            # plus the extra signatures of the approvers.
+            program.assigned_rangers.set(active_users.values())
+            program.create_approver_signatures()
+
+        messages.success(
+            request,
+            f"Programul pentru săptămâna {week}/{year} a fost creat cu {len(cards)} activități.",
+        )
+        return redirect('activity_program_list')
 
 
 class ActivityProgramListView(LoginRequiredMixin, ListView):
@@ -1207,11 +1297,16 @@ class ActivityProgramListView(LoginRequiredMixin, ListView):
     template_name = 'activities/activity_program_list.html'
     context_object_name = 'activity_programs'
     paginate_by = 10
+
     def get_queryset(self):
         user = self.request.user
+        qs = ActivityProgram.objects.annotate(
+            signatures_total=Count('signatures', distinct=True),
+            signatures_signed=Count('signatures', filter=Q(signatures__is_signed=True), distinct=True),
+        ).prefetch_related('items').order_by('-year', '-week')
         if user.is_staff or user.is_superuser:
-            return ActivityProgram.objects.all().order_by('-registration_date')
-        return ActivityProgram.objects.filter(assigned_rangers=user).order_by('-registration_date')
+            return qs
+        return qs.filter(pk__in=ActivityProgramSignature.objects.filter(ranger=user).values('program'))
 
 
 class ActivityProgramDetailView(LoginRequiredMixin, DetailView):
@@ -1224,11 +1319,14 @@ class ActivityProgramDetailView(LoginRequiredMixin, DetailView):
         user = self.request.user
         program = self.get_object()
 
-        # Signature status context
-        user_sig = ActivityProgramSignature.objects.filter(program=program, ranger=user).first()
-        context['user_sig'] = user_sig
-        context['can_sign'] = (user in program.assigned_rangers.all()) and (not user_sig or not user_sig.is_signed)
-        context['all_signatures'] = program.signatures.select_related('ranger').all()
+        # Signature status context: a user can have a personnel signature
+        # and, if an approver, an extra one for their role
+        user_sigs = program.signatures.filter(ranger=user)
+        context['user_sigs'] = user_sigs
+        context['pending_sigs'] = [sig for sig in user_sigs if not sig.is_signed]
+        context['can_sign'] = bool(context['pending_sigs'])
+        context['items'] = program.items.prefetch_related('rangers')
+        context['all_signatures'] = program.signatures.select_related('ranger').order_by('role', 'ranger__last_name')
         return context
 
 
@@ -1237,7 +1335,7 @@ class ActivityProgramUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateV
     Update view for Activity Program
     """
     model = ActivityProgram
-    form_class = BulkActivityProgramForm
+    form_class = ActivityProgramUpdateForm
     template_name = 'activities/activity_program_edit.html'
     success_url = reverse_lazy('activity_program_list')
 
@@ -1265,15 +1363,17 @@ class ActivityProgramDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteV
 class ActivityProgramSignView(LoginRequiredMixin, View):
     def post(self, request, pk):
         program = get_object_or_404(ActivityProgram, pk=pk)
+        role = request.POST.get('role', ActivityProgramSignature.Role.PERSONNEL.value)
 
-        if request.user not in program.assigned_rangers.all():
+        # Only the pending signatures created for the program can be signed
+        sig_record = ActivityProgramSignature.objects.filter(
+            program=program,
+            ranger=request.user,
+            role=role
+        ).first()
+        if sig_record is None:
             messages.error(request, "Nu aveți permisiunea de a semna acest program.")
             return redirect('activity_program_detail', pk=pk)
-
-        sig_record, _ = ActivityProgramSignature.objects.get_or_create(
-            program=program,
-            ranger=request.user
-        )
 
         signature_data = request.POST.get('signature_data', '')
         client_ip = request.META.get('REMOTE_ADDR')

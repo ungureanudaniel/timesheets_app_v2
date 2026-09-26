@@ -14,6 +14,47 @@ from timesheet.models import Timesheet
 import calendar
 from datetime import date
 
+import datetime
+
+
+def get_week_choices(year=None):
+    if year is None:
+        year = datetime.date.today().year
+
+    # Romanian month names 
+    ro_months = {
+        1: 'Ianuarie',
+        2: 'Februarie',
+        3: 'Martie',
+        4: 'Aprilie',
+        5: 'Mai',
+        6: 'Iunie',
+        7: 'Iulie',
+        8: 'August',
+        9: 'Septembrie',
+        10: 'Octombrie',
+        11: 'Noiembrie',
+        12: 'Decembrie',
+    }
+
+    choices = []
+    # Loop through weeks 1 to 52 (or 53)
+    for week in range(1, 53):
+        # Calculate start (Monday) and end (Sunday) dates for the given ISO week
+        first_day_of_year = datetime.date(year, 1, 4)  # Week 1 always contains Jan 4
+        start_of_week1 = first_day_of_year - datetime.timedelta(
+            days=first_day_of_year.weekday()
+        )
+        monday = start_of_week1 + datetime.timedelta(weeks=week - 1)
+        sunday = monday + datetime.timedelta(days=6)
+
+        start_str = f'{monday.day} {ro_months[monday.month]}'
+        end_str = f'{sunday.day} {ro_months[sunday.month]}'
+
+        label = f'Săptămâna {week} ({start_str} - {end_str})'
+        choices.append((week, label))
+
+    return choices
 
 def upload_activities(request):
     if request.method == 'POST' and request.FILES.get('excel_file'):

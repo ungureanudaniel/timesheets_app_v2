@@ -1,0 +1,71 @@
+{% extends 'general/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans 'Confirm Delete' %}{% endblock %}
+
+{% block content %}
+<div class="header">
+    <div class="container">
+        <h1>{% trans 'Delete Activity Program' %}</h1>
+        {% include 'includes/messages.html' %}
+    </div>
+</div>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">{% trans 'Are you sure?' %}</h4>
+                </div>
+                <div class="card-body">
+                    <p>{% trans 'You are about to delete the following activity program:' %}</p>
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item"><strong>{% trans 'Registration no.' %}:</strong> {{ activity_program.registration_nr }}</li>
+                        <li class="list-group-item"><strong>{% trans 'Registration date' %}:</strong> {{ activity_program.registration_date|date:"d M Y" }}</li>
+                        <li class="list-group-item"><strong>{% trans 'Week' %}:</strong> {{ activity_program.week }}/{{ activity_program.year }}</li>
+                        <li class="list-group-item">
+                            <strong>{% trans 'Activities' %}:</strong>
+                            <ul class="mb-0 mt-1">
+                                {% for item in activity_program.items.all %}
+                                <li>
+                                    {{ item.activity_code }} - {{ item.activity_title }}
+                                    <small class="text-muted">
+                                        ({% for ranger in item.rangers.all %}{{ ranger.get_full_name|default:ranger.username }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %})
+                                    </small>
+                                </li>
+                                {% empty %}
+                                <li>-</li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                        <li class="list-group-item"><strong>{% trans 'Director' %}:</strong> {{ activity_program.director.get_full_name|default:"-" }}</li>
+                        <li class="list-group-item"><strong>{% trans 'Chief ranger' %}:</strong> {{ activity_program.chief_ranger.get_full_name|default:"-" }}</li>
+                        <li class="list-group-item"><strong>{% trans 'Accountant' %}:</strong> {{ activity_program.accountant.get_full_name|default:"-" }}</li>
+                    </ul>
+
+                    {% with signed_count=activity_program.signatures.count %}
+                    {% if signed_count %}
+                        <div class="alert alert-warning">
+                            {% blocktrans count counter=signed_count %}This program has {{ counter }} signature record, which will also be deleted.{% plural %}This program has {{ counter }} signature records, which will also be deleted.{% endblocktrans %}
+                        </div>
+                    {% endif %}
+                    {% endwith %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash-alt"></i> {% trans 'Yes, Delete Permanently' %}
+                            </button>
+                            <a href="{% url 'activity_program_list' %}" class="btn btn-secondary">
+                                {% trans 'Cancel and Go Back' %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

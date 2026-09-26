@@ -3,6 +3,7 @@ from .models import ActivityProgram
 from timesheet.models import Activity, FundsSource
 import datetime
 from django.utils import timezone
+from .utils import get_week_choices
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import get_user_model
 from django.forms import formset_factory
@@ -30,43 +31,119 @@ class PALActivityForm(forms.ModelForm):
         }
 
 
-class BulkActivityProgramForm(forms.Form):
+class BulkActivityProgramForm(forms.ModelForm):
     ranger_id = forms.IntegerField(widget=forms.HiddenInput())
     ranger_name = forms.CharField(widget=forms.HiddenInput(), required=False)
-    
-    registration_nr = forms.IntegerField(widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm'}))
-    week = forms.IntegerField(widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm'}))
-    activity_code = forms.CharField(max_length=6, widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'}))
-    activity_title = forms.CharField(max_length=300, widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'}))
-
-BulkActivityProgramFormSet = formset_factory(BulkActivityProgramForm, extra=0)
-
-
-class ActivityProgramForm(forms.Form):
-    week = forms.IntegerField(label="Săptămâna", initial=1)
-    registration_nr = forms.CharField(
-        label="Nr. Înregistrare", required=False, max_length=50
+    model = ActivityProgram
+    registration_nr = forms.IntegerField(
+        required=False,
+        widget=forms.NumberInput(
+            attrs={'class': 'form-control form-control-sm'}
+        ),
     )
+    week = forms.ChoiceField(
+        choices=get_week_choices(),
+        widget=forms.NumberInput(
+            attrs={'class': 'form-control form-control-sm'}
+        )
+    )
+
     activity = forms.ModelChoiceField(
-        queryset=Activity.objects.all().order_by("code"),
-        label="Selectează Activitatea",
-        widget=forms.Select(attrs={"class": "form-select activity-select"}),
+        queryset=Activity.objects.all().order_by('code'),
+        required=True,
+        empty_label='-- Selectează Activitatea --',
+        widget=forms.Select(
+            attrs={
+                'class': 'form-select form-select-sm activity-select',
+                'onchange': 'autoFillTitle(this)',
+            }
+        ),
     )
+
     activity_title = forms.CharField(
-        label="Titlu / Descriere",
+        max_length=300,
+        required=False,
         widget=forms.TextInput(
-            attrs={"class": "form-control", "placeholder": "Descriere activitate"}
+            attrs={
+                'class': 'form-control form-control-sm activity-title-input',
+                'placeholder': 'Titlu activitate',
+            }
         ),
     )
-    assigned_rangers = forms.ModelMultipleChoiceField(
-        queryset=User.objects.filter(is_active=True).order_by(
-            "last_name", "first_name"
+
+
+BulkActivityProgramFormSet = forms.formset_factory(
+    BulkActivityProgramForm, extra=0
+)
+
+
+class ActivityProgramUpdateForm(forms.ModelForm):
+    week = forms.ChoiceField(
+        choices=get_week_choices(),
+        widget=forms.Select(
+            attrs={'class': 'form-select form-select-sm week-select'}
         ),
-        widget=forms.CheckboxSelectMultiple(
-            attrs={"class": "form-check-input"}
-        ),
-        label="Rangeri Alocați",
+        label="Săptămâna",
     )
+
+    activity = forms.ModelChoiceField(
+        queryset=Activity.objects.all().order_by('code'),
+        required=True,
+        empty_label='-- Selectează Activitatea --',
+        widget=forms.Select(
+            attrs={
+                'class': 'form-select form-select-sm activity-select',
+                'onchange': 'autoFillTitle(this)',
+            }
+        ),
+        label="Activitate",
+    )
+
+    class Meta:
+        model = ActivityProgram
+        fields = [
+            'registration_nr',
+            'week',
+            'assigned_rangers',
+        ]
+        widgets = {
+            'registration_nr': forms.TextInput(
+                attrs={'class': 'form-control form-control-sm'}
+            ),
+            # 'activity_title': forms.TextInput(
+            #     attrs={
+            #         'class': 'form-control form-control-sm activity-title-input',
+            #         'placeholder': 'Titlu activitate',
+            #     }
+            # ),
+            # 'assigned_rangers': forms.CheckboxSelectMultiple(
+            #     attrs={'class': 'form-check-input'}
+            # ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Pre-select the activity instance matching the current activity_code
+        if self.instance and self.instance.activity_code:
+            current_activity = Activity.objects.filter(
+                code=self.instance.activity_code
+            ).first()
+            if current_activity:
+                self.fields['activity'].initial = current_activity.pk
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        selected_activity = self.cleaned_data.get('activity')
+
+        if selected_activity:
+            instance.activity_code = selected_activity.code
+
+        if commit:
+            instance.save()
+            self.save_m2m()
+
+        return instance
 
 # class ActivityProgramForm(forms.ModelForm):
 #     """Form for creating and updating activity programs."""

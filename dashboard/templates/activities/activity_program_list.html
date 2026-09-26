@@ -53,12 +53,11 @@
                     <thead class="thead-dark">
                         <tr>
                             <th scope="col" width="5%">#</th>
-                            <th scope="col" width="15%">{% trans "User" %}</th>
-                            <th scope="col" width="12%">{% trans "Registration No." %}</th>
-                            <th scope="col" width="10%">{% trans "Week" %}</th>
-                            <th scope="col" width="12%">{% trans "Date" %}</th>
-                            <th scope="col" width="20%">{% trans "Activity Title" %}</th>
-                            <th scope="col" width="15%">{% trans "Status" %}</th>
+                            <th scope="col" width="10%">{% trans "Registration No." %}</th>
+                            <th scope="col" width="12%">{% trans "Week" %}</th>
+                            <th scope="col" width="10%">{% trans "Date" %}</th>
+                            <th scope="col" width="37%">{% trans "Activities" %}</th>
+                            <th scope="col" width="15%">{% trans "Signatures" %}</th>
                             <th scope="col" width="11%">{% trans "Actions" %}</th>
                         </tr>
                     </thead>
@@ -72,22 +71,25 @@
                                 <span class="badge bg-light text-dark font-monospace">{{ program.registration_nr }}</span>
                             </td>
                             <td>
-                                <span class="badge bg-info text-white">Week {{ program.week }}</span>
+                                <span class="badge bg-info text-white">{% trans "Week" %} {{ program.week }}/{{ program.year }}</span>
                             </td>
                             <td>
                                 <small class="text-muted">{{ program.registration_date|date:"M d, Y" }}</small>
                             </td>
                             <td>
-                                <div class="fw-bold text-truncate" style="max-width: 200px;" 
-                                     title="{{ program.activity_title }}">
-                                    {{ program.activity_title }}
+                                {% for item in program.items.all %}
+                                <div class="text-truncate" style="max-width: 400px;" title="{{ item.activity_code }} - {{ item.activity_title }}">
+                                    <span class="font-monospace">{{ item.activity_code }}</span> {{ item.activity_title }}
                                 </div>
+                                {% empty %}
+                                <span class="text-muted">-</span>
+                                {% endfor %}
                             </td>
                             <td>
-                                {% if program.is_active %}
-                                <span class="badge bg-success">{% trans "Active" %}</span>
+                                {% if program.signatures_total and program.signatures_signed == program.signatures_total %}
+                                <span class="badge bg-success">{% trans "Signed" %} {{ program.signatures_signed }}/{{ program.signatures_total }}</span>
                                 {% else %}
-                                <span class="badge bg-secondary">{% trans "Inactive" %}</span>
+                                <span class="badge bg-warning text-dark">{% trans "Pending" %} {{ program.signatures_signed }}/{{ program.signatures_total }}</span>
                                 {% endif %}
                             </td>
                             <td>
@@ -263,20 +265,17 @@ document.addEventListener('DOMContentLoaded', function() {
         let csvContent = "data:text/csv;charset=utf-8,";
         
         // Add headers
-        const headers = ["User", "Registration No.", "Week", "Date", "Activity Title"];
+        const headers = ["Registration No.", "Week", "Date", "Activities", "Signatures"];
         csvContent += headers.join(",") + "\r\n";
         
         // Add data
         rows.forEach(row => {
             if (row.style.display !== 'none') {
                 const cells = row.querySelectorAll('td');
-                const rowData = [
-                    cells[0].textContent.trim(),
-                    cells[1].textContent.trim(),
-                    cells[2].textContent.trim(),
-                    cells[3].textContent.trim(),
-                    cells[4].textContent.trim()
-                ];
+                // Activities cell holds several lines: flatten and quote every value
+                const rowData = Array.from(cells).slice(0, 5).map(cell =>
+                    '"' + cell.textContent.replace(/\s+/g, ' ').trim().replace(/"/g, '""') + '"'
+                );
                 csvContent += rowData.join(",") + "\r\n";
             }
         });
