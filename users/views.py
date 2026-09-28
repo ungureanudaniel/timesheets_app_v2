@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.views import LoginView, LogoutView, PasswordChangeView
 from django.views import generic
+from django.db.models import Count, Q
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -31,7 +32,7 @@ class UserListView(generic.ListView):
     template_name = "accounts/user_management.html"
 
     model = CustomUser
-    paginate_by = 10
+    paginate_by = 5
     context_object_name = "users"
 
     def test_func(self):
@@ -40,15 +41,38 @@ class UserListView(generic.ListView):
 
     def get_queryset(self):
         queryset = CustomUser.objects.all().order_by('-date_joined')
-        
         # Managers can only see reporters and other managers (not admins)
         if self.request.user.is_manager and not self.request.user.is_admin:
             queryset = queryset.exclude(role='ADMIN')
-            
+
+        is_approved = self.request.GET.get('is_approved')
+        if is_approved == '1':
+            queryset = queryset.filter(is_active=True)
+        elif is_approved == '0':
+            queryset = queryset.filter(is_active=False)
+
+        is_active = self.request.GET.get('is_active')
+        if is_active == '1':
+            queryset = queryset.filter(is_active=True)
+        elif is_active == '0':
+            queryset = queryset.filter(is_active=False)
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        base_qs = CustomUser.objects.all()
+        if self.request.user.is_manager and not self.request.user.is_admin:
+            base_qs = base_qs.exclude(role='ADMIN')
+
+        context['role_counts'] = base_qs.aggregate(
+            admin_count=Count('id', filter=Q(role='ADMIN')),
+            manager_count=Count('id', filter=Q(role='MANAGER')),
+            reporter_count=Count('id', filter=Q(role='REPORTER'))
+        )
+        context['current_is_active'] = self.request.GET.get('is_active', '')
+        context['current_is_approved'] = self.request.GET.get('is_approved', '')
+
         context['roles'] = CustomUser.Role.choices if hasattr(CustomUser, 'Role') else [
             ('ADMIN', 'Admin'),
             ('MANAGER', 'Manager'), 

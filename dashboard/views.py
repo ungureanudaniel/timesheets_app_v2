@@ -223,12 +223,12 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
         context['month_days'] = month_days_list
 
         if request.user.is_staff or request.user.groups.filter(name='Managers').exists():
-            employees = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+            employees = User.objects.filter(is_approved=True).order_by('first_name', 'last_name')
         else:
             # Non-manager users may view only their own timesheet summary.
             # Keep this as a queryset because it is prefetched below.
             employees = User.objects.filter(
-                is_active=True,
+                is_approved=True,
                 pk=request.user.pk,
             ).order_by('first_name', 'last_name')
 
@@ -1076,7 +1076,7 @@ def get_total_hours_qs(queryset):
 
 def worked_hours_per_member(request):
     today = timezone.now()
-    team_members = CustomUser.objects.filter(is_active=True)
+    team_members = CustomUser.objects.filter(is_approved=True, is_active=True)
     data = []
 
     for member in team_members:
@@ -1175,7 +1175,7 @@ class BulkActivityProgramCreateView(LoginRequiredMixin, UserPassesTestMixin, Vie
         return None
 
     def get_context(self, selected=None, cards=None):
-        active_users = User.objects.filter(is_active=True).order_by("last_name", "first_name")
+        active_users = User.objects.filter(is_approved=True, is_active=True).order_by("last_name", "first_name")
         if selected is None:
             # Default the approvers from the users' job titles,
             # falling back to the ones used on the previous program

@@ -20,7 +20,7 @@
             <div class="card bg-danger text-white">
                 <div class="card-body text-center">
                     <h5 class="card-title">{% trans 'Admins' %}</h5>
-                    <h2>{{ users|filter_by_role:"ADMIN"|length }}</h2>
+                    <h2>{{ role_counts.admin_count }}</h2>
                 </div>
             </div>
         </div>
@@ -28,7 +28,7 @@
             <div class="card bg-warning text-white">
                 <div class="card-body text-center">
                     <h5 class="card-title">{% trans 'Managers' %}</h5>
-                    <h2>{{ users|filter_by_role:"MANAGER"|length }}</h2>
+                    <h2>{{ role_counts.manager_count }}</h2>
                 </div>
             </div>
         </div>
@@ -36,7 +36,7 @@
             <div class="card bg-info text-white">
                 <div class="card-body text-center">
                     <h5 class="card-title">{% trans 'Reporters' %}</h5>
-                    <h2>{{ users|filter_by_role:"REPORTER"|length }}</h2>
+                    <h2>{{ role_counts.reporter_count }}</h2>
                 </div>
             </div>
         </div>
