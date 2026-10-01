@@ -36,7 +36,12 @@ class ActivityProgram(models.Model):
     accountant = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
     )
-
+    biologist = models.ForeignKey(
+            settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+        )
+    education = models.ForeignKey(
+            settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+        )
     # All personnel who must sign the program (every active user when it is created)
     assigned_rangers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -57,6 +62,9 @@ class ActivityProgram(models.Model):
             ActivityProgramSignature.Role.DIRECTOR: self.director,
             ActivityProgramSignature.Role.CHIEF_RANGER: self.chief_ranger,
             ActivityProgramSignature.Role.ACCOUNTANT: self.accountant,
+            ActivityProgramSignature.Role.BIOLOGIST: self.biologist,
+            ActivityProgramSignature.Role.EDUCATION: self.education,
+
         }
         for role, user in approvers.items():
             if user:
@@ -97,6 +105,8 @@ class ActivityProgramSignature(models.Model):
         DIRECTOR = 'DIRECTOR', 'Director'
         CHIEF_RANGER = 'CHIEF_RANGER', 'Șef pază'
         ACCOUNTANT = 'ACCOUNTANT', 'Contabil'
+        BIOLOGIST = 'BIOLOGIST', 'BIOLOG'
+        EDUCATION = 'EDUCATION', 'EDUCAȚIE'
 
     program = models.ForeignKey(
         ActivityProgram, 

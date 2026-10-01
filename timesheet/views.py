@@ -307,7 +307,13 @@ class UpdateTimesheetView(LoginRequiredMixin, generic.UpdateView):
     template_name = 'timesheet/update_timesheets.html'
     
     def get_queryset(self):
-        return Timesheet.objects.filter(user=self.request.user)
+        user = self.request.user
+        # Allow staff, superusers, or managers to edit any timesheet
+        if user.is_staff or user.is_superuser:
+            return Timesheet.objects.all()
+
+        # Regular rangers can only edit their own
+        return Timesheet.objects.filter(user=user)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

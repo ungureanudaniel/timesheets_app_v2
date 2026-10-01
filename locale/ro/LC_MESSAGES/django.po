@@ -1047,3 +1047,127 @@ msgid_plural "This program has %(counter)s signature records, which will also be
 msgstr[0] "Acest program are %(counter)s semnătură înregistrată, care va fi ștearsă și ea."
 msgstr[1] "Acest program are %(counter)s semnături înregistrate, care vor fi șterse și ele."
 msgstr[2] "Acest program are %(counter)s de semnături înregistrate, care vor fi șterse și ele."
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Activity Program"
+msgstr "Program de activitate"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Back to Activity Programs"
+msgstr "Înapoi la programe de activitate"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Print / Export PDF"
+msgstr "Tipărește / Exportă PDF"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "WEEK"
+msgstr "SĂPTĂMÂNA"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Bucegi Natural Park Administration"
+msgstr "Administrația Parcului Natural Bucegi"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Weekly Activity Program"
+msgstr "Program săptămânal de lucru"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Created"
+msgstr "Creat la"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Created By"
+msgstr "Elaborat de"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Chief Ranger"
+msgstr "Șef Pază"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Park Director"
+msgstr "Director Parc"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Accountant"
+msgstr "Contabil"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Unassigned"
+msgstr "Neatribuit"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Scheduled Field & Administrative Tasks"
+msgstr "Programul activităților de teren și administrative"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Activities Logged"
+msgstr "Activități înregistrate"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Day"
+msgstr "Ziua"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Code & Activity"
+msgstr "Cod & Activitate"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Description & Operational Objectives"
+msgstr "Descriere & Obiective operaționale"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Assigned Personnel"
+msgstr "Personal desemnat"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Location / Sector"
+msgstr "Locație / Sector"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "No additional operational details provided."
+msgstr "Nu au fost furnizate detalii operaționale suplimentare."
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "General Staff / Unassigned"
+msgstr "Personal general / Neatribuit"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Park Territory"
+msgstr "Teritoriul Parcului"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "No activities have been recorded for this program week."
+msgstr "Nu au fost înregistrate activități pentru această săptămână din program."
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Official Validation & Signatures"
+msgstr "Validare oficială și semnături"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Chief Ranger Verification"
+msgstr "Verificare Șef Pază"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Pending Assignment"
+msgstr "Atribuire în așteptare"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Signed Electronically"
+msgstr "Semnat electronic"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Awaiting Signature"
+msgstr "În așteptarea semnăturii"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Park Director Approval"
+msgstr "Aprobare Director Parc"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Approved & Signed"
+msgstr "Aprobat și semnat"
+
+#: dashboard/templates/activities/activity_program_detail.html
+msgid "Awaiting Approval"
+msgstr "În așteptarea aprobării"

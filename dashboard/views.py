@@ -17,19 +17,18 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from django.core.mail import send_mail
-from django.db.models import Count, Prefetch, Sum, F, ExpressionWrapper, fields, FloatField, Q, Max
+from django.db.models import Count, Prefetch, Sum, F, ExpressionWrapper, FloatField, Q, Max
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView, DeleteView
-
+from django.template.loader import get_template
 from django.conf import settings
 from .forms import PALActivitiesUploadForm, FundsSourceForm, PALActivityForm, ActivityProgramUpdateForm
-from .forms import BulkActivityProgramForm
-from .models import ActivityProgram, ActivityProgramSignature
+from .models import ActivityProgram, ActivityProgramSignature, ActivityProgramItem
 from .utils import format_minutes, generate_statutory_pdf_context, get_week_choices
 from timesheet.models import Activity, FundsSource, Timesheet
 from users.models import CustomUser
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import A4, landscape, portrait
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
@@ -1342,8 +1341,537 @@ class ActivityProgramUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateV
     template_name = 'activities/activity_program_edit.html'
     success_url = reverse_lazy('activity_program_list')
 
+    code_field_re = re.compile(r'^activity_(\d+)_code$')
+    approver_fields = ('director', 'chief_ranger', 'accountant')
+    # Non-reporter personnel (office, management) are always assigned to the PAL activity
+    pal_code = 'PAL'
+    pal_title = 'Activități conform PAL'
+    # Keyword (case-insensitive) that the Job title field must contain for a user to be assignable to activities
+    ranger_job_title = 'ranger'
+
     def test_func(self):
         return self.request.user.is_staff or self.request.user.is_superuser
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(ActivityProgram, pk=self.kwargs['pk'])
+
+    def get_program_cards(self, program):
+        """Rebuild the editable activity cards from the program's items (excluding the auto PAL item)."""
+        cards = []
+        for item in program.items.all():
+            if item.activity_code.upper() == self.pal_code.upper():
+                continue
+            cards.append({
+                'code': item.activity_code,
+                'title': item.activity_title,
+                'ranger_ids': [str(r.pk) for r in item.rangers.all()],
+            })
+        if not cards:
+            cards = [{'code': '', 'title': '', 'ranger_ids': []}]
+        return cards
+
+    def build_context(self, program, selected=None, cards=None):
+        active_users = User.objects.filter(is_approved=True, is_active=True).order_by("last_name", "first_name")
+        if selected is None:
+            selected = {
+                'week': str(program.week),
+                'director': str(program.director_id or ''),
+                'chief_ranger': str(program.chief_ranger_id or ''),
+                'accountant': str(program.accountant_id or ''),
+            }
+        return {
+            'object': program,
+            'active_users': active_users,
+            # Only users whose Job title contains "ranger" can be assigned to activities
+            'reporters': active_users.filter(job_title__icontains=self.ranger_job_title),
+            'pal_personnel': active_users.exclude(job_title__icontains=self.ranger_job_title),
+            'pal_code': self.pal_code,
+            'pal_title': self.pal_title,
+            'activities': natsorted(Activity.objects.all(), key=lambda a: a.code),
+            'week_choices': [(str(w), label) for w, label in get_week_choices()],
+            'selected': selected,
+            'cards': cards if cards is not None else self.get_program_cards(program),
+        }
+
+    def get(self, request, *args, **kwargs):
+        program = self.get_object()
+        return render(request, self.template_name, self.build_context(program))
+
+    def post(self, request, *args, **kwargs):
+        program = self.get_object()
+        year = program.year
+        week = request.POST.get('week', '')
+        selected = {'week': week}
+        for field in self.approver_fields:
+            selected[field] = request.POST.get(field, '')
+
+        indexes = sorted(
+            int(m.group(1))
+            for m in map(self.code_field_re.match, request.POST.keys())
+            if m
+        )
+        cards = [
+            {
+                'code': request.POST.get(f'activity_{i}_code', ''),
+                'title': request.POST.get(f'activity_{i}_title', '').strip(),
+                'ranger_ids': request.POST.getlist(f'activity_{i}_rangers'),
+            }
+            for i in indexes
+        ]
+
+        errors = []
+        valid_weeks = {w for w, _ in get_week_choices()}
+        if not week.isdigit() or int(week) not in valid_weeks:
+            errors.append("Selectează o săptămână validă.")
+        elif int(week) != program.week and ActivityProgram.objects.filter(year=year, week=int(week)).exists():
+            errors.append(
+                f"Există deja un program pentru săptămâna {week}/{year}. "
+                "Modifică programul existent sau alege altă săptămână."
+            )
+
+        active_users = {str(u.pk): u for u in User.objects.filter(is_active=True)}
+        reporters = {pk: u for pk, u in active_users.items() if self.ranger_job_title in (getattr(u, 'job_title', '') or '').lower()}
+        labels = {'director': 'directorul', 'chief_ranger': 'șeful pazei', 'accountant': 'contabilul șef'}
+        approvers = {}
+        for field in self.approver_fields:
+            approvers[field] = active_users.get(selected[field])
+            if approvers[field] is None:
+                errors.append(f"Selectează {labels[field]}.")
+
+        activities = {a.code: a for a in Activity.objects.all()}
+        if not cards:
+            errors.append("Adaugă cel puțin o activitate.")
+        for position, card in enumerate(cards, start=1):
+            if card['code'] not in activities:
+                errors.append(f"Activitatea #{position}: selectează codul activității.")
+            if not any(r in reporters for r in card['ranger_ids']):
+                errors.append(f"Activitatea #{position}: selectează cel puțin un ranger.")
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return render(request, self.template_name, self.build_context(program, selected, cards))
+
+        with transaction.atomic():
+            program.week = int(week)
+            program.director = approvers['director']
+            program.chief_ranger = approvers['chief_ranger']
+            program.accountant = approvers['accountant']
+            program.save()
+
+            # Rebuild the activity items from the submitted cards
+            ActivityProgramItem.objects.filter(program=program).delete()
+            for card in cards:
+                activity_obj = activities[card['code']]
+                item = ActivityProgramItem.objects.create(
+                    program=program,
+                    activity_code=activity_obj.code,
+                    activity_title=card['title'] or activity_obj.name,
+                )
+                item.rangers.set([reporters[r] for r in card['ranger_ids'] if r in reporters])
+
+            # Recreate the automatic PAL item for non-reporter personnel
+            pal_personnel = [u for pk, u in active_users.items() if pk not in reporters]
+            if pal_personnel:
+                pal_item = ActivityProgramItem.objects.create(
+                    program=program,
+                    activity_code=self.pal_code,
+                    activity_title=self.pal_title,
+                )
+                pal_item.rangers.set(pal_personnel)
+
+            program.assigned_rangers.set(active_users.values())
+            program.create_approver_signatures()
+
+        messages.success(
+            request,
+            f"Programul pentru săptămâna {week}/{year} a fost actualizat cu {len(cards)} activități.",
+        )
+        return redirect('activity_program_list')
+
+
+class ActivityProgramExportView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """Export view for Activity Program generated using ReportLab (Portrait A4)."""
+
+    def test_func(self):
+        return self.request.user.is_authenticated
+
+    def get(self, request, pk, *args, **kwargs):
+        program = get_object_or_404(ActivityProgram, pk=pk)
+
+        # Fetch items and prefetch rangers
+        items = (
+            ActivityProgramItem.objects.filter(program=program)
+            .prefetch_related('rangers')
+            .order_by('activity_code')
+        )
+
+        # Identify all distinct staff members assigned
+        staff_members = set()
+        for ranger in program.assigned_rangers.all():
+            staff_members.add(ranger)
+
+        # Days mapping (Luni - Duminica)
+        days_map = [
+            ('Luni', 1),
+            ('Marti', 2),
+            ('Miercuri', 3),
+            ('Joi', 4),
+            ('Vineri', 5),
+            ('Sambata', 6),
+            ('Duminica', 7),
+        ]
+
+        # 1. Setup Document Buffer (A4 Portrait)
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=portrait(A4),
+            leftMargin=20,
+            rightMargin=20,
+            topMargin=20,
+            bottomMargin=20,
+        )
+
+        elements = []
+
+        # 2. Setup Styles
+        styles = getSampleStyleSheet()
+
+        header_title_style = ParagraphStyle(
+            'HeaderTitle',
+            parent=styles['Heading1'],
+            fontSize=10,
+            leading=12,
+            fontName='Helvetica-Bold',
+            textColor=colors.HexColor('#0f172a'),
+        )
+
+        header_subtitle_style = ParagraphStyle(
+            'HeaderSubtitle',
+            parent=styles['Normal'],
+            fontSize=8,
+            leading=10,
+            textColor=colors.HexColor('#475569'),
+        )
+
+        director_title_style = ParagraphStyle(
+            'DirectorTitle',
+            parent=styles['Normal'],
+            fontSize=8,
+            leading=10,
+            alignment=1,  # Center
+            fontName='Helvetica-Bold',
+            textColor=colors.HexColor('#000000'),
+        )
+
+        director_name_style = ParagraphStyle(
+            'DirectorName',
+            parent=styles['Normal'],
+            fontSize=8,
+            leading=10,
+            alignment=1,  # Center
+            textColor=colors.HexColor('#1e293b'),
+        )
+
+        table_header_style = ParagraphStyle(
+            'TableHeader',
+            parent=styles['Normal'],
+            fontSize=7.5,
+            leading=9,
+            alignment=1,
+            fontName='Helvetica-Bold',
+            textColor=colors.HexColor('#1e293b'),
+        )
+
+        body_cell_style = ParagraphStyle(
+            'BodyCell',
+            parent=styles['Normal'],
+            fontSize=7,
+            leading=8.5,
+            textColor=colors.HexColor('#1e293b'),
+        )
+
+        name_cell_style = ParagraphStyle(
+            'NameCell',
+            parent=styles['Normal'],
+            fontSize=7.5,
+            leading=9,
+            alignment=1,
+            fontName='Helvetica-Bold',
+            textColor=colors.HexColor('#0f172a'),
+        )
+
+        day_cell_style = ParagraphStyle(
+            'DayCell',
+            parent=styles['Normal'],
+            fontSize=7,
+            leading=8.5,
+            alignment=1,
+            fontName='Helvetica-Bold',
+            textColor=colors.HexColor('#334155'),
+        )
+
+        sig_title_style = ParagraphStyle(
+            'SigTitle',
+            parent=styles['Normal'],
+            fontSize=7.5,
+            leading=9,
+            fontName='Helvetica-Bold',
+            alignment=1,
+            textColor=colors.HexColor('#0f172a'),
+        )
+
+        sig_name_style = ParagraphStyle(
+            'SigName',
+            parent=styles['Normal'],
+            fontSize=7,
+            leading=8.5,
+            alignment=1,
+            textColor=colors.HexColor('#334155'),
+        )
+
+        rules_style = ParagraphStyle(
+            'RulesText',
+            parent=styles['Normal'],
+            fontSize=6.5,
+            leading=8,
+            textColor=colors.HexColor('#334155'),
+        )
+
+        # 3. Build Top Header Block (Org Info + Director Approval Box)
+        director_name = (
+            program.director.get_full_name()
+            if hasattr(program, 'director') and program.director
+            else '__________________'
+        )
+
+        header_left = [
+            Paragraph(
+                '<b>ADMINISTRATIA PARCULUI NATURAL BUCEGI</b>', header_title_style
+            ),
+            Spacer(1, 2),
+            Paragraph(
+                f'Nr. {getattr(program, "registration_number", "____/NIC/____")}',
+                header_subtitle_style,
+            ),
+            Spacer(1, 4),
+            Paragraph(
+                f'<b>PROGRAM SAPTAMANA {program.week} ({program.year})</b>',
+                header_title_style,
+            ),
+        ]
+
+        header_right = [
+            Paragraph('Se aproba,', director_title_style),
+            Paragraph('<b>DIRECTOR</b>', director_title_style),
+            Spacer(1, 2),
+            Paragraph(director_name, director_name_style),
+            Spacer(1, 4),
+            Paragraph('Semnatura: ____________', director_title_style),
+        ]
+
+        header_table = Table([[header_left, header_right]], colWidths=[355, 200])
+        header_table.setStyle(
+            TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+                (
+                    'BOX',
+                    (1, 0),
+                    (1, 0),
+                    1,
+                    colors.HexColor('#0f172a'),
+                ),  # Border around Director box
+                ('BACKGROUND', (1, 0), (1, 0), colors.HexColor('#f8fafc')),
+                ('TOPPADDING', (1, 0), (1, 0), 6),
+                ('BOTTOMPADDING', (1, 0), (1, 0), 6),
+                ('LEFTPADDING', (1, 0), (1, 0), 6),
+                ('RIGHTPADDING', (1, 0), (1, 0), 6),
+            ])
+        )
+
+        elements.append(header_table)
+        elements.append(Spacer(1, 10))
+
+        # 4. Construct Schedule Table Matrix
+        table_data = [[
+            Paragraph('<b>Nr.<br/>crt.</b>', table_header_style),
+            Paragraph('<b>NUME SI PRENUME</b>', table_header_style),
+            Paragraph('<b>ZIUA</b>', table_header_style),
+            Paragraph('<b>PROGRAM SAPTAMANAL</b>', table_header_style),
+            Paragraph(
+                '<b>SEMNATURA<br/><font size=5.5>(LUAT LA'
+                ' CUNOSTINTA)</font></b>',
+                table_header_style,
+            ),
+        ]]
+
+        table_styles = [
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#475569')),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f1f5f9')),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+            ('LEFTPADDING', (0, 0), (-1, -1), 3),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+        ]
+
+        current_row = 1
+        for idx, member in enumerate(sorted(staff_members, key=lambda m: m.id), 1):
+            user_fullname = (member.get_full_name().upper() if member.get_full_name() else member.username.upper())
+            start_person_row = current_row
+
+        for day_label, day_code in days_map:
+            day_acts = []
+            for item in items:
+                item_rangers = item.rangers.all()
+                # Check if ranger is explicitly tagged on the item OR if no specific rangers are assigned to the item
+                if member in item_rangers or not item_rangers.exists():
+                    item_day = getattr(item, 'day', getattr(item, 'day_of_week', None))
+                    if item_day is None or item_day == day_code:
+                        act_str = f'<b>{item.activity_code}</b> - {item.activity_title}'
+                        day_acts.append(Paragraph(act_str, body_cell_style))
+
+            acts_content = (
+                day_acts if day_acts else Paragraph('-', body_cell_style)
+            )
+
+            row = [
+                Paragraph(str(person_index), body_cell_style),
+                Paragraph(user_fullname, name_cell_style),
+                Paragraph(day_label, day_cell_style),
+                acts_content,
+                Paragraph('Semnătura: _________', sig_name_style),
+            ]
+            table_data.append(row)
+            current_row += 1
+
+        end_person_row = current_row - 1
+
+        # Span Person Name, Index, and Signature across the 7 days of the week
+        table_styles.extend([
+            ('SPAN', (0, start_person_row), (0, end_person_row)),
+            ('SPAN', (1, start_person_row), (1, end_person_row)),
+            ('SPAN', (4, start_person_row), (4, end_person_row)),
+            ('VALIGN', (0, start_person_row), (1, end_person_row), 'MIDDLE'),
+            ('VALIGN', (4, start_person_row), (4, end_person_row), 'MIDDLE'),
+            (
+                'BACKGROUND',
+                (1, start_person_row),
+                (1, end_person_row),
+                colors.HexColor('#f8fafc'),
+            ),
+        ])
+
+        # Column widths totaling ~555pt (A4 printable width)
+        schedule_table = Table(
+            table_data, colWidths=[20, 110, 50, 255, 120], repeatRows=1
+        )
+        schedule_table.setStyle(TableStyle(table_styles))
+        elements.append(schedule_table)
+
+        elements.append(Spacer(1, 8))
+
+        # 5. Operational Instructions Box
+        rules_text = Paragraph(
+            '<b>ATENTIE! CERINTE OBLIGATORII:</b><br/>'
+            '• In cazul activitatilor neprevazute, puteti grupa 2 sau 3 activitati'
+            ' intr-o singura zi.<br/>'
+            '• RAPORTUL ZILNIC ESTE OBLIGATORIU si va fi insotit de fotografii'
+            ' realizate cu aplicatia GPS Map Camera (coordonate GPS, data si'
+            ' ora).<br/>'
+            '• Semnatura electronica/olografa aplicata dovedeste data intocmirii si'
+            ' luarii la cunostinta.',
+            rules_style,
+        )
+        rules_table = Table([[rules_text]], colWidths=[555])
+        rules_table.setStyle(
+            TableStyle([
+                ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fffde7')),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                ('LEFTPADDING', (0, 0), (-1, -1), 6),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+            ])
+        )
+        elements.append(rules_table)
+
+        elements.append(Spacer(1, 12))
+
+        # 6. Bottom Multi-Signature Grid
+        sig_data = [
+            [
+                Paragraph('<b>Sef Paza</b>', sig_title_style),
+                Paragraph('<b>Resp. Conscientizare</b>', sig_title_style),
+                Paragraph('<b>Biolog / Conservare</b>', sig_title_style),
+            ],
+            [
+                Paragraph(
+                    getattr(
+                        getattr(program, 'chief_ranger', None),
+                        'get_full_name',
+                        lambda: '________________',
+                    )(),
+                    sig_name_style,
+                ),
+                Paragraph(
+                    getattr(
+                        getattr(program, 'awareness_officer', None),
+                        'get_full_name',
+                        lambda: '________________',
+                    )(),
+                    sig_name_style,
+                ),
+                Paragraph(
+                    getattr(
+                        getattr(program, 'biologist', None),
+                        'get_full_name',
+                        lambda: '________________',
+                    )(),
+                    sig_name_style,
+                ),
+                Paragraph(
+                    getattr(
+                        getattr(program, 'created_by', None),
+                        'get_full_name',
+                        lambda: '________________',
+                    )(),
+                    sig_name_style,
+                ),
+            ],
+            [
+                Paragraph('Semnatura: ________', sig_name_style),
+                Paragraph('Semnatura: ________', sig_name_style),
+                Paragraph('Semnatura: ________', sig_name_style),
+                Paragraph('Semnatura: ________', sig_name_style),
+            ],
+        ]
+
+        sig_table = Table(sig_data, colWidths=[138, 139, 139, 139])
+        sig_table.setStyle(
+            TableStyle([
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#94a3b8')),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f1f5f9')),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ])
+        )
+
+        elements.append(sig_table)
+
+        # 7. Render PDF Document
+        doc.build(elements)
+        buffer.seek(0)
+
+        filename = f'Program_Activitate_Saptamana_{program.week}_{program.year}.pdf'
+        response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
 
 
 class ActivityProgramDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):

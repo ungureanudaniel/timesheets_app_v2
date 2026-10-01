@@ -1,0 +1,223 @@
+{% extends 'general/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Activity Program" %} — W{{ program.week }}/{{ program.year }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <!-- Action Header Bar -->
+  <div class="d-flex justify-content-between align-items-center mb-4 d-print-none flex-wrap gap-2">
+    <a href="{% url 'activity_program_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+      <i class="fas fa-arrow-left me-1"></i> {% trans "Back to Activity Programs" %}
+    </a>
+    
+    <div class="d-flex gap-2">
+      <button onclick="window.print();" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+        <i class="fas fa-print me-1"></i> {% trans "Print / Export PDF" %}
+      </button>
+      
+      {% if request.user.is_admin or request.user.is_manager %}
+      <a href="{% url 'activity_program_edit' program.pk %}" class="btn btn-primary btn-sm rounded-pill px-3">
+        <i class="fas fa-edit me-1"></i> {% trans "Edit Program" %}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Main Program Document -->
+  <div class="card timesheet-card p-0 overflow-hidden">
+    
+    <!-- Hero Banner Header using primary theme variables -->
+    <div class="header p-4 p-md-5 text-start text-white">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge bg-white text-dark rounded-pill px-3 py-1 font-monospace fw-bold">
+              {% trans "WEEK" %} {{ program.week }} • {{ program.year }}
+            </span>
+            <span class="text-white-50">|</span>
+            <small class="text-white-50">
+              <img src="{% static 'img/icons/romsilva_logo.png' %}" 
+                 alt="RNP Romsilva Logo" 
+                 width="50" 
+                 height="50" 
+                 class="d-inline-block align-top me-2">
+              <img src="{% static 'img/icons/bucegi_logo.png' %}" 
+                 alt="Bucegi Natural Park Logo" 
+                 width="55" 
+                 height="50" 
+                 class="d-inline-block align-top me-2">{% trans "Bucegi Natural Park Administration" %}
+            </small>
+          </div>
+          <h2 class="fw-bold text-white mb-1">
+            {% trans "Weekly Activity Program" %}
+          </h2>
+          
+        </div>
+        
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+          <span class="badge fs-6 px-3 py-2 rounded-pill {% if program.is_fully_signed %}bg-success text-white{% else %}bg-warning text-dark{% endif %}">
+            <i class="fas {% if program.is_fully_signed %}fa-check-circle{% else %}fa-clock{% endif %} me-1"></i>
+            {% if program.is_fully_signed %}
+              Semnat complet
+            {% else %}
+              Semnături în așteptare
+            {% endif %}
+          </span>
+          <div class="mt-2 text-white-50 small">
+            {% trans "Created" %}: {{ program.created_at|date:"M d, Y"|default:"N/A" }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body p-4 p-md-5">
+      
+      <!-- Key Metadata Panel -->
+      <div class="row g-3 p-3 mb-4 rounded-3 filter-panel border">
+        <div class="col-6 col-md-3">
+          <span class="text-muted small d-block mb-1"><i class="fas fa-user-tie me-1" style="color: var(--primary-color);"></i>{% trans "Director parc" %}</span>
+          <strong class="text-dark">{{ program.director.get_full_name|default:_("Unassigned") }}</strong>
+        </div>
+        <div class="col-6 col-md-3">
+          <span class="text-muted small d-block mb-1"><i class="fas fa-calculator me-1" style="color: var(--primary-color);"></i>{% trans "Contabil Șef" %}</span>
+          <strong class="text-dark">{{ program.accountant.get_full_name|default:_("Unassigned") }}</strong>
+        </div>
+        <div class="col-6 col-md-3">
+          <span class="text-muted small d-block mb-1"><i class="fas fa-seedling me-1" style="color: var(--primary-color);"></i>{% trans "Biolog" %}</span>
+          <strong class="text-dark">{{ program.biologist.get_full_name|default:_("Unassigned") }}</strong>
+        </div>
+        <div class="col-6 col-md-3">
+          <span class="text-muted small d-block mb-1"><i class="fas fa-chalkboard-teacher me-1" style="color: var(--primary-color);"></i>{% trans "Responsabil relația cu comunitățile și educație ecologică" %}</span>
+          <strong class="text-dark">{{ program.education.get_full_name|default:_("Unassigned") }}</strong>
+        </div>
+        <div class="col-6 col-md-3">
+          <span class="text-muted small d-block mb-1"><i class="fas fa-user-shield me-1" style="color: var(--primary-color);"></i>{% trans "Șef Pază" %}</span>
+          <strong class="text-dark">{{ program.chief_ranger.get_full_name|default:_("Unassigned") }}</strong>
+        </div>
+      </div>
+
+      <!-- Schedule Content Table -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold text-dark mb-0">
+          <i class="fas fa-calendar-alt me-2" style="color: var(--primary-color);"></i>{% trans "Scheduled Field & Administrative Tasks" %}
+        </h5>
+        <span class="badge bg-light text-dark border font-monospace">
+          {{ program_items|length }} {% trans "Activities Logged" %}
+        </span>
+      </div>
+
+      <div class="table-responsive mb-5">
+        <table class="table table-hover align-middle border">
+          <thead class="summary-header">
+            <tr>
+              <th scope="col" style="width: 12%;">{% trans "Day" %}</th>
+              <th scope="col" style="width: 18%;">{% trans "Code & Activity" %}</th>
+              <th scope="col">{% trans "Description & Operational Objectives" %}</th>
+              <th scope="col" style="width: 20%;">{% trans "Assigned Personnel" %}</th>
+              <th scope="col" style="width: 15%;">{% trans "Location / Sector" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in program_items %}
+            <tr>
+              <td class="fw-bold" style="color: var(--primary-color);">
+                {{ item.get_day_of_week_display|default:item.day_of_week }}
+              </td>
+              <td>
+                <span class="badge bg-dark font-monospace mb-1">{{ item.activity_code }}</span><br>
+                <span class="fw-semibold text-dark">{{ item.activity_title }}</span>
+              </td>
+              <td class="text-secondary small">
+                {{ item.description|default:_("No additional operational details provided.")|linebreaksbr }}
+              </td>
+              <td>
+                {% if item.assigned_rangers.all %}
+                  <div class="d-flex flex-column gap-1">
+                    {% for ranger in item.assigned_rangers.all %}
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="badge rounded-circle bg-secondary text-white p-1" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">
+                        {{ ranger.first_name|slice:":1"|upper }}{{ ranger.last_name|slice:":1"|upper }}
+                      </div>
+                      <span class="small text-dark">{{ ranger.get_full_name|default:ranger.username }}</span>
+                    </div>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <span class="text-muted small italic">{% trans "General Staff / Unassigned" %}</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge bg-light text-dark border">
+                  <i class="fas fa-map-marker-alt text-danger me-1"></i>{{ item.location|default:_("Park Territory") }}
+                </span>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-5">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3 d-block"></i>
+                <h6 class="text-muted fw-normal">{% trans "No activities have been recorded for this program week." %}</h6>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Formal Authorization & Signatures Block -->
+      <div class="mt-5 pt-3 border-top">
+        <h6 class="fw-bold text-dark text-uppercase small tracking-wide mb-4 text-center">
+          {% trans "Official Validation & Signatures" %}
+        </h6>
+        
+        <div class="row g-4 text-center">
+          <!-- Chief Ranger Signature -->
+          <div class="col-md-6">
+            <div class="p-4 rounded-3 border bg-light">
+              <small class="text-muted text-uppercase fw-bold d-block mb-1">{% trans "Chief Ranger Verification" %}</small>
+              <p class="fw-bold text-dark mb-2">{{ program.chief_ranger.get_full_name|default:_("Pending Assignment") }}</p>
+              
+              {% if program.chief_ranger_signature %}
+                <div class="badge bg-success text-white px-3 py-2 rounded-pill">
+                  <i class="fas fa-signature me-1"></i> {% trans "Signed Electronically" %}
+                </div>
+                <div class="small text-muted mt-2 font-monospace" style="font-size: 0.7rem;">
+                  {% trans "Date" %}: {{ program.chief_ranger_signature_date|date:"Y-m-d H:i"|default:_("Recorded") }}
+                </div>
+              {% else %}
+                <div class="badge bg-secondary text-white px-3 py-2 rounded-pill">
+                  <i class="fas fa-hourglass-half me-1"></i> {% trans "Awaiting Signature" %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Director Approval Signature -->
+          <div class="col-md-6">
+            <div class="p-4 rounded-3 border bg-light">
+              <small class="text-muted text-uppercase fw-bold d-block mb-1">{% trans "Park Director Approval" %}</small>
+              <p class="fw-bold text-dark mb-2">{{ program.director.get_full_name|default:_("Pending Assignment") }}</p>
+              
+              {% if program.director_signature %}
+                <div class="badge bg-success text-white px-3 py-2 rounded-pill">
+                  <i class="fas fa-stamp me-1"></i> {% trans "Approved & Signed" %}
+                </div>
+                <div class="small text-muted mt-2 font-monospace" style="font-size: 0.7rem;">
+                  {% trans "Date" %}: {{ program.director_signature_date|date:"Y-m-d H:i"|default:_("Recorded") }}
+                </div>
+              {% else %}
+                <div class="badge bg-secondary text-white px-3 py-2 rounded-pill">
+                  <i class="fas fa-hourglass-half me-1"></i> {% trans "Awaiting Approval" %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

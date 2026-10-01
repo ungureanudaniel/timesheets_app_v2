@@ -1,74 +1,319 @@
+<!DOCTYPE html>
 <html>
 <head>
-    <style>
-        body { font-family: DejaVu Sans, sans-serif; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid black; padding: 5px; text-align: center; }
-        .header { text-align: center; font-weight: bold; font-size: 18px; }
-        .week-number { font-size: 36px; border: 1px solid red; padding: 10px; }
-    </style>
+<meta charset="utf-8">
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm 10mm 12mm;
+  }
+
+  body {
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    font-size: 9pt;
+    color: #111;
+    line-height: 1.2;
+  }
+
+  /* Header Section */
+  .header-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+  }
+
+  .header-title {
+    font-size: 11pt;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+
+  .director-box {
+    border: 1.5px solid #000;
+    padding: 6px 10px;
+    width: 220px;
+    text-align: center;
+    background-color: #fcfcfc;
+  }
+
+  .director-title {
+    font-weight: bold;
+    font-size: 9pt;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .signature-stamp {
+    font-size: 7.5pt;
+    color: #1a365d;
+    border: 1px dashed #2b6cb0;
+    background-color: #ebf8ff;
+    padding: 4px;
+    border-radius: 3px;
+    margin-top: 4px;
+  }
+
+  /* Main Activities Table */
+  .schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+    page-break-inside: auto;
+  }
+
+  .schedule-table th, .schedule-table td {
+    border: 1px solid #333;
+    padding: 4px 5px;
+    vertical-align: middle;
+  }
+
+  .schedule-table th {
+    background-color: #e2e8f0;
+    font-weight: bold;
+    text-align: center;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+  }
+
+  .person-row {
+    page-break-inside: avoid; /* Keeps a person's week block on one page if possible */
+  }
+
+  .person-name {
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 8.5pt;
+    text-align: center;
+    background-color: #f8fafc;
+  }
+
+  .day-name {
+    font-weight: bold;
+    font-size: 8pt;
+    width: 55px;
+    text-align: center;
+    background-color: #f1f5f9;
+  }
+
+  .activity-code {
+    font-family: monospace;
+    font-weight: bold;
+    color: #1a56db;
+  }
+
+  .signature-cell {
+    width: 140px;
+    text-align: center;
+    font-size: 7.5pt;
+  }
+
+  /* Footers & Instructions */
+  .rules-box {
+    border: 1px solid #e2e8f0;
+    background-color: #fff9db;
+    padding: 6px 10px;
+    font-size: 7.5pt;
+    margin-top: 8px;
+    margin-bottom: 12px;
+    page-break-inside: avoid;
+  }
+
+  .rules-title {
+    font-weight: bold;
+    color: #9c36b5;
+    margin-bottom: 2px;
+  }
+
+  /* Bottom Acknowledgment & Creation Block */
+  .acknowledgment-section {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    page-break-inside: avoid;
+  }
+
+  .acknowledgment-section th {
+    background-color: #cbd5e1;
+    font-size: 8pt;
+    text-align: center;
+    padding: 4px;
+    text-transform: uppercase;
+  }
+
+  .acknowledgment-section td {
+    border: 1px solid #475569;
+    padding: 6px;
+    width: 25%;
+    vertical-align: top;
+    height: 70px;
+  }
+
+  .role-title {
+    font-weight: bold;
+    font-size: 8pt;
+    color: #0f172a;
+    display: block;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .person-assigned {
+    font-size: 8.5pt;
+    font-weight: bold;
+    color: #334155;
+  }
+</style>
 </head>
 <body>
-    <div class="header">
-        PROGRAM SĂPTĂMÂNA {{ week }} ({{ start_date }} - {{ end_date }})
-    </div>
-    <p><b>*ATENȚIE LA CERINȚELE DIN SUBSOLUL PROGRAMULUI DE LUCRU</b></p>
-    <table>
-        <thead>
-            <tr>
-                <th>NR</th>
-                <th>NUME SI PRENUME</th>
-                <th>PROGRAM SĂPTĂMÂNAL</th>
-                <th>SEMNATURĂ</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for program in programs %}
-            <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ program.user }}</td>
-                <td>{{ program.activity_title }}</td>
-                <td>{{ program.user }}</td>
-            </tr>
+
+  <!-- HEADER & DIRECTOR APPROVAL -->
+  <table class="header-table">
+    <tr>
+      <td style="vertical-align: top;">
+        <div class="header-title">ADMINISTRAȚIA PARCULUI NATURAL BUCEGI</div>[cite: 1]
+        <div style="font-size: 8pt; margin-top: 2px;">Nr. {{ program.registration_number|default:"____/NIC/____" }}</div>[cite: 1]
+        <h3 style="margin: 6px 0 0 0; font-size: 11pt; color: #0f172a;">
+          PROGRAM SĂPTĂMÂNA {{ program.week }} ({{ program.start_date|date:"d.m.Y" }} - {{ program.end_date|date:"d.m.Y" }})
+        </h3>[cite: 1]
+      </td>
+      <td style="text-align: right; vertical-align: top; width: 230px;">
+        <div class="director-box">
+          <div style="font-size: 7.5pt; text-transform: uppercase;">Se aprobă,</div>[cite: 1]
+          <div class="director-title">DIRECTOR</div>[cite: 1]
+          <div class="person-assigned">{{ program.director.get_full_name|default:program.director.username }}</div>[cite: 1]
+          
+          {% if program.director_signature %}
+            <div class="signature-stamp">
+              <strong>Digitally signed by {{ program.director.get_full_name }}</strong><br>[cite: 1]
+              Date: {{ program.director_signature_date|date:"Y.m.d H:i:s O" }}[cite: 1]
+            </div>
+          {% else %}
+            <div style="height: 35px; border-bottom: 1px solid #999; margin-top: 10px;"></div>
+            <span style="font-size: 7pt; color: #777;">(Semnătură / Dată)</span>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- MAIN PROGRAM SCHEDULE TABLE -->
+  <table class="schedule-table">
+    <thead>
+      <tr>
+        <th style="width: 4%;">NR.</th>[cite: 1]
+        <th style="width: 18%;">NUME ȘI PRENUME</th>[cite: 1]
+        <th style="width: 10%;">ZIUA</th>[cite: 1]
+        <th>PROGRAM SĂPTĂMÂNAL</th>[cite: 1]
+        <th style="width: 22%;">SEMNĂTURĂ<br><span style="font-size: 6.5pt; font-weight: normal;">(LUAT LA CUNOȘTINȚĂ)</span></th>[cite: 1]
+      </tr>
+    </thead>
+    <tbody>
+      {% for person_data in program_schedule_by_person %}
+        {% for day in person_data.days %}
+        <tr class="person-row">
+          {% if forloop.first %}
+            <td rowspan="{{ person_data.days|length }}" style="text-align: center; font-weight: bold;">{{ forloop.parentloop.counter }}</td>[cite: 1]
+            <td rowspan="{{ person_data.days|length }}" class="person-name">
+              {{ person_data.user.get_full_name|upper }}[cite: 1]
+            </td>
+          {% endif %}
+          
+          <td class="day-name">{{ day.day_name }}</td>[cite: 1]
+          
+          <td>
+            {% for act in day.activities %}
+              <div>
+                {% if act.code %}<span class="activity-code">{{ act.code }}</span>{% endif %}[cite: 1]
+                {{ act.title }} {% if act.location %}- <i>{{ act.location }}</i>{% endif %}[cite: 1]
+              </div>
+            {% empty %}
+              <span style="color: #888;">-</span>
             {% endfor %}
-        </tbody>
-    </table>
-    <table style="width:100%; margin-top:20px;">
-        <tr>
-            <!-- Left side: Notes -->
-            <td style="width:70%; vertical-align:top; color:red; font-size:12px; line-height:1.5;">
-                <p><b>*ATENȚIE:</b> PENTRU CAZUL ACTIVITĂȚILOR NEPREVAZUTE PUTEȚI GRUPA ȘI 2 SAU 3 ACTIVITĂȚI ÎNTR-O SINGURĂ ZI. TARIFUL DE VIZITARE POATE FI CONSIDERAT CA ȘI ACTIVITATE ZILNICĂ PERMANENTĂ ÎN PARALEL ȘI CU CELELALTE ACTIVITĂȚI PROGRAMATE EXPLICIT.</p>
-                <p>VA ROG SĂ AVEȚI ÎN VEDERE SĂ ACOPERIȚI CU ACTIVITĂȚILE ENUMERATE TOATĂ SĂPTĂMÂNA DE LUCRU ȘI SĂ JUSTIFICAȚI ZILELE CE VOR FI PONTATE. (FOLOSIȚI APLICAȚII GPS QFIELD/SAU ALTA ÎN CAZUL NEFUNCȚIONĂRII EI) PENTRU A DOVEDI DEPLASĂRILE ÎN TEREN, FOTOGRAFII ȘI DESCRIERI AMĂNUNȚITE DESPRE CONSTATĂRILE EFECTUATE.</p>
-                <p>RAPORTUL ZILNIC OBLIGATORIU VA FI ÎNSOȚIT DE FOTOGRAFII EFECTUATE CU APLICAȚIA GPS MAP CAMERA SAU ALTEVA SIMILAR CARE SĂ AFIȘEZE PE POZĂ LOCAȚIA ȘI COORDONATELE RESPECTIV DATA ȘI ORA, ÎN CAZ CONTRAR NU SE PONTEAZĂ ZIUA RESPECTIVĂ.</p>
-                <p>PENTRU GEF ACTIVITĂȚILE POT FI PONTATE ȘI FRACȚIONAT (2,4 ORE) PENTRU TOTALUL DE 8 ORE ZILNIC.</p>
-                <p>AVEȚI OBLIGAȚIA DE A COMPLETA ZILNIC GEF-UL CÂT ȘI RAPORTUL DE ACTIVITATE PE ZIUA RESPECTIVĂ (INCLUSIV FIȘE ȘI PROCESE VERBALE). SEMNĂTURA ELECTRONICĂ VA DOVEDI ACEST LUCRU PE RAPORT. CELE INTOCMITE ÎN ALTE DATE FAȚĂ DE ZIUA ÎN CAUZĂ NU SUNT LUATE ÎN CALCUL LA PONTAJ.</p>
+          </td>
+
+          {% if forloop.first %}
+            <td rowspan="{{ person_data.days|length }}" class="signature-cell">
+              {% if person_data.signature %}
+                <div class="signature-stamp">
+                  <strong>Digitally signed by {{ person_data.user.get_full_name }}</strong><br>[cite: 1]
+                  Date: {{ person_data.signature_date|date:"Y.m.d H:i:s O" }}[cite: 1]
+                </div>
+              {% else %}
+                <span style="color: #a1a1aa; font-style: italic; font-size: 7pt;">În așteptarea semnăturii</span>
+              {% endif %}
             </td>
-            <!-- Right side: Signature table -->
-            <td style="width:30%; vertical-align:top;">
-                <table style="width:100%; border:1px solid black; border-collapse:collapse;">
-                    <tr>
-                        <th style="border:1px solid black;">DAMIAN MIHAI</th>
-                        <td style="border:1px solid black;">
-                            
-                        </td>
-                    </tr>
-                    <tr>
-                        <th style="border:1px solid black;">FRICIU BEATRICE</th>
-                        <td style="border:1px solid black;">
-                            
-                        </td>
-                    </tr>
-                    <tr>
-                        <th style="border:1px solid black;">COLTOIU ALEXANDRU</th>
-                        <td style="border:1px solid black;"></td>
-                    </tr>
-                    <tr>
-                        <th style="border:1px solid black;">DIACONESCU ALINA</th>
-                        <td style="border:1px solid black;"></td>
-                    </tr>
-                </table>
-            </td>
+          {% endif %}
         </tr>
-    </table>
+        {% endfor %}
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- OPERATIONAL WARNING FOOTER -->
+  <div class="rules-box">
+    <div class="rules-title">ATENȚIE! *CERINȚE OBLIGATORII PRIVIND ROLUL ȘI EXECUTAREA PROGRAMULUI DE LUCRU</div>[cite: 1]
+    <ul style="margin: 3px 0 0 15px; padding: 0;">
+      <li>În cazul activităților neprevăzute, puteți grupa 2 sau 3 activități într-o singură zi. Tariful de vizitare poate fi considerat activitate zilnică permanentă[cite: 1].</li>
+      <li>Aveți în vedere să acoperiți întreaga săptămână de lucru și să justificați toate zilele pontate[cite: 1].</li>
+      <li>RAPORTUL ZILNIC ESTE OBLIGATORIU și va fi însoțit de fotografii cu aplicații GPS Map Camera (coordonate GPS, dată și oră)[cite: 1].</li>
+      <li>Semnătura electronică aplicată pe raport și program dovedește data întocmirii și luării la cunoștință[cite: 1].</li>
+    </ul>
+  </div>
+
+  <!-- CREATION & ELABORATION SIGNATURE BLOCK (ȘEF PAZĂ, BIOLOG, COMMUNITY RELATIONS, ETC.) -->
+  <div style="font-weight: bold; font-size: 8.5pt; text-transform: uppercase; text-align: center; margin-top: 10px;">
+    CONFIRMARE ÎNTOCMIRE ȘI APROBARE COLECTIVĂ PROGRAM
+  </div>
+
+  <table class="acknowledgment-section">
+    <thead>
+      <tr>
+        <th>Șef Pază</th>
+        <th>Resp. Conștientizare & Comunități</th>
+        <th>Biolog / Conservare</th>
+        <th>Întocmit / Elaborat</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <!-- Șef Pază -->
+        <td>
+          <span class="role-title">Șef Pază</span>
+          <div class="person-assigned">{{ program.chief_ranger.get_full_name|default:"-" }}</div>[cite: 1]
+          {% if program.chief_ranger_signature %}
+            <div class="signature-stamp">
+              Semnat digital: {{ program.chief_ranger.get_full_name }}<br>[cite: 1]
+              {{ program.chief_ranger_signature_date|date:"Y.m.d H:i" }}[cite: 1]
+            </div>
+          {% endif %}
+        </td>
+
+        <!-- Responsabil Conștientizare -->
+        <td>
+          <span class="role-title">Resp. Conștientizare</span>
+          <div class="person-assigned">{{ program.awareness_officer.get_full_name|default:"-" }}</div>
+          {% if program.awareness_officer_signature %}
+            <div class="signature-stamp">
+              Semnat digital: {{ program.awareness_officer.get_full_name }}<br>
+              {{ program.awareness_officer_signature_date|date:"Y.m.d H:i" }}
+            </div>
+          {% endif %}
+        </td>
+
+        <!-- Biolog -->
+        <td>
+          <span class="role-title">Biolog</span>
+          <div class="person-assigned">{{ program.biologist.get_full_name|default:"-" }}</div>
+          {% if program.biologist_signature %}
+            <div class="signature-stamp">
+              Semnat digital: {{ program.biologist.get_full_name }}<br>
+              {{ program.biologist_signature_date|date:"Y.m.d H:i" }}
+            </div>
+          {% endif %}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
 </body>
 </html>

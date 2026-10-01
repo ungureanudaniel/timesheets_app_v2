@@ -2,7 +2,7 @@ from django.urls import path, include
 from django.conf import settings
 from .views import TimesheetStandardizedHoursPDFView, automated_task_runner, BulkActivityProgramCreateView, ActivityProgramListView, ActivityProgramUpdateView, ActivityProgramDeleteView, PALActivityCreateView, dashboard, AnalyticsView, \
     worked_hours_per_member, yearly_statistics, activity_program, PALActivitiesListView, PALActivityUpdateView, PALActivityDeleteView, PALActivitiesUploadView, \
-    FundsSourceListView, NewFundsSourceView, HoursSummaryTableView
+    FundsSourceListView, NewFundsSourceView, HoursSummaryTableView, ActivityProgramDetailView, ActivityProgramExportView
 from .utils import upload_activities
 from django.conf.urls.static import static
 from django.utils.translation import gettext_lazy as _
@@ -24,6 +24,8 @@ urlpatterns = [
     path('activity-program/create/', BulkActivityProgramCreateView.as_view(), name='activity_program_create'),
     path('activity-program/list/', ActivityProgramListView.as_view(), name='activity_program_list'),
     path('activity-program/<int:pk>/edit/', ActivityProgramUpdateView.as_view(), name='activity_program_edit'),
+    path('activity-program/<int:pk>/', ActivityProgramDetailView.as_view(), name='activity_program_detail'),
+    path('activity-program/<int:pk>/export/', ActivityProgramExportView.as_view(), name='activity_program_export'),
     path('activity-program/<int:pk>/delete/', ActivityProgramDeleteView.as_view(), name='activity_program_delete'),
     path('funds_source/', FundsSourceListView.as_view(), name='funds_source'),
     path('new_funds_source/', NewFundsSourceView.as_view(), name='new_funds_source'),
