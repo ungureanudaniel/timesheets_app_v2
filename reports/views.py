@@ -275,7 +275,6 @@ def get_next_registration_number(request):
     latest = RangerDocumentRegistry.objects.filter(
         user=request.user
     ).order_by('-id').first()
-    print(latest.doc_number if latest else "No previous doc_number found")
     next_number = 1
     if latest and latest.doc_number:
         try:

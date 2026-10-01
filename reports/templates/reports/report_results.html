@@ -23,23 +23,23 @@
             </div>
             <!-- Replace your existing Export PDF button with this -->
             <div class="btn-group">
-                <form id="pdf-export-form" action="{% url 'export_simple_pdf' %}" method="POST" style="display: inline;margin-right: 5px;">
+                <form id="pdf-export-simple-form" action="{% url 'export_simple_pdf' %}" method="POST" style="display: inline; margin-right: 5px;">
                     {% csrf_token %}
-                    <input type="hidden" name="signature_data" id="signature-data">
-                    <input type="hidden" name="reg_number" id="hidden-reg-number">
-                    <input type="hidden" name="reg_date" id="hidden-reg-date">
-                    <button type="button" id="btn-open-sig" class="btn btn-warning">
+                    <input type="hidden" name="signature_data" class="signature-data-input">
+                    <input type="hidden" name="reg_number" class="reg-number-input">
+                    <input type="hidden" name="reg_date" class="reg-date-input">
+                    <button type="button" id="btn-open-sig-simple" class="btn btn-warning open-signature-modal" data-target-form="pdf-export-simple-form">
                         <i class="fas fa-file-pdf"></i> {% trans "Export fără fotografii" %}
                     </button>
                 </form>
                 
-                <!-- Hidden form to handle the signature data -->
+                <!-- 2. Form for Export WITH photos -->
                 <form id="pdf-export-form" action="{% url 'export_pdf' %}" method="POST" style="display: inline;">
                     {% csrf_token %}
-                    <input type="hidden" name="signature_data" id="signature-data">
-                    <input type="hidden" name="reg_number" id="hidden-reg-number">
-                    <input type="hidden" name="reg_date" id="hidden-reg-date">
-                    <button type="button" id="btn-open-sig" class="btn btn-danger">
+                    <input type="hidden" name="signature_data" class="signature-data-input">
+                    <input type="hidden" name="reg_number" class="reg-number-input">
+                    <input type="hidden" name="reg_date" class="reg-date-input">
+                    <button type="button" id="btn-open-sig" class="btn btn-danger open-signature-modal" data-target-form="pdf-export-form">
                         <i class="fas fa-file-pdf"></i> {% trans "Export PDF" %}
                     </button>
                 </form>
@@ -251,6 +251,10 @@
         const signaturePad = new SignaturePad(canvas, {
             penColor: "rgb(0, 0, 128)" 
         });
+
+        // Store active form element when a button is clicked
+        let activeExportForm = null;
+
         async function getNextRegistrationNumber() {
             try {
                 const response = await fetch('{% url "get_next_reg_number" %}');
@@ -263,58 +267,96 @@
             }
             return { next_number: '001', today: '{% now "Y-m-d" %}' };
         }
-        // 1. Open Modal
-        document.getElementById("btn-open-sig").addEventListener("click", async () => {
+
+        // Shared function to open modal and fetch registration numbers
+        async function openModalAndPrepare(formElement) {
+            activeExportForm = formElement;
             modal.style.display = "block";
-            // 💡 Delay slightly to give Bootstrap time to initialize the container box layout dimensions
+            
+            // 💡 Delay slightly to give Bootstrap/CSS time to initialize dimensions
             setTimeout(resizeCanvas, 50);
+
             // Auto-fill registration number and date
             const data = await getNextRegistrationNumber();
             document.getElementById("reg-number-input").value = data.next_number || '001';
             document.getElementById("reg-date-input").value = data.today || '{% now "Y-m-d" %}';
-        });
+        }
+
+        // 1. Open Modal via "Export fara fotografii" button
+        const btnOpenSimple = document.getElementById("btn-open-sig-simple");
+        if (btnOpenSimple) {
+            btnOpenSimple.addEventListener("click", () => {
+                const form = document.getElementById("pdf-export-simple-form");
+                openModalAndPrepare(form);
+            });
+        }
+
+        // 1b. Open Modal via "Export PDF" (with photos) button
+        const btnOpenFull = document.getElementById("btn-open-sig");
+        if (btnOpenFull) {
+            btnOpenFull.addEventListener("click", () => {
+                const form = document.getElementById("pdf-export-form");
+                openModalAndPrepare(form);
+            });
+        }
         
         // 2. Close Modal
-        document.getElementById("btn-close-sig").addEventListener("click", () => {
-            modal.style.display = "none";
-        });
+        const btnClose = document.getElementById("btn-close-sig");
+        if (btnClose) {
+            btnClose.addEventListener("click", () => {
+                modal.style.display = "none";
+            });
+        }
 
         // 3. Clear Pad
-        document.getElementById("btn-clear-sig").addEventListener("click", () => {
-            signaturePad.clear();
-        });
+        const btnClear = document.getElementById("btn-clear-sig");
+        if (btnClear) {
+            btnClear.addEventListener("click", () => {
+                signaturePad.clear();
+            });
+        }
 
         // 4. Submit Form
-        document.getElementById("btn-submit-sig").addEventListener("click", () => {
-            const regNum = document.getElementById("reg-number-input").value.trim();
-            const regDate = document.getElementById("reg-date-input").value;
+        const btnSubmit = document.getElementById("btn-submit-sig");
+        if (btnSubmit) {
+            btnSubmit.addEventListener("click", () => {
+                if (!activeExportForm) {
+                    alert("{% trans 'Eroare: Formularul de export nu a fost identificat.' %}");
+                    return;
+                }
 
-            if (!regNum) {
-                alert("{% trans 'Vă rugăm să introduceți numărul de înregistrare.' %}");
-                return;
-            }
-            if (!regDate) {
-                alert("{% trans 'Vă rugăm să selectați data înregistrării.' %}");
-                return;
-            }
-            if (signaturePad.isEmpty()) {
-                alert("{% trans 'Vă rugăm să introduceți semnătura.' %}");
-                return;
-            }
-            
-            document.getElementById("hidden-reg-number").value = regNum;
-            document.getElementById("hidden-reg-date").value = regDate;
-            document.getElementById("signature-data").value = signaturePad.toDataURL();
-            
-            document.getElementById("pdf-export-form").submit();
-            
-            setTimeout(() => { modal.style.display = "none"; }, 500);
-        });
+                const regNum = document.getElementById("reg-number-input").value.trim();
+                const regDate = document.getElementById("reg-date-input").value;
+
+                if (!regNum) {
+                    alert("{% trans 'Vă rugăm să introduceți numărul de înregistrare.' %}");
+                    return;
+                }
+                if (!regDate) {
+                    alert("{% trans 'Vă rugăm să selectați data înregistrării.' %}");
+                    return;
+                }
+                if (signaturePad.isEmpty()) {
+                    alert("{% trans 'Vă rugăm să introduceți semnătura.' %}");
+                    return;
+                }
+                
+                // Set signature & registration values inside the specific active form
+                activeExportForm.querySelector('.reg-number-input').value = regNum;
+                activeExportForm.querySelector('.reg-date-input').value = regDate;
+                activeExportForm.querySelector('.signature-data-input').value = signaturePad.toDataURL();
+                
+                // Submit only the active form (simple OR full PDF export)
+                activeExportForm.submit();
+                
+                setTimeout(() => { modal.style.display = "none"; }, 500);
+            });
+        }
 
         function resizeCanvas() {
             const ratio = Math.max(window.devicePixelRatio || 1, 1);
             
-            // 💡 FIX: Fallback to fixed dimensions if offsetWidth renders as 0 inside hidden nodes
+            // Fallback to fixed dimensions if offsetWidth renders as 0 inside hidden nodes
             const width = canvas.offsetWidth || 460; 
             const height = canvas.offsetHeight || 180;
 
