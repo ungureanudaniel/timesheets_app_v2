@@ -673,302 +673,320 @@ class ExportPDFView(LoginRequiredMixin, TemplateView):
         return 0
 
 class ExportSimpleView(LoginRequiredMixin, TemplateView):
-    """
-    Export the report data without pictures in pdf"""
-    
     def _format_hours_to_hm(self, decimal_hours):
-            """Converts 8.5 to '8h 30m'"""
-            hours = int(decimal_hours)
-            minutes = int(round((decimal_hours - hours) * 60))
-            return f"{hours}h {minutes:02d}m"
-    
+        """Converts 8.5 to '8h 30m'"""
+        hours = int(decimal_hours)
+        minutes = int(round((decimal_hours - hours) * 60))
+        return f"{hours}h {minutes:02d}m"
+
     def get(self, request, *args, **kwargs):
-            report_data = request.session.get('report_data', {})
-            if not report_data:
-                return HttpResponse("Nu s-au găsit date pentru raport.")
-    
-            buffer = BytesIO()
-            # Adjusted margins to fit content better
-            doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
-            elements = []
-            styles = getSampleStyleSheet()
-            
-            # --- 1. DATA FETCHING ---
-            user_id = report_data.get('user_id')
-            start_date = datetime.strptime(report_data.get('start_date'), '%Y-%m-%d').date()
-            end_date = datetime.strptime(report_data.get('end_date'), '%Y-%m-%d').date()
-    
-            # Update styles for Unicode
-            styles['Title'].fontName = BOLD_FONT
-            styles['Normal'].fontName = FONT_NAME
-            styles['Heading2'].fontName = BOLD_FONT
-            styles['Heading3'].fontName = BOLD_FONT
-    
-            # --- 2. PRE-CALCULATE TOTALS (One Loop Only) ---
-            timesheets = Timesheet.objects.filter(
-                user_id=user_id,
-                date__range=[start_date, end_date]
-            ).select_related('activity', 'fundssource').annotate(
-                img_nr=Count('timesheet_images')
-            ).order_by('date', 'start_time')
-    
-            total_hours_decimal = 0
-            activity_totals = {}
-            for ts in timesheets:
-                h = self._calculate_hours(ts)
-                total_hours_decimal += h
-                code = ts.activity.code
-                activity_totals[code] = activity_totals.get(code, 0) + h
-    
-            # Pull registration variables cleanly from session/request parsing upstream
-            reg_num = report_data.get('reg_number', '_______')
-            reg_date_str = report_data.get('reg_date', '')
-            if reg_date_str:
-                try:
-                    reg_date_formatted = datetime.strptime(reg_date_str, '%Y-%m-%d').strftime('%d.%m.%Y')
-                except ValueError:
-                    reg_date_formatted = reg_date_str
-            else:
-                reg_date_formatted = '__.__.____'
-    
-            # Safely determine employee context variables
-            first_ts = timesheets.first()
-            employee_name = first_ts.user.get_full_name() if (timesheets.exists() and first_ts.user) else 'N/A'
-            job_title = getattr(first_ts.user, 'job_title', 'N/A') if (timesheets.exists() and first_ts.user) else 'N/A'
-    
-            # --- 4. HEADER WITH REGISTRATION INFO ---
-            elements.append(Paragraph(f"<b>Nr. Înregistrare:</b> {reg_num} / {reg_date_formatted}", styles['Normal']))
-            elements.append(Spacer(1, 0.1 * inch))
-            
-            elements.append(Paragraph(f"Raport de activitate", styles['Title']))
-            elements.append(Spacer(1, 0.1 * inch))
-            
-            elements.append(Paragraph(f"<b>Angajat:</b> {employee_name}", styles['Normal']))
-            elements.append(Paragraph(f"<b>Funcție:</b> {job_title}", styles['Normal']))
-            elements.append(Paragraph(f"<b>Perioada raportării:</b> {start_date.strftime('%d.%m.%Y')} - {end_date.strftime('%d.%m.%Y')}", styles['Normal']))
-            elements.append(Spacer(1, 0.25 * inch))
-    
-            standard_day = 8.5
-            total_days = total_hours_decimal / standard_day
-            
-            summary_table_data = [
-                [_('Total Time'), _('Work Days'), _('Entries')],
+        report_data = request.session.get('report_data', {})
+        user = request.user
+        if not report_data:
+            return HttpResponse("Nu s-au găsit date pentru raport.")
+
+        buffer = BytesIO()
+        # Adjusted margins to fit content better
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+        elements = []
+        styles = getSampleStyleSheet()
+
+        # --- 1. DATA FETCHING ---
+        user_id = report_data.get('user_id')
+        start_date = datetime.strptime(report_data.get('start_date'), '%Y-%m-%d').date()
+        end_date = datetime.strptime(report_data.get('end_date'), '%Y-%m-%d').date()
+
+        # Update styles for Unicode
+        styles['Title'].fontName = BOLD_FONT
+        styles['Normal'].fontName = FONT_NAME
+        styles['Heading2'].fontName = BOLD_FONT
+        styles['Heading3'].fontName = BOLD_FONT
+
+        # --- 2. PRE-CALCULATE TOTALS (One Loop Only) ---
+        timesheets = Timesheet.objects.filter(
+            user_id=user_id,
+            date__range=[start_date, end_date]
+        ).select_related('activity', 'fundssource').annotate(
+            img_nr=Count('timesheet_images')
+        ).order_by('date', 'start_time')
+
+        total_hours_decimal = 0
+        activity_totals = {}
+        for ts in timesheets:
+            h = self._calculate_hours(ts)
+            total_hours_decimal += h
+            code = ts.activity.code
+            activity_totals[code] = activity_totals.get(code, 0) + h
+
+        # Pull registration variables cleanly from session/request parsing upstream
+        reg_num = report_data.get('reg_number', '_______')
+        reg_date_str = report_data.get('reg_date', '')
+        if reg_date_str:
+            try:
+                reg_date_formatted = datetime.strptime(reg_date_str, '%Y-%m-%d').strftime('%d.%m.%Y')
+            except ValueError:
+                reg_date_formatted = reg_date_str
+        else:
+            reg_date_formatted = '__.__.____'
+
+        # Safely determine employee context variables
+        first_ts = timesheets.first()
+        employee_name = first_ts.user.get_full_name() if (timesheets.exists() and first_ts.user) else 'N/A'
+        job_title = getattr(first_ts.user, 'job_title', 'N/A') if (timesheets.exists() and first_ts.user) else 'N/A'
+
+        # --- 4. HEADER WITH REGISTRATION INFO ---
+        elements.append(Paragraph(f"<b>Nr. Înregistrare personal:</b> {reg_num} / {user.first_name[0]}{user.last_name[0]} / {reg_date_formatted}", styles['Normal']))
+        elements.append(Spacer(1, 0.1 * inch))
+
+        elements.append(Paragraph(f"Raport de activitate", styles['Title']))
+        elements.append(Spacer(1, 0.1 * inch))
+
+        elements.append(Paragraph(f"<b>Angajat:</b> {employee_name}", styles['Normal']))
+        elements.append(Paragraph(f"<b>Funcție:</b> {job_title}", styles['Normal']))
+        elements.append(Paragraph(f"<b>Perioada raportării:</b> {start_date.strftime('%d.%m.%Y')} - {end_date.strftime('%d.%m.%Y')}", styles['Normal']))
+        elements.append(Spacer(1, 0.25 * inch))
+
+        standard_day = 8.5
+        total_days = total_hours_decimal / standard_day
+
+        summary_table_data = [
+            [_('Total Time'), _('Work Days'), _('Entries')],
+            [
+                self._format_hours_to_hm(total_hours_decimal), 
+                f"{total_days:.2f}", 
+                str(timesheets.count())
+            ]
+        ]
+
+        st = Table(summary_table_data, colWidths=[2.5 * inch] * 3)
+        st.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 0), (-1, -1), FONT_NAME),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(st)
+        elements.append(Spacer(1, 0.3 * inch))
+
+        # --- 4. BAR CHART ---
+        if activity_totals:
+            chart_buffer = self._generate_bar_chart(activity_totals)
+            chart_img = Image(chart_buffer)
+
+            available_width = 535.27
+
+            aspect = chart_img.imageHeight / float(chart_img.imageWidth)
+
+            chart_img.drawWidth = available_width
+            chart_img.drawHeight = available_width * aspect
+            elements.append(chart_img)
+            elements.append(Spacer(1, 0.3 * inch))
+
+        # --- 5. DETAILED LOG LOOP ---
+        elements.append(Paragraph(_("Detalii"), styles['Heading2']))
+        current_date = None
+
+        for ts in timesheets:
+            if ts.date != current_date:
+                current_date = ts.date
+                elements.append(Spacer(1, 0.1 * inch))
+                date_style = styles['Heading3']
+                date_style.backColor = colors.whitesmoke
+                elements.append(Paragraph(f"Data: {current_date.strftime('%d.%m.%Y')}", date_style))
+                elements.append(Spacer(1, 0.05 * inch))
+
+            h = self._calculate_hours(ts)
+            entry_data = [
+                [_('Time'), _('Activity'), _('Funds source'), _('Hrs'), _('Description')],
                 [
-                    self._format_hours_to_hm(total_hours_decimal), 
-                    f"{total_days:.2f}", 
-                    str(timesheets.count())
+                    f"{ts.start_time.strftime('%H:%M')}-{ts.end_time.strftime('%H:%M')}",
+                    Paragraph(f"<b>{ts.activity.code}</b><br/>{ts.activity.name}", styles['Normal']),
+                    ts.fundssource.name if ts.fundssource else '-',
+                    self._format_hours_to_hm(h), 
+                    Paragraph(ts.description or '', styles['Normal'])
                 ]
             ]
-            
-            st = Table(summary_table_data, colWidths=[2.5 * inch] * 3)
-            st.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+
+            t = Table(entry_data, colWidths=[0.8*inch, 1.7*inch, 1.0*inch, 0.7*inch, 3.2*inch])
+            t.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('FONTNAME', (0, 0), (-1, -1), FONT_NAME),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
                 ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-                ('TOPPADDING', (0, 0), (-1, -1), 6),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ]))
-            elements.append(st)
-            elements.append(Spacer(1, 0.3 * inch))
-    
-            # --- 4. BAR CHART ---
-            if activity_totals:
-                chart_buffer = self._generate_bar_chart(activity_totals)
-                chart_img = Image(chart_buffer)
-                
-                available_width = 535.27
-                
-                aspect = chart_img.imageHeight / float(chart_img.imageWidth)
-                
-                chart_img.drawWidth = available_width
-                chart_img.drawHeight = available_width * aspect
-                elements.append(chart_img)
-                elements.append(Spacer(1, 0.3 * inch))
-    
-            # --- 5. DETAILED LOG LOOP ---
-            elements.append(Paragraph(_("Detalii"), styles['Heading2']))
-            current_date = None
-            
-            for ts in timesheets:
-                if ts.date != current_date:
-                    current_date = ts.date
-                    elements.append(Spacer(1, 0.1 * inch))
-                    date_style = styles['Heading3']
-                    date_style.backColor = colors.whitesmoke
-                    elements.append(Paragraph(f"Data: {current_date.strftime('%d.%m.%Y')}", date_style))
-                    elements.append(Spacer(1, 0.05 * inch))
-    
-                h = self._calculate_hours(ts)
-                entry_data = [
-                    [_('Time'), _('Activity'), _('Funds source'), _('Hrs'), _('Description')],
-                    [
-                        f"{ts.start_time.strftime('%H:%M')}-{ts.end_time.strftime('%H:%M')}",
-                        Paragraph(f"<b>{ts.activity.code}</b><br/>{ts.activity.name}", styles['Normal']),
-                        ts.fundssource.name if ts.fundssource else '-',
-                        self._format_hours_to_hm(h), 
-                        Paragraph(ts.description or '', styles['Normal'])
-                    ]
-                ]
-                
-                t = Table(entry_data, colWidths=[0.8*inch, 1.7*inch, 1.0*inch, 0.7*inch, 3.2*inch])
-                t.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                    ('FONTNAME', (0, 0), (-1, -1), FONT_NAME),
-                    ('FONTSIZE', (0, 0), (-1, -1), 8),
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            elements.append(t)
+
+        # --- 6. SIGNATURE SECTION (Updated) ---
+        elements.append(Spacer(1, 0.5 * inch))
+
+        # Get the base64 string from the session
+        sig_base64 = report_data.get('signature_base64')
+
+        if sig_base64 and "," in sig_base64:
+            try:
+                # 1. Strip the header (data:image/png;base64,)
+                format, imgstr = sig_base64.split(';base64,')
+
+                # 2. Decode the base64 string
+                img_data = base64.b64decode(imgstr)
+
+                # 3. Create a ReportLab Image from the decoded bytes
+                sig_io = BytesIO(img_data)
+                sig_img = Image(sig_io)
+
+                # 4. Set dimensions
+                sig_img.drawHeight = 0.8 * inch
+                sig_img.drawWidth = 2.0 * inch
+
+                # 5. Build Signature Table
+                sig_table = Table([
+                    [sig_img],
+                    [Paragraph("Semnătură angajat", styles['Normal'])],
+                    [Paragraph(timesheets.first().user.get_full_name() if timesheets.first().user.job_title else 'N/A', styles['Normal'])],
+                    [Paragraph("Data generare raport: " + timezone.now().strftime("%d-%m-%Y"), styles['Normal'])]
+                ], colWidths=[2.5 * inch])
+
+                sig_table.setStyle(TableStyle([
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('LINEABOVE', (0, 1), (0, 1), 0.5, colors.black),
+                    ('TOPPADDING', (1, 0), (1, 0), 5),
                 ]))
-                elements.append(t)
-    
-            # --- 6. SIGNATURE SECTION (Updated) ---
-            elements.append(Spacer(1, 0.5 * inch))
-            
-            # Get the base64 string from the session
-            sig_base64 = report_data.get('signature_base64')
-    
-            if sig_base64 and "," in sig_base64:
-                try:
-                    # 1. Strip the header (data:image/png;base64,)
-                    format, imgstr = sig_base64.split(';base64,')
-                    
-                    # 2. Decode the base64 string
-                    img_data = base64.b64decode(imgstr)
-                    
-                    # 3. Create a ReportLab Image from the decoded bytes
-                    sig_io = BytesIO(img_data)
-                    sig_img = Image(sig_io)
-                    
-                    # 4. Set dimensions
-                    sig_img.drawHeight = 0.8 * inch
-                    sig_img.drawWidth = 2.0 * inch
-                    
-                    # 5. Build Signature Table
-                    sig_table = Table([
-                        [sig_img],
-                        [Paragraph("Semnătură angajat", styles['Normal'])],
-                        [Paragraph(timesheets.first().user.get_full_name() if timesheets.first().user.job_title else 'N/A', styles['Normal'])],
-                        [Paragraph("Data generare raport: " + timezone.now().strftime("%d-%m-%Y"), styles['Normal'])]
-                    ], colWidths=[2.5 * inch])
-                    
-                    sig_table.setStyle(TableStyle([
-                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                        ('LINEABOVE', (0, 1), (0, 1), 0.5, colors.black),
-                        ('TOPPADDING', (1, 0), (1, 0), 5),
-                    ]))
-                    
-                    elements.append(sig_table)
-                except Exception as e:
-                    # If something goes wrong, we append a blank line for manual signing
-                    elements.append(Paragraph("__________________________", styles['Normal']))
-                    elements.append(Paragraph("Semnătură angajat", styles['Normal']))
-            else:
-                # Fallback if no digital signature was provided
-                elements.append(Spacer(1, 0.3 * inch))
+
+                elements.append(sig_table)
+            except Exception as e:
+                # If something goes wrong, we append a blank line for manual signing
                 elements.append(Paragraph("__________________________", styles['Normal']))
                 elements.append(Paragraph("Semnătură angajat", styles['Normal']))
-    
-            # --- BUILD AND RETURN ---
-            doc.build(elements)
-            buffer.seek(0)
-            response = HttpResponse(buffer, content_type='application/pdf')
-            user_fullname = timesheets.first().user.get_full_name() if timesheets.exists() else 'user'
-            user_fullname = user_fullname.replace(" ", "_")
-            response['Content-Disposition'] = 'attachment; filename="activity_report_{}_{}.pdf"'.format(timezone.now().strftime("%Y-%m-%d"), user_fullname)
-            return response
-    
-    def post(self, request, *args, **kwargs):
-            # This receives the signature data
-            signature_data = request.POST.get('signature_data')
-            reg_number = request.POST.get('reg_number')
-            reg_date = request.POST.get('reg_date')
-            
-            # Store it in the session so the GET part of the PDF logic can find it
-            report_data = request.session.get('report_data', {})
-            report_data['signature_base64'] = signature_data
-            report_data['reg_number'] = reg_number
-            report_data['reg_date'] = reg_date
-            request.session['report_data'] = report_data
-            request.session.modified = True
-    
-            user_id = report_data.get('user_id')
-            start_str = report_data.get('start_date', '')
-            end_str = report_data.get('end_date', '')
-    
-            if reg_number and reg_date and user_id:
-                try:
-                    from registries.models import RangerDocumentRegistry
-                    RangerDocumentRegistry.objects.create(
-                        user_id=user_id,
-                        doc_number=reg_number,
-                        doc_date=reg_date,
-                        explanation=f"Raport activitate interval {start_str} - {end_str}"
-                    )
-                except Exception as e:
-                    messages.error(request, f"Failed to record registry log row: {e}")
-            
-            # Hand off control explicitly into updated GET execution pipeline above
-            return self.get(request, *args, **kwargs)
-    
-    def _generate_bar_chart(self, data_dict):
-            # Filter data to remove zeros (makes the chart cleaner)
-            clean_data = {k: v for k, v in data_dict.items() if v > 0}
-            
-            if not clean_data:
-                # Fallback if no data exists to prevent Matplotlib crash
-                clean_data = {"Date lipsă": 0}
-    
-            labels = list(clean_data.keys())
-            values = list(clean_data.values())
-    
-            # Helper function for formatting
-            def format_duration(decimal_hours):
-                h = int(decimal_hours)
-                m = int(round((decimal_hours - h) * 60))
-                return f"{h}h {m:02d}m"
-        
-            # Adjust figure height based on the number of items
-            fig_height = max(4, len(labels) * 0.5)
-            plt.figure(figsize=(20, fig_height))
-            
-            # Font setup for diacritics
-            plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'sans-serif']
-            plt.rcParams['font.family'] = 'sans-serif'
-    
-            # Create horizontal bars
-            bars = plt.barh(labels, values, color='#007bff')
-    
-            # Add labels to the end of each bar for clarity
-            for bar in bars:
-                width = bar.get_width()
-                if width > 0:
-                    formatted_label = format_duration(width)
-                    plt.text(width + 0.1, bar.get_y() + bar.get_height()/2, 
-                            formatted_label, va='center', fontsize=12, fontweight='bold')
-            
-            from matplotlib.ticker import FuncFormatter
-            plt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format_duration(x)))
-    
-            plt.xlabel('Ore lucrate')
-            plt.title('Distribuția orelor pe activități')
-            
-            plt.tight_layout()
-    
-            # Save to memory buffer
-            chart_buffer = BytesIO()
-            plt.savefig(chart_buffer, format='png', bbox_inches='tight', dpi=300)
-            plt.close()
-            chart_buffer.seek(0)
-            
-            return chart_buffer
-    
-    def _calculate_hours(self, timesheet):
-            if timesheet.start_time and timesheet.end_time:
-                start = datetime.combine(datetime.today(), timesheet.start_time)
-                end = datetime.combine(datetime.today(), timesheet.end_time)
-                if end < start: end += timedelta(days=1)
-                return (end - start).total_seconds() / 3600
-            return 0
+        else:
+            # Fallback if no digital signature was provided
+            elements.append(Spacer(1, 0.3 * inch))
+            elements.append(Paragraph("__________________________", styles['Normal']))
+            elements.append(Paragraph("Semnătură angajat", styles['Normal']))
 
+        # --- BUILD AND RETURN ---
+        doc.build(elements)
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        user_fullname = timesheets.first().user.get_full_name() if timesheets.exists() else 'user'
+        user_fullname = user_fullname.replace(" ", "_")
+        response['Content-Disposition'] = 'attachment; filename="activity_report_{}_{}.pdf"'.format(timezone.now().strftime("%Y-%m-%d"), user_fullname)
+        return response
+
+    def post(self, request, *args, **kwargs):
+        # This receives the signature data
+        signature_data = request.POST.get('signature_data')
+        reg_number = request.POST.get('reg_number')
+        reg_date = request.POST.get('reg_date')
+
+        # Store it in the session so the GET part of the PDF logic can find it
+        report_data = request.session.get('report_data', {})
+        report_data['signature_base64'] = signature_data
+        report_data['reg_number'] = reg_number
+        report_data['reg_date'] = reg_date
+        request.session['report_data'] = report_data
+        request.session.modified = True
+
+        user_id = report_data.get('user_id')
+        start_str = report_data.get('start_date', '')
+        end_str = report_data.get('end_date', '')
+
+        if reg_number and reg_date and user_id:
+            try:
+                from registries.models import RangerDocumentRegistry
+                RangerDocumentRegistry.objects.create(
+                    user_id=user_id,
+                    doc_number=reg_number,
+                    doc_date=reg_date,
+                    explanation=f"Raport activitate interval {start_str} - {end_str}"
+                )
+            except Exception as e:
+                # Log the error or handle it as needed
+                messages.error(request, f"Error saving to RangerDocumentRegistry: {e}")
+        # Hand off control explicitly into updated GET execution pipeline above
+        return self.get(request, *args, **kwargs)
+
+    def _generate_pie_chart(self, data_dict):
+        plt.figure(figsize=(6, 6)) # Keep it square to prevent vertical distortion
+
+        # Check for diacritics in labels
+        labels = list(data_dict.keys())
+        values = list(data_dict.values())
+
+        # Try to set a font that exists on Windows or Linux
+        # Windows: Arial, Linux: DejaVu Sans
+        plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'sans-serif']
+        plt.rcParams['font.family'] = 'sans-serif'
+
+        plt.pie(values, labels=labels, autopct='%1.1f%%', startangle=140)
+        plt.axis('equal') 
+
+        chart_buffer = BytesIO()
+        plt.savefig(chart_buffer, format='png', bbox_inches='tight')
+        plt.close()
+        chart_buffer.seek(0)
+        return chart_buffer
+
+    def _generate_bar_chart(self, data_dict):
+        # Filter data to remove zeros (makes the chart cleaner)
+        clean_data = {k: v for k, v in data_dict.items() if v > 0}
+
+        if not clean_data:
+            # Fallback if no data exists to prevent Matplotlib crash
+            clean_data = {"Date lipsă": 0}
+
+        labels = list(clean_data.keys())
+        values = list(clean_data.values())
+
+        # Helper function for formatting
+        def format_duration(decimal_hours):
+            h = int(decimal_hours)
+            m = int(round((decimal_hours - h) * 60))
+            return f"{h}h {m:02d}m"
+
+        # Adjust figure height based on the number of items
+        fig_height = max(4, len(labels) * 0.5)
+        plt.figure(figsize=(20, fig_height))
+
+        # Font setup for diacritics
+        plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'sans-serif']
+        plt.rcParams['font.family'] = 'sans-serif'
+
+        # Create horizontal bars
+        bars = plt.barh(labels, values, color='#007bff')
+
+        # Add labels to the end of each bar for clarity
+        for bar in bars:
+            width = bar.get_width()
+            if width > 0:
+                formatted_label = format_duration(width)
+                plt.text(width + 0.1, bar.get_y() + bar.get_height()/2, 
+                        formatted_label, va='center', fontsize=12, fontweight='bold')
+
+        from matplotlib.ticker import FuncFormatter
+        plt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format_duration(x)))
+
+        plt.xlabel('Ore lucrate')
+        plt.title('Distribuția orelor pe activități')
+
+        plt.tight_layout()
+
+        # Save to memory buffer
+        chart_buffer = BytesIO()
+        plt.savefig(chart_buffer, format='png', bbox_inches='tight', dpi=300)
+        plt.close()
+        chart_buffer.seek(0)
+
+        return chart_buffer
+
+    def _calculate_hours(self, timesheet):
+        if timesheet.start_time and timesheet.end_time:
+            start = datetime.combine(datetime.today(), timesheet.start_time)
+            end = datetime.combine(datetime.today(), timesheet.end_time)
+            if end < start: end += timedelta(days=1)
+            return (end - start).total_seconds() / 3600
+        return 0

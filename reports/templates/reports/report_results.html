@@ -23,9 +23,15 @@
             </div>
             <!-- Replace your existing Export PDF button with this -->
             <div class="btn-group">
-                <button onclick="window.print()" class="btn btn-outline-secondary">
-                    <i class="fas fa-print"></i> {% trans "No Photos Export" %}
-                </button>
+                <form id="pdf-export-form" action="{% url 'export_simple_pdf' %}" method="POST" style="display: inline;margin-right: 5px;">
+                    {% csrf_token %}
+                    <input type="hidden" name="signature_data" id="signature-data">
+                    <input type="hidden" name="reg_number" id="hidden-reg-number">
+                    <input type="hidden" name="reg_date" id="hidden-reg-date">
+                    <button type="button" id="btn-open-sig" class="btn btn-warning">
+                        <i class="fas fa-file-pdf"></i> {% trans "Export fără fotografii" %}
+                    </button>
+                </form>
                 
                 <!-- Hidden form to handle the signature data -->
                 <form id="pdf-export-form" action="{% url 'export_pdf' %}" method="POST" style="display: inline;">
