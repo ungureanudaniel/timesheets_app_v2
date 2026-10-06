@@ -172,6 +172,7 @@ def generate_statutory_pdf_context(year, month, employee_data_list, ro_holidays)
     for item in employee_data_list:
         legal_days_matrix = {}
         legal_total_hours = 0
+        statutory_worked_days_count = 0
         
         # Parse existing matrix
         for day_num, day_info in item['days_matrix'].items():
@@ -181,17 +182,19 @@ def generate_statutory_pdf_context(year, month, employee_data_list, ro_holidays)
             if entry_type in ['CO', 'CM', 'EF']:
                 # Statutory leave preserves code
                 legal_days_matrix[day_num] = day_info
-                legal_total_hours += int(8)
-            elif entry_type == 'work' and ((weekday in range(4) and raw_minutes == 510) or (weekday == 4 and raw_minutes == 360) or ((weekday in (5,6) and raw_minutes == 510)) or (weekday in (5,6) and raw_minutes == 360)):
+            elif entry_type == 'work' and (
+                (weekday in range(4) and raw_minutes == 510)
+                  or (weekday == 4 and raw_minutes == 360)
+                    or ((weekday in (5,6) and raw_minutes == 510))
+                      or (weekday in (5,6) and raw_minutes == 360)):
                 # Force standard 8h rendering for legal pontaj
                 legal_days_matrix[day_num] = {'type': 'work', 'hours': 8}
                 legal_total_hours += int(8)
-            elif raw_minutes > 0:
-                # For any other work hours, round to nearest 8h if > 0
-                legal_days_matrix[day_num] = {'type': 'work', 'hours': raw_minutes/60}
-                legal_total_hours += raw_minutes/60
+                statutory_worked_days_count += 1
             else:
-                legal_days_matrix[day_num] = day_info
+                legal_days_matrix[day_num] = {'type': 'none', 'hours': 0}
+
+        
         statutory_employee_data.append({
             'employee_name': item['employee_name'],
             'job_title': item['job_title'],
@@ -201,6 +204,8 @@ def generate_statutory_pdf_context(year, month, employee_data_list, ro_holidays)
             'total_co_days': item['total_co_days'],
             'total_cm_days': item['total_cm_days'],
             'total_ef_days': item['total_ef_days'],
+            'statutory_worked_days': statutory_worked_days_count,
+            'statutory_total_days': statutory_worked_days_count,
             # 'meal_tickets_count': item['meal_tickets_count'],
         })
 

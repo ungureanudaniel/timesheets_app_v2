@@ -342,10 +342,12 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                 'job_title': getattr(emp, 'job_title', None) or 'N/A',
                 'days_matrix': days_matrix,
                 'total_hours_worked': round(total_hours_worked, 1),
+                'statutory_total_days': len(worked_days_set),
                 'total_minutes_worked': total_minutes_worked,
                 'total_co_days': len(co_days_set),
                 'total_cm_days': len(cm_days_set),
                 'total_ef_days': len(ef_days_set),
+                
                 # 'meal_tickets_count': len(eligible_meal_ticket_days)
             })
         serializable_employee_data = []
@@ -370,6 +372,7 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                 'total_co_days': emp_data.get('total_co_days'),
                 'total_cm_days': emp_data.get('total_cm_days'),
                 'total_ef_days': emp_data.get('total_ef_days'),
+                'statutory_total_days': emp_data.get('statutory_total_days'),
                 # 'meal_tickets_count': emp_data.get('meal_tickets_count')
             }
             serializable_employee_data.append(serializable_emp_data)
@@ -808,6 +811,7 @@ class TimesheetStandardizedHoursPDFView(View):
                 job_title = row.get('job_title', "N/A")
                 days_matrix = row.get('days_matrix', {})
                 total_hours = row.get('statutory_total_hours', 0)
+                total_worked_days = row.get('statutory_total_days', 0)
                 co_days = row.get('co_days', row.get('total_co_days', 0))
                 cm_days = row.get('cm_days', row.get('total_cm_days', 0))
                 ef_days = row.get('ef_days', row.get('total_ef_days', 0))
@@ -818,6 +822,7 @@ class TimesheetStandardizedHoursPDFView(View):
                 job_title = getattr(row, 'job_title', "N/A")
                 days_matrix = getattr(row, 'days_matrix', {})
                 total_hours = getattr(row, 'statutory_total_hours', 0)
+                total_worked_days = getattr(row, 'statutory_total_days', 0)
                 co_days = getattr(row, 'co_days', 0)
                 cm_days = getattr(row, 'cm_days', 0)
                 ef_days = getattr(row, 'ef_days', 0)
@@ -828,7 +833,7 @@ class TimesheetStandardizedHoursPDFView(View):
             # Check for mismatch and apply alert style
             total_mismatch = (total_hours != norma)
             
-            total_formatted = f"{round(total_hours/60, 2)}" if total_hours else "0"
+            total_formatted = f"{total_worked_days}" if total_worked_days else "0"
             if total_mismatch:
                 table_styles.append(
                     ('BACKGROUND', (total_ore_col_idx, idx), (total_ore_col_idx, idx), colors.HexColor('#FFE6E6'))
@@ -894,7 +899,7 @@ class TimesheetStandardizedHoursPDFView(View):
             weekday = calendar.weekday(year, month, day_int)
             if weekday in (5, 6):  # Saturday / Sunday
                 col_index = 3 + idx_d
-                t_style.append(('BACKGROUND', (col_index, 0), (col_index, -1), colors.HexColor('#eaeaea')))
+                t_style.append(('BACKGROUND', (col_index, 0), (col_index, -1), colors.HexColor("#b7e0bb")))
         t_style.extend(table_styles)
         t = Table(table_data, colWidths=col_widths, repeatRows=1)
         t.setStyle(TableStyle(t_style))
