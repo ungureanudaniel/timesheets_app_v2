@@ -191,6 +191,11 @@ def generate_statutory_pdf_context(year, month, employee_data_list, ro_holidays)
                 legal_days_matrix[day_num] = {'type': 'work', 'hours': 8}
                 legal_total_hours += int(8)
                 statutory_worked_days_count += 1
+            elif raw_minutes > 0:
+                # Incomplete day: display hours in cell, but DO NOT increment worked days/total hours
+                hours_decimal = round(raw_minutes / 60, 1)
+                formatted_hours = int(hours_decimal) if hours_decimal.is_integer() else hours_decimal
+                legal_days_matrix[day_num] = {'type': 'work', 'hours': formatted_hours}
             else:
                 legal_days_matrix[day_num] = {'type': 'none', 'hours': 0}
 

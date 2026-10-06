@@ -788,16 +788,6 @@ class TimesheetStandardizedHoursPDFView(View):
             # Paragraph("<b>Tichete<br/>Masa</b>", header_cell_style),
         ])
         total_ore_col_idx = 3 + num_days
-        alert_cell_style = ParagraphStyle(
-            'AlertCell',
-            parent=styles['Normal'],
-            fontSize=6,
-            leading=7,
-            alignment=1,
-            fontName='Helvetica-Bold',
-            textColor=colors.HexColor('#CC0000'),
-            borderColor=colors.HexColor('#CC0000'),
-        )
         table_styles = []
         table_data = [row1]
         statutory_norm, employee_rows = generate_statutory_pdf_context(year, month, employee_data, ro_holidays=ro_holidays) # Contains standardized hours data
@@ -862,9 +852,6 @@ class TimesheetStandardizedHoursPDFView(View):
                 
                 # Add to PDF cell
                 data_row.append(Paragraph(str(cell_val if cell_val is not None else ''), body_cell_style))
-            # Choose paragraph style based on alert status
-            # total_paragraph_style = alert_cell_style if total_mismatch else body_cell_style
-
             # Append totals and counts    
             data_row.extend([
                 Paragraph(total_formatted, body_cell_style),
