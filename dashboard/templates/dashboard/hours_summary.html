@@ -84,7 +84,7 @@
                     <tr>
                         <th rowspan="2" style="width: 40px;">{% trans "Nr. crt." %}</th>
                         <th rowspan="2" style="width: 100px;">{% trans "Nume Prenume" %}</th>
-                        <th rowspan="2" style="width: 50px;">{% trans "Normă" %}</th>
+                        <th rowspan="2" style="width: 50px;">{% trans "Norma" %}</th>
                         {% for day in month_days %}
                             <th style="width: 30px;" class="{% if day.is_weekend %}weekend-col{% endif %} {% if day.is_holiday %}holiday-col{% endif %}" 
                                 {% if day.is_holiday %}title="{{ day.holiday_name }}"{% endif %}>
@@ -95,7 +95,7 @@
                         <th rowspan="2" class="summary-header summary-wrap-col">{% trans "Zile CO" %}</th>
                         <th rowspan="2" class="summary-header summary-wrap-col">{% trans "Zile CM" %}</th>
                         <th rowspan="2" class="summary-header summary-wrap-col">{% trans "Zile EF" %}</th>
-                        <th rowspan="2" class="summary-header summary-wrap-col">{% trans "Tichete Masă" %}</th>
+                        {% comment %} <th rowspan="2" class="summary-header summary-wrap-col">{% trans "Tichete Masă" %}</th> {% endcomment %}
                     </tr>
                     <tr>
                         {% for day in month_days %}
@@ -112,7 +112,7 @@
                     <tr>
                         <td>{{ forloop.counter }}</td>
                         <td class="employee-name-cell text-start px-2 fw-bold text-dark">{{ row.employee.last_name }} {{ row.employee.first_name|default:row.employee.username }}</td>
-                        <td class="text-muted">{{ row.norma_minutes|fmt_minutes }}</td>
+                        <td class="text-muted px-1">{{ row.norma_minutes|fmt_minutes }}</td>
                         {% for day in month_days %}
                             {% with cell=row.days_matrix|dictget:day.day_num %}
                                 <td class="{% if day.is_weekend %}weekend-col{% endif %} {% if day.is_holiday %}holiday-cell-bg{% endif %}">
@@ -143,7 +143,7 @@
                         <td class="fw-bold text-success">{{ row.total_co_days|default:"0" }}</td>
                         <td class="fw-bold text-danger">{{ row.total_cm_days|default:"0" }}</td>
                         <td class="fw-bold text-danger">{{ row.total_ef_days|default:"0" }}</td>
-                        <td class="fw-bold text-primary bg-light">{{ row.meal_tickets_count|default:"0" }}</td>
+                        {% comment %} <td class="fw-bold text-primary bg-light">{{ row.meal_tickets_count|default:"0" }}</td> {% endcomment %}
                     </tr>
                     {% empty %}
                     <tr>

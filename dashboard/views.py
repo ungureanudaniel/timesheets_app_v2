@@ -222,14 +222,14 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
         context['month_days'] = month_days_list
 
         if request.user.is_staff or request.user.groups.filter(name='Managers').exists():
-            employees = User.objects.filter(is_approved=True).order_by('first_name', 'last_name')
+            employees = User.objects.filter(is_approved=True).order_by('last_name', 'first_name')
         else:
             # Non-manager users may view only their own timesheet summary.
             # Keep this as a queryset because it is prefetched below.
             employees = User.objects.filter(
                 is_approved=True,
                 pk=request.user.pk,
-            ).order_by('first_name', 'last_name')
+            ).order_by('last_name', 'first_name')
 
         monthly_timesheets = Timesheet.objects.filter(
             date__year=year, 
@@ -330,38 +330,47 @@ class HoursSummaryTableView(LoginRequiredMixin, TemplateView):
                     # Track this day as a worked day for meal ticket eligibility
                     worked_days_set.add(day_number)
             
-            eligible_meal_ticket_days = worked_days_set - co_days_set - cm_days_set-ef_days_set
+            # eligible_meal_ticket_days = worked_days_set - co_days_set - cm_days_set-ef_days_set
             # Standard Romanian Norm setup subtracting statutory bank holidays 
             norma_hours = workable_mon_thu * 8.5 + workable_fri * 6
             norma_minutes = norma_hours * 60
             employee_data.append({
                 'employee': emp,
+                'employee_name': f"{emp.first_name} {emp.last_name}".strip() if emp else "Unknown",
                 'norma_hours': norma_hours,
                 'norma_minutes': norma_minutes,
-                'days_matrix': days_matrix,  
+                'job_title': getattr(emp, 'job_title', None) or 'N/A',
+                'days_matrix': days_matrix,
                 'total_hours_worked': round(total_hours_worked, 1),
                 'total_minutes_worked': total_minutes_worked,
                 'total_co_days': len(co_days_set),
                 'total_cm_days': len(cm_days_set),
                 'total_ef_days': len(ef_days_set),
-                'meal_tickets_count': len(eligible_meal_ticket_days)
+                # 'meal_tickets_count': len(eligible_meal_ticket_days)
             })
         serializable_employee_data = []
 
         for emp_data in employee_data:
             emp = emp_data.get('employee')
+
+            # format name as last and first
+            if emp:
+                last = getattr(emp, 'last_name', '').strip()
+                first = getattr(emp, 'first_name', '').strip()
+                formatted_name = f"{last} {first}".strip() or getattr(emp, 'username', 'Unknown')
             serializable_emp_data = {
-                'employee_id': emp.id,
-                'employee_name': f"{emp.first_name} {emp.last_name}".strip() if emp else "Unknown",
+                'employee_id': emp.id if emp else None,
+                'employee_name': formatted_name,
                 'norma_hours': emp_data.get('norma_hours'),
                 'norma_minutes': emp_data.get('norma_minutes'),
+                'job_title': emp_data.get('job_title'),
                 'days_matrix': emp_data.get('days_matrix'),
                 'total_hours_worked': emp_data.get('total_hours_worked'),
                 'total_minutes_worked': emp_data.get('total_minutes_worked'),
                 'total_co_days': emp_data.get('total_co_days'),
                 'total_cm_days': emp_data.get('total_cm_days'),
                 'total_ef_days': emp_data.get('total_ef_days'),
-                'meal_tickets_count': emp_data.get('meal_tickets_count')
+                # 'meal_tickets_count': emp_data.get('meal_tickets_count')
             }
             serializable_employee_data.append(serializable_emp_data)
 
@@ -498,7 +507,7 @@ class TimesheetPDFView(View):
             Paragraph("<b>Zile<br/>CO</b>", header_cell_style),
             Paragraph("<b>Zile<br/>CM</b>", header_cell_style),
             Paragraph("<b>Zile<br/>EF</b>", header_cell_style),
-            Paragraph("<b>Tichete<br/>Masa</b>", header_cell_style),
+            # Paragraph("<b>Tichete<br/>Masa</b>", header_cell_style),
         ])
         total_ore_col_idx = 3 + num_days
         alert_cell_style = ParagraphStyle(
@@ -518,22 +527,24 @@ class TimesheetPDFView(View):
             # Safe name extraction
             if isinstance(row, dict):
                 emp_name = row.get('employee_name', f"Angajat {idx}")
+                job_title = row.get('job_title', "N/A")
                 norma_minutes = row.get('norma_minutes', 168)
                 days_matrix = row.get('days_matrix', {})
                 total_minutes = row.get('total_minutes_worked')
                 co_days = row.get('co_days', row.get('total_co_days', 0))
                 cm_days = row.get('cm_days', row.get('total_cm_days', 0))
                 ef_days = row.get('ef_days', row.get('total_ef_days', 0))
-                meal_tickets = row.get('meal_tickets', row.get('meal_tickets_count', 0))
+                # meal_tickets = row.get('meal_tickets', row.get('meal_tickets_count', 0))
             else:
                 emp_name = getattr(row, 'employee_name')
+                job_title = getattr(row, 'job_title', "N/A")
                 norma_minutes = getattr(row, 'norma_minutes', 168)
                 days_matrix = getattr(row, 'days_matrix', {})
                 total_minutes = getattr(row, 'total_minutes_worked', 0)
                 co_days = getattr(row, 'co_days', 0)
                 cm_days = getattr(row, 'cm_days', 0)
                 ef_days = getattr(row, 'ef_days', 0)
-                meal_tickets = getattr(row, 'meal_tickets', 0)
+                # meal_tickets = getattr(row, 'meal_tickets', 0)
             # fetch and format employee name
             emp_name = f"{emp_name}".strip() if emp_name else f"Angajat {idx}"
             total_formatted = format_minutes(total_minutes) if total_minutes is not None else "0:00"
@@ -576,7 +587,7 @@ class TimesheetPDFView(View):
                 Paragraph(str(co_days), body_cell_style),
                 Paragraph(str(cm_days), body_cell_style),
                 Paragraph(str(ef_days), body_cell_style),
-                Paragraph(str(meal_tickets), body_cell_style),
+                # Paragraph(str(meal_tickets), body_cell_style),
             ])
 
             table_data.append(data_row)
@@ -760,18 +771,18 @@ class TimesheetStandardizedHoursPDFView(View):
         row1 = [
             Paragraph("<b>Nr.<br/>crt.</b>", header_cell_style),
             Paragraph("<b>Nume Prenume</b>", header_cell_style),
-            Paragraph("<b>Norma</b>", header_cell_style),
+            Paragraph("<b>Functie</b>", header_cell_style),
         ]
         
         for day_int in month_days:
             row1.append(Paragraph(f"<b>{day_int}</b>", header_cell_style))
         # Add the additional columns for totals and counts
         row1.extend([
-            Paragraph("<b>Total<br/>ore</b>", header_cell_style),
+            Paragraph("<b>Total<br/>zile<br/>lucrate</b>", header_cell_style),
             Paragraph("<b>Zile<br/>CO</b>", header_cell_style),
             Paragraph("<b>Zile<br/>CM</b>", header_cell_style),
             Paragraph("<b>Zile<br/>EF</b>", header_cell_style),
-            Paragraph("<b>Tichete<br/>Masa</b>", header_cell_style),
+            # Paragraph("<b>Tichete<br/>Masa</b>", header_cell_style),
         ])
         total_ore_col_idx = 3 + num_days
         alert_cell_style = ParagraphStyle(
@@ -794,28 +805,30 @@ class TimesheetStandardizedHoursPDFView(View):
             if isinstance(row, dict):
                 emp_name = row.get('employee_name', f"Angajat {idx}")
                 norma = row.get('statutory_norm', statutory_norm)
+                job_title = row.get('job_title', "N/A")
                 days_matrix = row.get('days_matrix', {})
                 total_hours = row.get('statutory_total_hours', 0)
                 co_days = row.get('co_days', row.get('total_co_days', 0))
                 cm_days = row.get('cm_days', row.get('total_cm_days', 0))
                 ef_days = row.get('ef_days', row.get('total_ef_days', 0))
-                meal_tickets = row.get('meal_tickets', row.get('meal_tickets_count', 0))
+                # meal_tickets = row.get('meal_tickets', row.get('meal_tickets_count', 0))
             else:
                 emp_name = getattr(row, 'employee_name')
                 norma = getattr(row, 'statutory_norm', statutory_norm)
+                job_title = getattr(row, 'job_title', "N/A")
                 days_matrix = getattr(row, 'days_matrix', {})
                 total_hours = getattr(row, 'statutory_total_hours', 0)
                 co_days = getattr(row, 'co_days', 0)
                 cm_days = getattr(row, 'cm_days', 0)
                 ef_days = getattr(row, 'ef_days', 0)
-                meal_tickets = getattr(row, 'meal_tickets', 0)
+                # meal_tickets = getattr(row, 'meal_tickets', 0)
 
             # fetch and format employee name
             emp_name = f"{emp_name}".strip() if emp_name else f"Angajat {idx}"
             # Check for mismatch and apply alert style
             total_mismatch = (total_hours != norma)
             
-            total_formatted = f"{total_hours}" if total_hours else "0"
+            total_formatted = f"{round(total_hours/60, 2)}" if total_hours else "0"
             if total_mismatch:
                 table_styles.append(
                     ('BACKGROUND', (total_ore_col_idx, idx), (total_ore_col_idx, idx), colors.HexColor('#FFE6E6'))
@@ -823,7 +836,7 @@ class TimesheetStandardizedHoursPDFView(View):
             data_row = [
                 Paragraph(str(idx), body_cell_style),
                 Paragraph(emp_name, name_cell_style),
-                Paragraph(str(norma), body_cell_style),
+                Paragraph(job_title, body_cell_style),
             ]
             # Populate matrix days
             for day_int in month_days:
@@ -853,7 +866,7 @@ class TimesheetStandardizedHoursPDFView(View):
                 Paragraph(str(co_days), body_cell_style),
                 Paragraph(str(cm_days), body_cell_style),
                 Paragraph(str(ef_days), body_cell_style),
-                Paragraph(str(meal_tickets), body_cell_style),
+                # Paragraph(str(meal_tickets), body_cell_style),
             ])
 
             table_data.append(data_row)

@@ -84,7 +84,7 @@ class Command(BaseCommand):
         
         # 1. EVERY MONDAY: Office Overview (Who filled what last week)
         if today.weekday() == 0:  # 0 is Monday
-            self.send_office_overview(today)
+            self.send_office_summary()
             self.send_weekly_reminders(today)
 
         # 2. END OF MONTH: Monthly Reminders
@@ -192,16 +192,16 @@ def generate_statutory_pdf_context(year, month, employee_data_list, ro_holidays)
                 legal_total_hours += raw_minutes/60
             else:
                 legal_days_matrix[day_num] = day_info
-
         statutory_employee_data.append({
             'employee_name': item['employee_name'],
+            'job_title': item['job_title'],
             'statutory_norm': statutory_month_norm,
             'statutory_total_hours': legal_total_hours,
             'days_matrix': legal_days_matrix,
             'total_co_days': item['total_co_days'],
             'total_cm_days': item['total_cm_days'],
             'total_ef_days': item['total_ef_days'],
-            'meal_tickets_count': item['meal_tickets_count'],
+            # 'meal_tickets_count': item['meal_tickets_count'],
         })
 
     return statutory_month_norm, statutory_employee_data
