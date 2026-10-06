@@ -831,13 +831,13 @@ class TimesheetStandardizedHoursPDFView(View):
             # fetch and format employee name
             emp_name = f"{emp_name}".strip() if emp_name else f"Angajat {idx}"
             # Check for mismatch and apply alert style
-            total_mismatch = (total_hours != norma)
+            # total_mismatch = (total_hours != norma)
             
             total_formatted = f"{total_worked_days}" if total_worked_days else "0"
-            if total_mismatch:
-                table_styles.append(
-                    ('BACKGROUND', (total_ore_col_idx, idx), (total_ore_col_idx, idx), colors.HexColor('#FFE6E6'))
-                )
+            # if total_mismatch:
+            #     table_styles.append(
+            #         ('BACKGROUND', (total_ore_col_idx, idx), (total_ore_col_idx, idx), colors.HexColor('#FFE6E6'))
+            #     )
             data_row = [
                 Paragraph(str(idx), body_cell_style),
                 Paragraph(emp_name, name_cell_style),
@@ -863,11 +863,11 @@ class TimesheetStandardizedHoursPDFView(View):
                 # Add to PDF cell
                 data_row.append(Paragraph(str(cell_val if cell_val is not None else ''), body_cell_style))
             # Choose paragraph style based on alert status
-            total_paragraph_style = alert_cell_style if total_mismatch else body_cell_style
+            # total_paragraph_style = alert_cell_style if total_mismatch else body_cell_style
 
             # Append totals and counts    
             data_row.extend([
-                Paragraph(total_formatted, total_paragraph_style),
+                Paragraph(total_formatted, body_cell_style),
                 Paragraph(str(co_days), body_cell_style),
                 Paragraph(str(cm_days), body_cell_style),
                 Paragraph(str(ef_days), body_cell_style),
