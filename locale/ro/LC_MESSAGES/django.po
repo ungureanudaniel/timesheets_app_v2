@@ -1109,12 +1109,12 @@ msgid "Day"
 msgstr "Ziua"
 
 #: dashboard/templates/activities/activity_program_detail.html
-msgid "Code & Activity"
-msgstr "Cod & Activitate"
+msgid "Activity code"
+msgstr "Cod activitate"
 
 #: dashboard/templates/activities/activity_program_detail.html
-msgid "Description & Operational Objectives"
-msgstr "Descriere & Obiective operaționale"
+msgid "Activity description"
+msgstr "Descriere activitate"
 
 #: dashboard/templates/activities/activity_program_detail.html
 msgid "Assigned Personnel"

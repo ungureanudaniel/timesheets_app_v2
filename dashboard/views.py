@@ -1325,7 +1325,10 @@ class ActivityProgramDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         program = self.get_object()
+        print(program.items.all())
 
+        monday = date.fromisocalendar(program.year, program.week, 1)  # ISO week starts on Monday
+        context['week_days'] = [(monday + timedelta(days=i)).strftime('%A, %d.%m.%Y') for i in range(7)]
         # Signature status context: a user can have a personnel signature
         # and, if an approver, an extra one for their role
         user_sigs = program.signatures.filter(ranger=user)
